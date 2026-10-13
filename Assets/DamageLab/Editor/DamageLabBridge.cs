@@ -102,6 +102,12 @@ namespace DamageLab.EditorTools
                 case "verify":
                     Debug.Log(DamageLabValidation.Run());
                     break;
+                case "impact-set":
+                    DamageLabCapture.CaptureImpactSet();
+                    break;
+                case "verify-impacts":
+                    Debug.Log(DamageLabValidation.RunImpacts());
+                    break;
                 case "capture-set":
                     DamageLabCapture.CaptureSet(DamageLabCapture.ComparisonSet, 145f, 14f, 7.6f, true, "");
                     break;

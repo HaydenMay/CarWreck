@@ -114,3 +114,19 @@ MonoBehaviour:
     seed: 53
   roofLineStart: 1.05
   roofLineEnd: 1.4
+  impact:
+    maxDepth: 0.42
+    depthExponent: 1.15
+    radiusMin: 0.16
+    radiusMax: 0.6
+    grazingDepth: 0.45
+    profileSharpness: 2.6
+    footprintIrregularity: 0.22
+    buckleLobes: 6
+    buckleStrength: 0.26
+    rimCrease: 0.15
+    floorWrinkle: 0.05
+    lip: 0.06
+    drawIn: 0.12
+    stackKnee: 0.4
+    stackCap: 0.7

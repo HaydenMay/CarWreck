@@ -155,7 +155,9 @@ namespace DamageLab.EditorTools
             car.SetActive(true);
 
             // ---------------------------------------------------------------- UI
-            DamageLabUIBuilder.Build(cam, damage, turntable, camController);
+            var picker = camGO.AddComponent<ImpactPicker>();
+            picker.model = damage;
+            DamageLabUIBuilder.Build(cam, damage, turntable, camController, picker);
             new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene, ScenePath);

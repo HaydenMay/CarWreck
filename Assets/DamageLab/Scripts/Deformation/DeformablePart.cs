@@ -149,9 +149,9 @@ namespace DamageLab.Deformation
         }
 
         /// <summary>Rebuild the deformed mesh from the original data for the given direction states.</summary>
-        public void Apply(CrushField[] fields, RegionState[] states, float roofStart, float roofEnd)
+        public void Apply(CrushField[] fields, RegionState[] states, float roofStart, float roofEnd, ImpactField impacts = null)
         {
-            bool any = false;
+            bool any = impacts != null && hasImpacts;
             for (int d = 0; d < states.Length; d++) any |= states[d].active;
             int n = baseVerts.Length;
 
@@ -170,6 +170,7 @@ namespace DamageLab.Deformation
 
             // Displacement is a pure function of per-vertex constants, so vertex chunks run in parallel.
             applyFields = fields; applyStates = states; applyRoofStart = roofStart; applyRoofEnd = roofEnd;
+            applyImpacts = any && hasImpacts ? impacts : null;
             if (MultiThreaded && n >= 4096) Parallel.For(0, (n + ChunkSize - 1) / ChunkSize, applyChunk ??= DisplaceChunk);
             else DisplaceChunk(0, n);
 
@@ -200,6 +201,7 @@ namespace DamageLab.Deformation
         CrushField[] applyFields;
         RegionState[] applyStates;
         float applyRoofStart, applyRoofEnd;
+        ImpactField applyImpacts;
 
         void DisplaceChunk(int chunk) => DisplaceChunk(chunk * ChunkSize, Mathf.Min(baseVerts.Length, (chunk + 1) * ChunkSize));
 
@@ -215,8 +217,40 @@ namespace DamageLab.Deformation
                     if (!states[d].active) continue;
                     disp += fields[d].Displacement(in samples[d][i], vehicleNormal[i], in states[d], crumple, applyRoofStart, applyRoofEnd);
                 }
+                // Localized click impacts (cached sum, computed from the original positions).
+                if (applyImpacts != null) disp += applyImpacts.Limit(impactSum[i]);
                 work[i] = baseVerts[i] + vehicleToMesh.MultiplyVector(disp);
             }
+        }
+
+        Vector3[] impactSum;              // per vertex: summed raw displacement of all localized impacts
+        bool hasImpacts;
+
+        /// <summary>Add impact <paramref name="index"/> of the field to this part's cached impact sum.
+        /// Only the new impact is evaluated, so a click costs one impact and slider moves cost none.</summary>
+        public void AccumulateImpact(ImpactField field, int index)
+        {
+            int n = vehiclePos.Length;
+            impactSum ??= new Vector3[n];
+            hasImpacts = true;
+            if (MultiThreaded && n >= 4096)
+            {
+                Parallel.For(0, (n + ChunkSize - 1) / ChunkSize, chunk =>
+                {
+                    int end = Mathf.Min(n, (chunk + 1) * ChunkSize);
+                    for (int i = chunk * ChunkSize; i < end; i++) impactSum[i] += field.Contribution(index, vehiclePos[i], vehicleNormal[i], crumple);
+                });
+            }
+            else
+            {
+                for (int i = 0; i < n; i++) impactSum[i] += field.Contribution(index, vehiclePos[i], vehicleNormal[i], crumple);
+            }
+        }
+
+        public void ClearImpacts()
+        {
+            if (impactSum != null) System.Array.Clear(impactSum, 0, impactSum.Length);
+            hasImpacts = false;
         }
 
         void ComputeNormals(Vector3[] pos, Vector3[] result)
