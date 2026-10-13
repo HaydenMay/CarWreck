@@ -218,12 +218,13 @@ namespace DamageLab.Deformation
                     disp += fields[d].Displacement(in samples[d][i], vehicleNormal[i], in states[d], crumple, applyRoofStart, applyRoofEnd);
                 }
                 // Localized click impacts (cached sum, computed from the original positions).
-                if (applyImpacts != null) disp += applyImpacts.Limit(impactSum[i]);
+                if (applyImpacts != null) disp += applyImpacts.Limit(impactSum[i], impactCap[i]);
                 work[i] = baseVerts[i] + vehicleToMesh.MultiplyVector(disp);
             }
         }
 
         Vector3[] impactSum;              // per vertex: summed raw displacement of all localized impacts
+        float[] impactCap;                // per vertex: structural crush capacity (depends only on the original mesh)
         bool hasImpacts;
 
         /// <summary>Add impact <paramref name="index"/> of the field to this part's cached impact sum.
@@ -232,6 +233,11 @@ namespace DamageLab.Deformation
         {
             int n = vehiclePos.Length;
             impactSum ??= new Vector3[n];
+            if (impactCap == null)
+            {
+                impactCap = new float[n];
+                for (int i = 0; i < n; i++) impactCap[i] = field.Capacity(vehiclePos[i], crumple);
+            }
             hasImpacts = true;
             if (MultiThreaded && n >= 4096)
             {
@@ -306,6 +312,8 @@ namespace DamageLab.Deformation
         readonly Vector3 baseLocalPosition;
         readonly Quaternion baseLocalRotation;
         readonly Vector3 vehicleCenter;
+        /// <summary>Centre of the part in vehicle space (used as a wheel-mount position).</summary>
+        public Vector3 VehicleCenter => vehicleCenter;
         readonly Vector3 vehicleExtents;
         readonly float follow;
         readonly Transform vehicleRoot;

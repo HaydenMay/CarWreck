@@ -105,6 +105,12 @@ namespace DamageLab.EditorTools
                 case "impact-set":
                     DamageLabCapture.CaptureImpactSet();
                     break;
+                case "stress-set":
+                    DamageLabCapture.CaptureStressSet();
+                    break;
+                case "verify-stress":
+                    Debug.Log(DamageLabValidation.RunStress());
+                    break;
                 case "verify-impacts":
                     Debug.Log(DamageLabValidation.RunImpacts());
                     break;

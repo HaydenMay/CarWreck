@@ -128,5 +128,12 @@ MonoBehaviour:
     floorWrinkle: 0.05
     lip: 0.06
     drawIn: 0.12
-    stackKnee: 0.4
-    stackCap: 0.7
+    panelLimit: 0.5
+    cabinLimit: 0.36
+    wheelLimit: 0.2
+    wheelInner: 0.5
+    wheelOuter: 0.95
+    saturationKnee: 0.6
+    spreadPerHit: 0.15
+    maxSpread: 1.5
+    hardening: 0.6

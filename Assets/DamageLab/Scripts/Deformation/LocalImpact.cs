@@ -37,9 +37,24 @@ namespace DamageLab.Deformation
         [Tooltip("Small outward lip just outside the dent.")]
         public float lip = 0.06f;
         public float drawIn = 0.12f;
-        [Tooltip("Summed impact displacement is linear up to the knee and then eases toward the cap.")]
-        public float stackKnee = 0.40f;
-        public float stackCap = 0.70f;
+        [Header("Structural limits (crush capacity per vertex, m)")]
+        [Tooltip("Outer body panels: doors, fenders, hood, trunk.")]
+        public float panelLimit = 0.50f;
+        [Tooltip("Passenger compartment (above the roof line start): pillars, roof.")]
+        public float cabinLimit = 0.36f;
+        [Tooltip("Metal around the wheel mounts.")]
+        public float wheelLimit = 0.20f;
+        [Tooltip("Distance from a wheel centre where the wheel limit applies / fades out to the panel limit.")]
+        public float wheelInner = 0.50f;
+        public float wheelOuter = 0.95f;
+        [Tooltip("Fraction of the limit that is reached linearly; beyond it further damage has diminishing returns.")]
+        [Range(0.2f, 0.95f)] public float saturationKnee = 0.6f;
+        [Header("Spreading on repeated hits")]
+        [Tooltip("Footprint radius growth per unit of earlier damage at the hit point.")]
+        public float spreadPerHit = 0.15f;
+        public float maxSpread = 1.5f;
+        [Tooltip("Work hardening: depth of a new hit is divided by (1 + hardening · earlier damage at that spot).")]
+        public float hardening = 0.6f;
     }
 
     /// <summary>
@@ -50,25 +65,53 @@ namespace DamageLab.Deformation
     ///   buckles a few radial triangle-wave folds on the dent wall (sheet metal gathers into creases
     ///           when it is pushed into a smaller area) plus ridged creases on the rim.
     ///   lip     a slight outward roll just outside the dent so the edge reads as bent metal.
-    /// Several impacts are summed and the total is soft-limited, so stacked hits deepen without exploding.
+    /// Several impacts are summed, then the total is saturated against a per-vertex structural limit
+    /// (soft panels, stiffer cabin, stiff wheel mounts): linear up to a knee, then diminishing returns.
+    /// A hit on metal that is already damaged spreads wider (and rolls a smaller lip), so repeated hits
+    /// widen the crushed area instead of drilling one spot ever deeper.
     /// </summary>
     public sealed class ImpactField
     {
         struct State
         {
             public Vector3 p, d, e1, e2, noiseOffset;
-            public float depth, radius, invRadius, zone, reach2, phase;
+            public float depth, radius, invRadius, zone, reach2, phase, lipScale;
         }
 
         readonly ImpactSettings cfg;
         readonly DeterministicNoise noise = new DeterministicNoise(71);
         readonly List<State> states = new List<State>();
+        Vector3[] wheelCenters = new Vector3[0];
+        float cabinStart = 1.05f;
 
         public ImpactField(ImpactSettings settings) { cfg = settings ?? new ImpactSettings(); }
 
         public int Count => states.Count;
 
         public void Clear() => states.Clear();
+
+        /// <summary>Lightweight structure map: wheel mount positions and the height where the cabin starts (vehicle space).</summary>
+        public void SetStructure(Vector3[] wheels, float cabinLineStart)
+        {
+            wheelCenters = wheels ?? new Vector3[0];
+            cabinStart = cabinLineStart;
+        }
+
+        /// <summary>How far (m) the metal at x can be crushed by localized impacts before it is saturated.</summary>
+        public float Capacity(Vector3 x, float crumple)
+        {
+            // Passenger compartment is stiffer than the outer panels; blend over ±0.1 m.
+            float cabin = Mathf.Clamp01((x.y - (cabinStart - 0.1f)) / 0.2f);
+            float c = Mathf.Lerp(cfg.panelLimit, cfg.cabinLimit, cabin * cabin * (3f - 2f * cabin));
+            // Wheel mounts: the fender can crumple around the wheel but not wander away from it.
+            foreach (var w in wheelCenters)
+            {
+                float t = Mathf.Clamp01(((x - w).magnitude - cfg.wheelInner) / Mathf.Max(0.01f, cfg.wheelOuter - cfg.wheelInner));
+                c = Mathf.Min(c, Mathf.Lerp(cfg.wheelLimit, c, t * t * (3f - 2f * t)));
+            }
+            // Stiff parts (bumpers, lights) give less.
+            return c * (0.6f + 0.4f * Mathf.Clamp01(crumple));
+        }
 
         /// <summary>Add one impact; returns its index for <see cref="Contribution"/>.</summary>
         public int Add(LocalImpact im)
@@ -79,7 +122,19 @@ namespace DamageLab.Deformation
             float facing = Mathf.Clamp01(Vector3.Dot(-st.d, im.normal));
             float s = Mathf.Clamp01(im.strength);
             st.depth = cfg.maxDepth * Mathf.Pow(s, cfg.depthExponent) * Mathf.Lerp(cfg.grazingDepth, 1f, facing);
-            st.radius = Mathf.Lerp(cfg.radiusMin, cfg.radiusMax, s);
+            // Earlier damage at this spot (sum of earlier footprints, weighted by their strength): the
+            // centre is already near its limit, so the new hit spreads into the surrounding panels.
+            float prior = 0f;
+            foreach (var o in states)
+            {
+                Vector3 r0 = im.point - o.p;
+                Vector3 lat0 = r0 - o.d * Vector3.Dot(r0, o.d);
+                prior += o.depth / Mathf.Max(1e-3f, cfg.maxDepth) * Mathf.Exp(-lat0.sqrMagnitude * o.invRadius * o.invRadius);
+            }
+            // Work hardening: crushed metal absorbs less of a new hit, so repeats give diminishing depth.
+            st.depth /= 1f + cfg.hardening * prior;
+            st.lipScale = 1f / (1f + prior);
+            st.radius = Mathf.Lerp(cfg.radiusMin, cfg.radiusMax, s) * (1f + cfg.spreadPerHit * Mathf.Min(prior, cfg.maxSpread));
             st.invRadius = 1f / st.radius;
             st.zone = 1.5f * st.depth + 0.12f;
             float r = 1.8f * st.radius;
@@ -88,7 +143,7 @@ namespace DamageLab.Deformation
             st.e1 = Vector3.Cross(helper, st.d).normalized;
             st.e2 = Vector3.Cross(st.d, st.e1);
             // Noise offset and buckle phase come from the hit position, so the same click always
-            // produces the same dent regardless of the order impacts were added.
+            // produces the same dent pattern (its spread still depends on the damage already there).
             st.noiseOffset = new Vector3(Hash(im.point.x * 13.1f + im.point.z * 3.7f), Hash(im.point.y * 17.3f + im.point.x * 5.1f), Hash(im.point.z * 11.7f + im.point.y * 7.9f)) * 40f;
             st.phase = Hash(im.point.x * 7.3f + im.point.y * 3.1f + im.point.z * 5.9f);
             states.Add(st);
@@ -105,13 +160,15 @@ namespace DamageLab.Deformation
         /// position x with smoothed normal n. Parts cache the sum of these, so a new click costs one impact.</summary>
         public Vector3 Contribution(int index, Vector3 x, Vector3 n, float crumple) => One(states[index], x, n, crumple);
 
-        /// <summary>Soft limit applied to the summed contributions of all impacts.</summary>
-        public Vector3 Limit(Vector3 sum)
+        /// <summary>Saturate the summed contributions of all impacts against the vertex's crush capacity:
+        /// linear up to knee·capacity, then easing toward the capacity (diminishing returns, no hard stop).</summary>
+        public Vector3 Limit(Vector3 sum, float capacity)
         {
             float m = sum.magnitude;
-            if (m <= cfg.stackKnee) return sum;
-            float span = Mathf.Max(1e-3f, cfg.stackCap - cfg.stackKnee);
-            float limited = cfg.stackKnee + span * Tanh((m - cfg.stackKnee) / span);
+            float knee = cfg.saturationKnee * capacity;
+            if (m <= knee) return sum;
+            float span = Mathf.Max(1e-3f, capacity - knee);
+            float limited = knee + span * Tanh((m - knee) / span);
             return sum * (limited / m);
         }
 
@@ -166,7 +223,7 @@ namespace DamageLab.Deformation
 
             // Outward lip just past the dent edge.
             float dl = (le - 1.25f) / 0.25f;
-            float lip = cfg.lip * st.depth * Mathf.Exp(-dl * dl);
+            float lip = cfg.lip * st.depth * st.lipScale * Mathf.Exp(-dl * dl);
 
             Vector3 disp = st.d * (push + buckle * w - lip * w) + n * (crease * w);
             // Material is dragged in toward the dent instead of stretching over its wall.

@@ -307,6 +307,9 @@ namespace DamageLab.Vehicle
                 rigidParts.Add(rp);
             }
             impactField = new ImpactField(profile.impact);
+            var wheelCenters = new Vector3[rigidParts.Count];
+            for (int i = 0; i < rigidParts.Count; i++) wheelCenters[i] = rigidParts[i].VehicleCenter;
+            impactField.SetStructure(wheelCenters, profile.roofLineStart);
             foreach (var im in impacts) AccumulateImpact(im);
 
             // Static picking colliders built from the ORIGINAL meshes (never re-cooked as the car deforms).

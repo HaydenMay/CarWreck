@@ -113,6 +113,28 @@ namespace DamageLab.EditorTools
             foreach (var s in ImpactSet) CaptureImpactShot(s, withUI);
         }
 
+        static Aim WheelArch(float s) => new Aim(100, 37, 6.5f, new Vector3(-1f, 0.4f, 0.6f), s);
+        static Aim Windshield(float s) => new Aim(180, 37, 6.5f, new Vector3(0f, 1.4f, 0.25f), s);
+        static Aim[] Repeat(Aim a, int n) { var r = new Aim[n]; for (int i = 0; i < n; i++) r[i] = a; return r; }
+
+        /// <summary>Saturation stress shots: the same click repeated 1 / 3 / 5 times, plus other locations.</summary>
+        public static readonly ImpactShot[] StressSet =
+        {
+            new ImpactShot { name = "21_Stress_Door_x1", aims = Repeat(Door(100), 1), yaw = 115, pitch = 12, distance = 6.8f },
+            new ImpactShot { name = "22_Stress_Door_x3", aims = Repeat(Door(100), 3), yaw = 115, pitch = 12, distance = 6.8f },
+            new ImpactShot { name = "23_Stress_Door_x5", aims = Repeat(Door(100), 5), yaw = 115, pitch = 12, distance = 6.8f },
+            new ImpactShot { name = "24_Stress_Hood_x5", aims = Repeat(Hood(100), 5), yaw = 150, pitch = 32, distance = 6.8f },
+            new ImpactShot { name = "25_Stress_WheelArch_x5", aims = Repeat(WheelArch(100), 5), yaw = 120, pitch = 14, distance = 6.8f },
+            new ImpactShot { name = "26_Stress_Roof_x5", aims = Repeat(Roof(100), 5), yaw = 145, pitch = 24, distance = 7.2f },
+            new ImpactShot { name = "27_Stress_Windshield_x3", aims = Repeat(Windshield(100), 3), yaw = 160, pitch = 22, distance = 7.2f },
+            new ImpactShot { name = "28_Moderate_Door40_Corner55_Hood70", aims = new[] { Door(40), FrontLeftCorner(55), Hood(70) }, yaw = 132, pitch = 28, distance = 7.4f },
+        };
+
+        public static void CaptureStressSet(bool withUI = true)
+        {
+            foreach (var s in StressSet) CaptureImpactShot(s, withUI);
+        }
+
         /// <summary>Apply the shot's slider values, fire its clicks through the real picking path, render.</summary>
         public static void CaptureImpactShot(ImpactShot s, bool withUI, int width = 1920, int height = 1080)
         {

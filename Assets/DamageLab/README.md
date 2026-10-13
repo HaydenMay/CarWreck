@@ -85,17 +85,28 @@ The **Impact Testing** card adds three controls: an *Enable Click-to-Damage* tog
 * **Size.** Depth reaches 0.42 m and radius 0.16 → 0.60 m between strength 0 and 100.
 * **Combination.**
   * Each part caches the summed raw displacement of all impacts. A click evaluates only the new impact.
-  * At rebuild, the summed impact displacement is soft-limited: linear to 0.40 m, then easing to a 0.70 m cap. Stacked hits deepen without exploding.
   * The result is added to the four directional fields.
   * Everything is still evaluated on the original vertices, so Clear Impacts and Reset All restore the mesh exactly.
-* **Validation:** *Damage Lab ▸* bridge command `verify-impacts`. Screenshots come from `impact-set`, which writes `Screenshots/11_…`–`17_…`.
+* **Saturation and structure.** Repeated hits get diminishing returns rather than a hard stop:
+  * **Structural limit per vertex** (`ImpactField.Capacity`):
+    * outer panels 0.50 m;
+    * passenger compartment above the roof line 0.36 m;
+    * within 0.5–0.95 m of a wheel centre, it fades down to 0.20 m, so fenders crumple around the wheel without leaving it behind;
+    * stiff parts get less (×0.6–1 by crumple).
+
+    The summed impact displacement is linear up to 60% of the limit and then eases toward it (tanh).
+  * **Work hardening.** A new hit is scaled by `1 / (1 + 0.6 · earlier damage at that spot)`.
+  * **Spreading.** The footprint widens by up to +22% on damaged metal, and its outward lip shrinks. Repeated hits widen the crushed area instead of drilling ever deeper.
+  * **Order now matters.** The same clicks in a different order give a slightly different result (a few mm). The same sequence is always identical.
+* **Validation:** *Damage Lab ▸* bridge commands `verify-impacts` and `verify-stress` (1/3/5 × strength 100 per location). Screenshots come from `impact-set` (`Screenshots/11_…`–`17_…`) and `stress-set` (`21_…`–`28_…`).
 
 Click-to-damage limitations:
 
 * **Picking uses the original shape.** After heavy damage, a click lands on where the undamaged surface was. The point can sit up to the dent depth in front of the visible metal, and a ray can hit a panel that has since been pushed out of view.
 * **Wheels.** Wheels are pickable, and a hit there dents the surrounding bodywork. The wheels themselves don't move from impacts; they only move from the sliders. A deep corner hit can push the fender into the tyre.
 * **The direction is the camera ray, by design.** A grazing click slides the metal sideways. This is reduced, but not removed, by the grazing factor.
-* **Repeated extreme stacking.** Ten strength-100 hits on one spot still fold some triangles (about 1% of the mesh). With every slider at 100 as well, it's about 2.9%, against 1.6% from the sliders alone.
+* **Repeated extreme stacking.** Five strength-100 hits on one spot still fold some small triangles in the crumple (0.1–1.7% of the mesh, worst on the angled front corner). That's roughly half the count before saturation.
+* **The structure map is spatial.** It uses the roof line and the wheel centres, not real panels or a chassis. The four directional sliders are unchanged and are not saturated against impacts.
 
 ## Limitations / next steps
 

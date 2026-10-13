@@ -166,7 +166,7 @@ namespace DamageLab.EditorTools
                 sw.Stop();
                 float stackMax = MaxDiff(baseVerts, Snapshot(filters));
                 CheckSanity(filters, baseVerts, out int nan10, out int flip10, out _);
-                sb.AppendLine($"  Strength 100 on the door: max displacement {singleMax:0.000} m, flipped triangles {flip1}; 10 x on the same spot: {stackMax:0.000} m (cap {model.profile.impact.stackCap} m), " +
+                sb.AppendLine($"  Strength 100 on the door: max displacement {singleMax:0.000} m, flipped triangles {flip1}; 10 x on the same spot: {stackMax:0.000} m, " +
                               $"flipped {flip10} of {tris:N0}, NaN {nan1 + nan10}");
                 sb.AppendLine($"  Cost per click (pick + one impact + rebuild): {sw.Elapsed.TotalMilliseconds / 9:0.0} ms (editor, multithreaded)");
                 model.SetDamageImmediate(100, 100, 100, 100);
@@ -202,7 +202,7 @@ namespace DamageLab.EditorTools
                 model.ClearImpacts();
                 model.TryApplyImpact(cases[1].ray, 0.6f, out _); model.TryApplyImpact(cases[0].ray, 0.4f, out _); model.TryApplyImpact(cases[3].ray, 0.75f, out _);
                 float orderErr = MaxDiff(seqA, Snapshot(filters));
-                sb.AppendLine($"  Same 3 clicks repeated: diff {repeatErr:E2} m {(repeatErr == 0f ? "PASS (identical)" : "FAIL")}; same clicks in another order: diff {orderErr:E2} m {(orderErr < 1e-5f ? "PASS (float rounding only)" : "FAIL")}");
+                sb.AppendLine($"  Same 3 clicks repeated: diff {repeatErr:E2} m {(repeatErr == 0f ? "PASS (identical)" : "FAIL")}; same clicks in another order: diff {orderErr:E3} m (expected: later hits on damaged metal spread wider, so order now matters)");
 
                 // Reset All restores the original exactly, repeatedly
                 float worst = 0f, worstN = 0f;
@@ -219,6 +219,103 @@ namespace DamageLab.EditorTools
                 }
                 sb.AppendLine($"  20 x (random sliders + 1-10 random clicks -> Reset All): max vertex error {worst:E2} m, max normal error {worstN:E2}, impacts left {model.ImpactCount} " +
                               $"{(worst == 0f && worstN == 0f && model.ImpactCount == 0 ? "PASS (exact)" : "FAIL")}");
+            }
+            finally
+            {
+                model.ClearImpacts();
+                model.SetDamageImmediate(0, 0, 0, 0);
+                model.Shutdown();
+            }
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Saturation stress test: 1, 3 and 5 strength-100 clicks on the same spot (same ray) for several
+        /// locations. Reports the deepest displacement, how far the damage spread, how much the metal
+        /// around the wheel mounts moved, and folded triangles.
+        /// </summary>
+        public static string RunStress()
+        {
+            if (EditorSceneManager.GetActiveScene().path != DamageLabSceneBuilder.ScenePath)
+                EditorSceneManager.OpenScene(DamageLabSceneBuilder.ScenePath, OpenSceneMode.Single);
+            var model = Object.FindAnyObjectByType<VehicleDamageModel>();
+            var sb = new StringBuilder("[DamageLab] Saturation stress test (strength 100, same ray)\n");
+            model.Initialize();
+            var root = model.transform;
+            try
+            {
+                var filters = model.GetComponentsInChildren<MeshFilter>();
+                var baseVerts = new List<Vector3[]>();
+                var baseNormals = new List<Vector3[]>();
+                foreach (var f in filters) { baseVerts.Add(f.sharedMesh.vertices); baseNormals.Add(f.sharedMesh.normals); }
+                var wheels = new List<Vector3>();
+                foreach (var f in filters)
+                    if (f.name.Contains("Wheel")) wheels.Add(root.InverseTransformPoint(f.GetComponent<Renderer>().bounds.center));
+                Bounds b = model.BodyBounds;
+                Ray VRay(Vector3 frac, Vector3 dir)
+                {
+                    Vector3 target = b.center + Vector3.Scale(b.extents, frac);
+                    Vector3 d = dir.normalized;
+                    return new Ray(root.TransformPoint(target - d * 6f), root.TransformDirection(d));
+                }
+                var cases = new (string name, Ray ray)[]
+                {
+                    ("Door (side)", VRay(new Vector3(-1f, 0.05f, -0.08f), Vector3.right)),
+                    ("Hood (above)", VRay(new Vector3(0.38f, 0.3f, 0.5f), Vector3.down)),
+                    ("Front-left wheel arch (side, above)", VRay(new Vector3(-1f, 0.4f, 0.6f), new Vector3(0.8f, -0.6f, 0f))),
+                    ("Roof (above)", VRay(new Vector3(0f, 0.6f, -0.12f), Vector3.down)),
+                    ("Windshield base (front, above)", VRay(new Vector3(0f, 1.4f, 0.25f), new Vector3(0f, -0.6f, -0.8f))),
+                    ("Front-left corner (angled)", VRay(new Vector3(-0.85f, 0.1f, 0.92f), new Vector3(0.45f, -0.55f, -0.7f))),
+                };
+                sb.AppendLine("  location                              hits  max disp  area>2cm  wheel-zone max  flipped tris");
+                foreach (var c in cases)
+                {
+                    int done = 0;
+                    foreach (int hits in new[] { 1, 3, 5 })
+                    {
+                        while (done < hits) { model.TryApplyImpact(c.ray, 1f, out _); done++; }
+                        float maxDisp = 0f, wheelZone = 0f; int area = 0;
+                        var now = Snapshot(filters);
+                        for (int i = 0; i < filters.Length; i++)
+                            for (int j = 0; j < now[i].Length; j++)
+                            {
+                                Vector3 dv = root.InverseTransformVector(filters[i].transform.TransformVector(now[i][j] - baseVerts[i][j]));
+                                float m = dv.magnitude;
+                                if (m < 1e-4f) continue;
+                                maxDisp = Mathf.Max(maxDisp, m);
+                                if (m > 0.02f) area++;
+                                Vector3 p = root.InverseTransformPoint(filters[i].transform.TransformPoint(baseVerts[i][j]));
+                                foreach (var w in wheels)
+                                    if ((p - w).magnitude < 0.6f) wheelZone = Mathf.Max(wheelZone, m);
+                            }
+                        CheckSanity(filters, baseVerts, out int nan, out int flipped, out _);
+                        sb.AppendLine($"  {c.name,-38}{hits,4}  {maxDisp,7:0.000} m {area,8:N0}  {wheelZone,10:0.000} m  {flipped,8}{(nan > 0 ? "  NaN!" : "")}");
+                    }
+                    model.ClearImpacts();
+                }
+
+                // Moderate single hits should still be generous.
+                foreach (float s in new[] { 0.4f, 0.7f })
+                {
+                    model.ClearImpacts();
+                    model.TryApplyImpact(cases[0].ray, s, out _);
+                    sb.AppendLine($"  Single door hit at strength {s * 100:0}: max displacement {MaxDiff(baseVerts, Snapshot(filters)):0.000} m");
+                }
+                // Two locations, then combined with sliders, then reset.
+                model.ClearImpacts();
+                model.TryApplyImpact(cases[0].ray, 1f, out _);
+                model.TryApplyImpact(cases[1].ray, 1f, out _);
+                float two = MaxDiff(baseVerts, Snapshot(filters));
+                model.SetDamageImmediate(60, 0, 50, 0);
+                CheckSanity(filters, baseVerts, out int nanC, out int flipC, out _);
+                model.ClearImpacts();
+                CheckSanity(filters, baseVerts, out _, out int flipS, out _);
+                sb.AppendLine($"  Door + hood (100 each): max {two:0.000} m; with Front 60 + Left 50: flipped {flipC} (sliders alone {flipS}), NaN {nanC}");
+                model.TryApplyImpact(cases[3].ray, 1f, out _);
+                model.ResetAll();
+                model.SetDamageImmediate(0, 0, 0, 0);
+                Compare(filters, baseVerts, baseNormals, out float ep, out float en);
+                sb.AppendLine($"  Reset All: max vertex error {ep:E2}, normal error {en:E2} {(ep == 0f && en == 0f ? "PASS (exact)" : "FAIL")}");
             }
             finally
             {
