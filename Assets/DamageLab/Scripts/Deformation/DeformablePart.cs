@@ -133,11 +133,18 @@ namespace DamageLab.Deformation
             {
                 var field = fields[d];
                 var arr = samples[d] = new CrushSample[vehiclePos.Length];
-                Parallel.For(0, (vehiclePos.Length + 1023) / 1024, chunk =>
+                if (MultiThreaded)
                 {
-                    int end = Mathf.Min(vehiclePos.Length, (chunk + 1) * 1024);
-                    for (int i = chunk * 1024; i < end; i++) arr[i] = field.Sample(vehiclePos[i]);
-                });
+                    Parallel.For(0, (vehiclePos.Length + 1023) / 1024, chunk =>
+                    {
+                        int end = Mathf.Min(vehiclePos.Length, (chunk + 1) * 1024);
+                        for (int i = chunk * 1024; i < end; i++) arr[i] = field.Sample(vehiclePos[i]);
+                    });
+                }
+                else
+                {
+                    for (int i = 0; i < arr.Length; i++) arr[i] = field.Sample(vehiclePos[i]);
+                }
             }
         }
 
@@ -163,7 +170,7 @@ namespace DamageLab.Deformation
 
             // Displacement is a pure function of per-vertex constants, so vertex chunks run in parallel.
             applyFields = fields; applyStates = states; applyRoofStart = roofStart; applyRoofEnd = roofEnd;
-            if (n >= 4096) Parallel.For(0, (n + ChunkSize - 1) / ChunkSize, applyChunk ??= DisplaceChunk);
+            if (MultiThreaded && n >= 4096) Parallel.For(0, (n + ChunkSize - 1) / ChunkSize, applyChunk ??= DisplaceChunk);
             else DisplaceChunk(0, n);
 
             ComputeNormals(work, workNormals);
@@ -184,6 +191,11 @@ namespace DamageLab.Deformation
         }
 
         const int ChunkSize = 2048;
+#if UNITY_WEBGL && !UNITY_EDITOR
+        const bool MultiThreaded = false; // no thread pool in the browser
+#else
+        const bool MultiThreaded = true;
+#endif
         System.Action<int> applyChunk;
         CrushField[] applyFields;
         RegionState[] applyStates;

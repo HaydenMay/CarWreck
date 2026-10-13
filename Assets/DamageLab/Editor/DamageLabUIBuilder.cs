@@ -31,6 +31,7 @@ namespace DamageLab.EditorTools
         public static DamageLabUI Build(Camera cam, VehicleDamageModel model, ModelTurntable turntable, InspectionCameraController camController)
         {
             font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            hintKeys.Clear();
 
             var canvasGO = new GameObject("LabCanvas", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
             var canvas = canvasGO.GetComponent<Canvas>();
@@ -54,7 +55,30 @@ namespace DamageLab.EditorTools
             BuildRightPanel(root, ui);
             BuildControlsHint(root, ui);
             BuildRotateBar(root, ui, turntable);
+            var overlay = BuildPortraitOverlay(root);
+
+            var responsive = canvasGO.AddComponent<ResponsiveLabLayout>();
+            responsive.scaler = scaler;
+            responsive.sidePanel = sidePanel;
+            responsive.portraitOverlay = overlay;
+            responsive.cameraController = camController;
+            responsive.hintTexts = hintKeys.ToArray();
             return ui;
+        }
+
+        static RectTransform sidePanel;
+        static readonly System.Collections.Generic.List<Text> hintKeys = new System.Collections.Generic.List<Text>();
+
+        static GameObject BuildPortraitOverlay(Transform root)
+        {
+            var bg = Img("RotateToLandscape", root, new Color(0.08f, 0.085f, 0.095f, 0.97f), null);
+            Stretch(bg.rectTransform, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+            var icon = Img("Icon", bg.transform, Accent, DamageLabAssets.GetSprite("IconReset"));
+            Place(icon.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0, 90), new Vector2(110, 110));
+            var t = Label("Message", bg.transform, "Rotate your phone to landscape\nto use the Damage Lab", 40, TextMain, FontStyle.Bold, TextAnchor.MiddleCenter);
+            Stretch(t.rectTransform, new Vector2(0, 0.5f), new Vector2(1, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -40), new Vector2(-60, 140));
+            bg.gameObject.SetActive(false);
+            return bg.gameObject;
         }
 
         // ------------------------------------------------------------------ sections
@@ -90,6 +114,7 @@ namespace DamageLab.EditorTools
             var prt = panel.rectTransform;
             prt.anchorMin = new Vector2(1, 0); prt.anchorMax = new Vector2(1, 1); prt.pivot = new Vector2(1, 0.5f);
             prt.sizeDelta = new Vector2(PanelWidth, 0); prt.anchoredPosition = Vector2.zero;
+            sidePanel = prt;
             var edge = Img("Edge", panel.transform, Hex("2E3135"), null);
             Stretch(edge.rectTransform, new Vector2(0, 0), new Vector2(0, 1), new Vector2(0, 0.5f), Vector2.zero, new Vector2(1, 0));
 
@@ -105,14 +130,27 @@ namespace DamageLab.EditorTools
             var hsub = Label("Subtitle", header.transform, "D E F O R M A T I O N    T E S T I N G    T O O L", 13, TextDim, FontStyle.Normal, TextAnchor.MiddleLeft);
             Place(hsub.rectTransform, new Vector2(0, 0.5f), new Vector2(102, -20), new Vector2(360, 22), new Vector2(0, 0.5f));
 
-            // Scrollable content column (fits 1080p without scrolling; layout groups keep it tidy).
+            // Scrollable content column: fits 1080p without scrolling, scrolls on phones where the UI is scaled up.
+            var viewport = new GameObject("Scroll", typeof(RectTransform), typeof(RectMask2D)).GetComponent<RectTransform>();
+            viewport.SetParent(panel.transform, false);
+            viewport.anchorMin = new Vector2(0, 0); viewport.anchorMax = new Vector2(1, 1);
+            viewport.offsetMin = new Vector2(16, 0); viewport.offsetMax = new Vector2(-16, -TopBarHeight - 112);
             var content = new GameObject("Content", typeof(RectTransform)).GetComponent<RectTransform>();
-            content.SetParent(panel.transform, false);
-            content.anchorMin = new Vector2(0, 0); content.anchorMax = new Vector2(1, 1);
-            content.offsetMin = new Vector2(16, 14); content.offsetMax = new Vector2(-16, -TopBarHeight - 112);
+            content.SetParent(viewport, false);
+            content.anchorMin = new Vector2(0, 1); content.anchorMax = new Vector2(1, 1); content.pivot = new Vector2(0.5f, 1);
+            content.sizeDelta = Vector2.zero; content.anchoredPosition = Vector2.zero;
             var vlg = content.gameObject.AddComponent<VerticalLayoutGroup>();
             vlg.spacing = 12; vlg.childControlHeight = true; vlg.childControlWidth = true;
             vlg.childForceExpandHeight = false; vlg.childForceExpandWidth = true;
+            vlg.padding = new RectOffset(0, 0, 0, 14);
+            content.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            var scroll = viewport.gameObject.AddComponent<ScrollRect>();
+            scroll.content = content;
+            scroll.viewport = viewport;
+            scroll.horizontal = false;
+            scroll.vertical = true;
+            scroll.movementType = ScrollRect.MovementType.Clamped;
+            scroll.scrollSensitivity = 30f;
 
             // Header sits below the top bar.
             header.rectTransform.anchoredPosition = new Vector2(0, -TopBarHeight);
@@ -282,6 +320,7 @@ namespace DamageLab.EditorTools
                 var n = Label("Name", card.transform, r.name, 16, TextMain, FontStyle.Bold, TextAnchor.MiddleLeft);
                 Place(n.rectTransform, new Vector2(0, 1), new Vector2(52, y + 2), new Vector2(70, 28), new Vector2(0, 1));
                 var k = Label("Keys", card.transform, r.keys, 13, TextDim, FontStyle.Normal, TextAnchor.MiddleLeft);
+                hintKeys.Add(k);
                 Place(k.rectTransform, new Vector2(0, 1), new Vector2(112, y + 2), new Vector2(140, 28), new Vector2(0, 1));
                 y -= 38;
             }
@@ -370,7 +409,7 @@ namespace DamageLab.EditorTools
             img.color = color;
             img.sprite = sprite;
             img.type = sliced ? Image.Type.Sliced : Image.Type.Simple;
-            img.raycastTarget = false;
+            img.raycastTarget = true; // panels block camera drags; buttons/sliders need hits
             if (sliced) img.pixelsPerUnitMultiplier = 2f;
             return img;
         }

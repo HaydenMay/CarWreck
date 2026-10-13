@@ -96,6 +96,9 @@ namespace DamageLab.EditorTools
                 case "reimport":
                     AssetDatabase.ImportAsset(DamageLabAssets.ModelPath, ImportAssetOptions.ForceUpdate);
                     break;
+                case "webgl":
+                    DamageLabWebBuild.Build();
+                    break;
                 case "verify":
                     Debug.Log(DamageLabValidation.Run());
                     break;
