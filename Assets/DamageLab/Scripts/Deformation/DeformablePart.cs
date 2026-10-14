@@ -31,6 +31,7 @@ namespace DamageLab.Deformation
         readonly int[] triangles;
         readonly int[] normalRep;         // vertex -> representative of its smoothing group
         readonly Matrix4x4 vehicleToMesh;
+        readonly Matrix4x4 meshToVehicle;
         float windingSign = 1f;
         CrushSample[][] samples;          // [direction][vertex]
         bool deformed;
@@ -56,7 +57,7 @@ namespace DamageLab.Deformation
             triangles = sourceMesh.triangles;
             int n = baseVerts.Length;
 
-            Matrix4x4 meshToVehicle = vehicleRoot.worldToLocalMatrix * filter.transform.localToWorldMatrix;
+            meshToVehicle = vehicleRoot.worldToLocalMatrix * filter.transform.localToWorldMatrix;
             vehicleToMesh = meshToVehicle.inverse;
 
             vehiclePos = new Vector3[n];
@@ -246,15 +247,28 @@ namespace DamageLab.Deformation
                 Parallel.For(0, (n + ChunkSize - 1) / ChunkSize, chunk =>
                 {
                     int end = Mathf.Min(n, (chunk + 1) * ChunkSize);
-                    for (int i = chunk * ChunkSize; i < end; i++) impactSum[i] += field.Contribution(index, vehiclePos[i], vehicleNormal[i], crumple);
+                    for (int i = chunk * ChunkSize; i < end; i++) impactSum[i] += field.Contribution(index, vehiclePos[i], vehicleNormal[i], crumple, impactSum[i], impactCap[i]);
                 });
             }
             else
             {
-                for (int i = 0; i < n; i++) impactSum[i] += field.Contribution(index, vehiclePos[i], vehicleNormal[i], crumple);
+                for (int i = 0; i < n; i++) impactSum[i] += field.Contribution(index, vehiclePos[i], vehicleNormal[i], crumple, impactSum[i], impactCap[i]);
             }
         }
 
+
+        /// <summary>Vehicle-space positions of the bodywork as damaged by localized impacts so far (original +
+        /// saturated impact sum). Used to find where a new physical impact meets the CURRENT surface.</summary>
+        public Vector3[] ImpactedVehiclePositions(ImpactField field)
+        {
+            if (impactSum == null || !hasImpacts) return vehiclePos;
+            var p = new Vector3[vehiclePos.Length];
+            for (int i = 0; i < p.Length; i++) p[i] = vehiclePos[i] + field.Limit(impactSum[i], impactCap[i]);
+            return p;
+        }
+
+        /// <summary>Current rendered position of vertex i in vehicle space (original when undeformed).</summary>
+        public Vector3 DeformedVehiclePosition(int i) => deformed ? meshToVehicle.MultiplyPoint3x4(work[i]) : vehiclePos[i];
         /// <summary>Original vertex with the smallest distance t ≥ 0 along d from o, within √r2 of the line.</summary>
         public void FirstAlongLane(Vector3 o, Vector3 d, float r2, ref float bestT, ref Vector3 bestPoint)
         {

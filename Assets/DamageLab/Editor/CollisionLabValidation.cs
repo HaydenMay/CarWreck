@@ -55,6 +55,8 @@ namespace DamageLab.EditorTools
             var prevMode = Physics.simulationMode;
             Physics.simulationMode = SimulationMode.Script;
             model.Initialize();
+            bool wasAnchored = lab.anchored;
+            lab.SetAnchored(false);   // these suites measure the free-moving car
             lab.Setup();
             receiver.logImpacts = false;
             try
@@ -64,13 +66,13 @@ namespace DamageLab.EditorTools
                 var baseNormals = new List<Vector3[]>();
                 foreach (var f in filters) baseNormals.Add(f.sharedMesh.normals);
                 Vector3 carPos0 = lab.car.position; Quaternion carRot0 = lab.car.rotation;
-                lab.ResetTest();
+                lab.ResetAll();
                 Vector3 sledPos0 = lab.sled.position;
 
                 if (screenshots)
                 {
                     lab.direction = ImpactDirection.FrontCornerAngled; lab.speed = 14f; lab.mass = 1500f;
-                    lab.ResetTest(); lab.RefreshValues();
+                    lab.ResetAll(); lab.RefreshValues();
                     Shot(lab, cam, "30_CollisionLab_Before", 128f, 22f, 17f, new Vector3(0f, 0.6f, 1.5f));
                 }
 
@@ -118,7 +120,7 @@ namespace DamageLab.EditorTools
                     }
 
                     // G: reset must restore mesh, poses and velocities exactly
-                    lab.ResetTest();
+                    lab.ResetAll();
                     Compare(filters, baseVerts, baseNormals, out float ep, out float en);
                     worstResetPos = Mathf.Max(worstResetPos, ep); worstResetNrm = Mathf.Max(worstResetNrm, en);
                     worstPose = Mathf.Max(worstPose, (lab.car.position - carPos0).magnitude + (lab.sled.position - SledHome(lab)).magnitude * 0f);
@@ -141,18 +143,19 @@ namespace DamageLab.EditorTools
                 float[] strengths = new float[2]; List<Vector3[]>[] meshes = new List<Vector3[]>[2];
                 for (int k = 0; k < 2; k++)
                 {
-                    lab.Launch();
+                    lab.ResetAll(); lab.Launch();
                     for (int i = 0; i < 200; i++) { Physics.Simulate(Time.fixedDeltaTime); receiver.Step(Time.fixedDeltaTime); }
                     strengths[k] = receiver.Last.strength; meshes[k] = Snapshot(filters);
                 }
-                lab.ResetTest();
+                lab.ResetAll();
                 sb.AppendLine($"  Same launch twice (E): strength {strengths[0] * 100f:0.00} vs {strengths[1] * 100f:0.00}, mesh difference {MaxDiff(meshes[0], meshes[1]):E2} m");
             }
             finally
             {
-                lab.ResetTest();
+                lab.ResetAll();
                 receiver.logImpacts = true;
                 Physics.simulationMode = prevMode;
+                lab.SetAnchored(wasAnchored);
                 model.Shutdown();
                 cam.pivot = new Vector3(0f, 0.6f, 1.5f);
                 cam.SetView(cam.defaultYaw, cam.defaultPitch, cam.defaultDistance);

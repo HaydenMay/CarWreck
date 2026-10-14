@@ -126,7 +126,7 @@ The `Scenes/VehicleCollisionLab.unity` scene is built by *Damage Lab ▸ Build C
   * The push direction is `n·vn + 0.5·vt`.
   * The contact point sits on a box collider, so `VehicleDamageModel.SurfacePointAlong` moves it to the first original car vertex along that direction.
   * The result goes to `VehicleDamageModel.AddImpact(LocalImpact)` with the existing impact maths and saturation.
-* **Reset** restores the car's pose and zeroes its velocities, re-parks the sled, clears cooldowns, and calls `ResetAll()`, which restores the mesh exactly.
+* **Reset** (phase 1; split into Reset Block / Repair Car / Reset All in phase 3) restores the car's pose and zeroes its velocities, re-parks the sled, clears cooldowns, and calls `ResetAll()`, which restores the mesh exactly.
 * **Validation:** bridge command `collision-verify` runs the scenarios with `Physics.Simulate` and writes the `Screenshots/3x_…` files. WebGL: `collision-webgl` builds to `Builds/WebGLCollision`.
 
 Collision Lab limitations:
@@ -195,6 +195,73 @@ Phase 2 limitations:
 * **Simplified car colliders.** The car still collides as two boxes. First contact is measured against the real mesh, but the physical stop happens at the box. For a rounded nose, the visual patch can differ by a few centimetres from where the bodies would really meet. A second hit on crushed metal measures the gap from the *original* surface, so it starts at the old contact plane rather than the dented one.
 * **No energy accounting.** Crush depth comes from collision energy through the impact strength, scaled by contact area. It isn't an energy-absorbing structural model, and the car body doesn't get physically shorter.
 * **Glancing scrapes** produce small, shallow damage, because only the normal closing speed counts. There's no scraping or smearing model along the surface.
+
+## Collision Lab phase 3: persistent damage and a damage-aware front hitbox
+
+**Checkpoint A: anchored car and persistent damage** (`CollisionLabController`)
+
+* **Anchor Vehicle** (on by default) sets `RigidbodyConstraints.FreezeAll` on the car's dynamic Rigidbody.
+  * The car can't translate or rotate, but it still collides with continuous detection and still gets collision events.
+  * Off restores free physics.
+  * While anchored, the receiver treats the car as immovable, so the reduced mass is the impactor's mass. The same 12 m/s 1500 kg hit therefore scores 83 instead of 57 when free. It isn't calibrated.
+* **LAUNCH** no longer repairs the car. Damage accumulates through the existing impact list, with saturation. `maxImpacts` is 24 in this scene.
+* **Reset Block** re-parks the block for the current settings and clears the collision cooldowns. The car is untouched. The block is placed relative to the car's current ground pose, which is the start pose when anchored.
+* **Repair Car** restores the original mesh and the original hitbox, and keeps every setting. A block that would overlap the regrown hitbox is re-parked.
+* **Reset All** restores everything, including the car's pose and velocities.
+* Changing direction, impactor, speed, mass or **Aim Offset** never repairs anything.
+  * Aim Offset (−0.8…0.8 m) shifts the aim point toward the car's right for front, rear and corner hits, and toward the front for side hits.
+
+**Checkpoint B: damage-aware front hitbox** (`FrontHitbox`, `PhysicsHitboxDebug`)
+
+* **Collider layout.** The single body box is replaced by:
+  * a structural **core** box from the rear to 0.7 m behind the nose, just ahead of the front axle;
+  * three front sections, **left, centre and right** (thirds of the width), from the core's front face to the bodywork.
+  * The cabin box is unchanged, giving 5 boxes. Sections share faces exactly: no overlaps, no gaps.
+* **Face position comes from the mesh.** Each section's frontal area is split into a 6 × 4 grid of cells.
+  * The front-most *current deformed* vertex of each cell is found, about 19.5 k vertices sampled.
+  * The section face is the median of those cell fronts, but never closer than 6 cm to the core.
+  * Undamaged, that's the front contour; the bodywork's tip stands about 4 cm proud of it.
+  * Crushed, the face retracts by about as much as most of the section's metal moved. No separate damage value is kept, so physics can't disagree with the visuals.
+* **When colliders change.** An impact marks the hitbox pending. The faces are refitted at a safe point:
+  * once the block is no longer pressing into the car (relative speed < 0.3 m/s, or block parked);
+  * and always in Reset Block, before the next launch.
+  * Between repairs, sections only shrink, so a change never creates an overlap.
+* **New hits use the current surface.** `ImpactField.ResolveFootprint` now finds first contact against the bodywork as damaged so far: original vertices plus their saturated impact sum. A box impact's per-vertex contribution is computed from the vertex's current depth. The mesh is still rebuilt deterministically from the original vertices and the impact sequence. An undamaged car behaves exactly as before.
+* **Contact point.** `CollisionDamageReceiver` backs the contact point and impactor pose out by the reported penetration (`ContactPoint.separation`). A fast block is often reported one step after it entered the collider, so this gives where the surfaces first met.
+* **Diagnostics.** A sub-threshold re-touch soon after a damaging hit doesn't overwrite the diagnostics. This happens when a block still creeping at a few cm/s meets the retracted face.
+* **Show Physics Colliders** draws the current car colliders as a green wireframe (runtime lines, works in WebGL).
+
+**Validation** (`collision-persist-a`, `collision-persist-b`, real PhysX; screenshots `Screenshots/50…57`):
+
+* **Checkpoint A**
+  * Five launches without repair (front, front, left, rear narrow, front-left corner): each is one damaging collision and adds damage.
+  * Settings changes moved the mesh 0 m.
+  * The anchored car drifts at most 0.03 mm (solver residual).
+  * Reset Block keeps the mesh bit-identical. Repair Car and Reset All restore it exactly.
+  * Free mode still pushes the car (3 m), and a second hit after Reset Block registers.
+* **Same front-centre spot, narrow block, 12 m/s, identical start pose.** Physical contact moved from z 2.474 to 2.170 to 2.125 m; the hitbox retracted 35 cm in the centre, 4 cm on the left, 0 on the right. A 4th hit saturated: no further retraction.
+* **Front-left vs front-right.** Two left hits retract the left face 24 cm. The centre and right faces don't move. A right hit then makes contact at 2.469, within 0.5 cm of the undamaged right face.
+* **Wide hit.** All three sections retract by about 20 cm, and a second wide hit makes contact 19.5 cm deeper.
+* **Repair and drift.** After repair and three more hit/repair cycles, the faces are identical to the undamaged fit.
+* **Stability.** Updates were applied at ≤ 0.24 m/s relative block speed, with no impulse afterwards. Repairing with the block resting in the dent re-parks it, with no motion. Free mode with the split hitbox shows no spin.
+* **Performance** (editor, this machine):
+
+  | Cost | Time |
+  |---|---|
+  | Hitbox refit | 0.44 ms (5 colliders, only when damage changed) |
+  | Visual deformation per impact | about 70 ms |
+  | Physics step | 0.04 ms |
+
+  The visual deformation is the bottleneck, not the hitbox.
+
+Phase 3 limitations:
+
+* **Front only.** The sides and rear still collide with the core and cabin boxes.
+* **Three boxes per front.** Each section has one flat face at the median of its metal. Metal that sticks out (unhit parts of a section, the 4 cm tip of the undamaged nose) can visually overlap the block. A narrow hit near a section boundary moves the neighbouring section only if most of its metal moved. Section height doesn't change, so a crushed hood top still collides at its original height.
+* **Between collisions, not during.** The hitbox changes after an impact is resolved, not during it. The block stops at the face it hit in that step.
+* **Re-touches.** After a retraction, a block still creeping at a few cm/s may touch the new face again. These are below the damage threshold.
+* **Anchored severity.** Anchored mode uses the impactor's mass as the reduced mass, so its severities aren't comparable to free mode.
+* **Cost for 8–12 vehicles.** The hitbox and physics cost is negligible. The visual deformation cost (single-threaded in WebGL) is what needs Burst/Jobs or GPU work before many cars crash at once.
 
 ## Limitations / next steps
 

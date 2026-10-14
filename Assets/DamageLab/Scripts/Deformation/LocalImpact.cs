@@ -212,7 +212,8 @@ namespace DamageLab.Deformation
         }
 
         /// <summary>
-        /// Contact patch of a box impactor against the ORIGINAL bodywork (vehicle-space vertex positions):
+        /// Contact patch of a box impactor against the CURRENT bodywork (vehicle-space vertex positions: the original
+        /// mesh plus the saturated impact damage so far; on an undamaged car that is the original mesh):
         ///   1. first contact: the vertex whose gap to the box's leading surface (measured along the impact
         ///      direction, inside the box's silhouette) is smallest;
         ///   2. patch: every vertex the leading surface would sweep through over the crush depth, i.e. the
@@ -221,7 +222,7 @@ namespace DamageLab.Deformation
         /// Fills <see cref="LocalImpact.footprint"/> and moves the impact point to the patch centre; returns false
         /// (and leaves the impact as an ordinary localized one) if the box does not overlap the car at all.
         /// </summary>
-        public bool ResolveFootprint(ref LocalImpact im, IEnumerable<Vector3[]> vertexSets)
+        public bool ResolveFootprint(ref LocalImpact im, IEnumerable<Vector3[]> vertexSets, bool damagedSurface = false)
         {
             if (!im.impactor.valid) return false;
             var pj = new BoxProjection(im.impactor, im.direction);
@@ -241,6 +242,9 @@ namespace DamageLab.Deformation
                     if (gap < gapMin) { gapMin = gap; first = x; }
                 }
             if (inside.Count == 0) return false;
+            // On already-damaged bodywork the impactor stops at the (retracted) physical hitbox, which can sit behind
+            // metal that still sticks out. That metal is crushed from the impactor face, not from its own tip.
+            if (damagedSurface && gapMin < 0f) gapMin = 0f;
 
             float t0 = BaseDepth(im) / (1f + cfg.hardening * Prior(first));
             var hull0 = BoxProjection.ConvexHull(PatchPoints(inside, gapMin, t0));
@@ -320,10 +324,18 @@ namespace DamageLab.Deformation
 
         /// <summary>Raw displacement (vehicle space) from impact <paramref name="index"/> of a vertex at original
         /// position x with smoothed normal n. Parts cache the sum of these, so a new click costs one impact.</summary>
-        public Vector3 Contribution(int index, Vector3 x, Vector3 n, float crumple)
+        public Vector3 Contribution(int index, Vector3 x, Vector3 n, float crumple) => Contribution(index, x, n, crumple, Vector3.zero, 1f);
+
+        /// <summary>As above, given the vertex's summed raw displacement from the EARLIER impacts and its capacity.
+        /// Geometry-aware impacts crush the CURRENT surface: the vertex's present position (original + saturated
+        /// earlier damage) decides how far the impactor's face is from it. The result is still a pure function of
+        /// the original mesh and the impact sequence, so rebuilding stays deterministic.</summary>
+        public Vector3 Contribution(int index, Vector3 x, Vector3 n, float crumple, Vector3 priorSum, float capacity)
         {
             var st = states[index];
-            return st.box != null ? OneBox(st, x, n, crumple) : One(st, x, n, crumple);
+            if (st.box == null) return One(st, x, n, crumple);
+            float priorAlong = priorSum.sqrMagnitude > 0f ? Vector3.Dot(Limit(priorSum, capacity), st.box.d) : 0f;
+            return OneBox(st, x, n, crumple, priorAlong);
         }
 
         /// <summary>Saturate the summed contributions of all impacts against the vertex's crush capacity:
@@ -359,11 +371,11 @@ namespace DamageLab.Deformation
         ///            pulled in toward the crushed area; ridged creases mark the boundary of the patch
         /// The result is summed with the other impacts and saturated per vertex like every localized impact.
         /// </summary>
-        Vector3 OneBox(in State st, Vector3 x, Vector3 n, float crumple)
+        Vector3 OneBox(in State st, Vector3 x, Vector3 n, float crumple, float priorAlong)
         {
             var pj = st.box;
             Vector3 r = x - pj.c;
-            float a = Vector3.Dot(r, pj.d);
+            float a = Vector3.Dot(r, pj.d) + priorAlong;   // current depth along d (original + earlier crush)
             float soft = cfg.edgeSoftness;
             float tentLen = cfg.tentLength * st.travel + 0.1f;
             float deepest = st.travel * (1f + cfg.faceUnevenness + cfg.pleatDepth);

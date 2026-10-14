@@ -60,6 +60,8 @@ namespace DamageLab.CollisionTest
             public bool applied;
             public int contacts;
             public Vector3 localPoint;    // vehicle space, on the original surface
+            public Vector3 contactPoint;  // vehicle space, averaged physics contact point backed out by the penetration (where the colliders met)
+            public float penetration;     // how far the block had moved into the car collider when the contact was reported (m)
             public Vector3 localDirection;
             public string region;
             public float deformMilliseconds;
@@ -76,6 +78,7 @@ namespace DamageLab.CollisionTest
             public Vector3 pointSum, normalSum, relativeVelocity;
             public float impulse;
             public int contacts;
+            public float minSeparation;   // most negative ContactPoint.separation (= penetration when the contact was reported)
             public BoxImpactor box;   // world space, pose at the first reported contact
         }
 
@@ -83,6 +86,7 @@ namespace DamageLab.CollisionTest
         readonly Dictionary<Rigidbody, float> lastHit = new Dictionary<Rigidbody, float>();
         readonly List<ContactPoint> contactBuffer = new List<ContactPoint>(32);
         readonly Stopwatch stopwatch = new Stopwatch();
+        float lastAppliedClock = float.NegativeInfinity;
         float clock;
 
         void Reset()
@@ -98,6 +102,14 @@ namespace DamageLab.CollisionTest
             lastHit.Clear();
             HasReport = false;
             EventCount = 0;
+        }
+
+        /// <summary>Forget pending contacts and cooldowns only (the block was re-parked for an intentional new launch).</summary>
+        public void ClearCooldowns()
+        {
+            pending.Clear();
+            lastHit.Clear();
+            lastAppliedClock = float.NegativeInfinity;
         }
 
         void OnCollisionEnter(UnityEngine.Collision c) => Accumulate(c);
@@ -122,6 +134,7 @@ namespace DamageLab.CollisionTest
                 p.pointSum += cp.point;
                 p.normalSum += n;
                 p.contacts++;
+                p.minSeparation = Mathf.Min(p.minSeparation, cp.separation);
             }
             p.impulse += c.impulse.magnitude;
             if (c.relativeVelocity.sqrMagnitude > p.relativeVelocity.sqrMagnitude) p.relativeVelocity = c.relativeVelocity;
@@ -153,7 +166,11 @@ namespace DamageLab.CollisionTest
             lastHit[other] = clock;
             EventCount++;
             Vector3 n = p.normalSum.sqrMagnitude > 1e-8f ? p.normalSum.normalized : (body.worldCenterOfMass - p.pointSum / p.contacts).normalized;
-            Vector3 point = p.pointSum / p.contacts;
+            // A fast block can be reported only after it has moved part of a step into the collider. Back the contact
+            // point and the impactor pose out along the normal by that penetration: where the surfaces first met.
+            float penetration = Mathf.Max(0f, -p.minSeparation);
+            Vector3 point = p.pointSum / p.contacts - n * penetration;
+            if (p.box.valid) p.box.center -= n * penetration;
             // Collision.relativeVelocity is the other body's velocity relative to this one (verified by the
             // validation: every approaching hit has vn > 0). A contact whose bodies are already separating
             // along the normal is not an impact, so it is never flipped into one.
@@ -162,7 +179,11 @@ namespace DamageLab.CollisionTest
             Vector3 vt = v - n * Vector3.Dot(v, n);
 
             float mOther = other.isKinematic ? float.PositiveInfinity : other.mass;
-            float mu = float.IsInfinity(mOther) ? body.mass : body.mass * mOther / (body.mass + mOther);
+            // An anchored car (all axes frozen) cannot move: it acts as infinite mass, so the impactor's own mass is what counts.
+            bool carFixed = body.isKinematic || body.constraints == RigidbodyConstraints.FreezeAll;
+            float mCar = carFixed ? float.PositiveInfinity : body.mass;
+            float mu = float.IsInfinity(mOther) && float.IsInfinity(mCar) ? body.mass
+                     : float.IsInfinity(mOther) ? mCar : float.IsInfinity(mCar) ? mOther : mCar * mOther / (mCar + mOther);
             float energy = 0.5f * mu * vn * vn;
             float strength = energy <= energyThreshold ? 0f : 1f - Mathf.Exp(-(energy - energyThreshold) / Mathf.Max(1f, energyScale));
 
@@ -202,6 +223,8 @@ namespace DamageLab.CollisionTest
                 contacts = p.contacts,
                 localPoint = localPoint,
                 localDirection = localDir,
+                contactPoint = localContact,
+                penetration = penetration,
                 region = Region(localPoint),
             };
             if (strength > 0f)
@@ -216,7 +239,11 @@ namespace DamageLab.CollisionTest
                     if (report.footprint.valid) { report.localPoint = report.footprint.center; report.region = Region(report.footprint.center); }
                 }
             }
-            Last = report;
+            // A harmless re-touch shortly after a damaging hit (e.g. the block creeping into a freshly retracted hitbox)
+            // must not replace the hit in the diagnostics; it is still counted and logged.
+            bool keepLast = !report.applied && HasReport && Last.applied && clock - lastAppliedClock < 3f;
+            if (report.applied) lastAppliedClock = clock;
+            if (!keepLast) Last = report;
             HasReport = true;
             if (logImpacts)
                 UnityEngine.Debug.Log($"[CollisionLab] {report.other} -> car: |v| {report.relativeSpeed:0.00} m/s, closing {report.closingSpeed:0.00} m/s, " +

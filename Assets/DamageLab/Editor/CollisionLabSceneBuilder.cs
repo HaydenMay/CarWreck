@@ -25,6 +25,7 @@ namespace DamageLab.EditorTools
     {
         public const string ScenePath = DamageLabAssets.Root + "/Scenes/VehicleCollisionLab.unity";
         const float CarMass = 1400f;
+        const float FrontSectionDepth = 0.7f;   // deformable front hitbox depth (m)
 
         [MenuItem("Damage Lab/Build Collision Lab Scene", priority = 3)]
         public static void Build()
@@ -102,11 +103,28 @@ namespace DamageLab.EditorTools
             var shapes = new GameObject("PhysicsShape").transform;
             shapes.SetParent(car.transform, false);
             var tyreMat = PhysicsMat("CarTyres", 0.55f, 0.7f, PhysicsMaterialCombine.Average);
-            var lower = new GameObject("BodyBox").AddComponent<BoxCollider>();
+            // Body: a structural core from the rear to just ahead of the front axle, and three front sections
+            // (left / centre / right) whose front faces follow the damaged bodywork (FrontHitbox). All boxes sit
+            // on the car root's origin, so collider-local coordinates are car space.
+            float coreFront = body.max.z - FrontSectionDepth;
+            float boxY = (wheels.min.y + body.max.y) * 0.5f, boxH = body.max.y - wheels.min.y;
+            var lower = new GameObject("BodyCoreBox").AddComponent<BoxCollider>();
             lower.transform.SetParent(shapes, false);
-            lower.center = new Vector3(body.center.x, (wheels.min.y + body.max.y) * 0.5f, body.center.z);
-            lower.size = new Vector3(body.size.x, body.max.y - wheels.min.y, body.size.z);
+            lower.center = new Vector3(body.center.x, boxY, (body.min.z + coreFront) * 0.5f);
+            lower.size = new Vector3(body.size.x, boxH, coreFront - body.min.z);
             lower.sharedMaterial = tyreMat;
+            var frontSections = new BoxCollider[3];
+            string[] sectionNames = { "FrontLeftBox", "FrontCentreBox", "FrontRightBox" };
+            float third = body.size.x / 3f;
+            for (int s = 0; s < 3; s++)
+            {
+                var sec = new GameObject(sectionNames[s]).AddComponent<BoxCollider>();
+                sec.transform.SetParent(shapes, false);
+                sec.center = new Vector3(body.min.x + third * (s + 0.5f), boxY, (coreFront + body.max.z) * 0.5f);
+                sec.size = new Vector3(third, boxH, body.max.z - coreFront);
+                sec.sharedMaterial = tyreMat;
+                frontSections[s] = sec;
+            }
             var upper = new GameObject("CabinBox").AddComponent<BoxCollider>();
             upper.transform.SetParent(shapes, false);
             upper.center = new Vector3(cabin.center.x, (body.max.y + cabin.max.y) * 0.5f, cabin.center.z);
@@ -134,6 +152,16 @@ namespace DamageLab.EditorTools
             footprintDebug.outlineMaterial = UnlitMaterial("FootprintOutline", new Color(0.1f, 0.95f, 1f));
             footprintDebug.arrowMaterial = UnlitMaterial("FootprintArrow", new Color(1f, 0.85f, 0.1f));
             footprintDebug.show = true;
+            damage.maxImpacts = 24;                  // damage persists across launches
+            var hitbox = car.AddComponent<FrontHitbox>();
+            hitbox.model = damage;
+            hitbox.core = lower;
+            hitbox.sections = frontSections;
+            var colliderDebug = car.AddComponent<PhysicsHitboxDebug>();
+            colliderDebug.car = car.transform;
+            colliderDebug.hitbox = hitbox;
+            colliderDebug.lineMaterial = UnlitMaterial("PhysicsHitbox", new Color(0.2f, 1f, 0.3f));
+            colliderDebug.show = false;
 
             // ---------------------------------------------------------------- test sled
             var sledGO = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -187,6 +215,8 @@ namespace DamageLab.EditorTools
             lab.sled = sled;
             lab.cameraController = camController;
             lab.footprintDebug = footprintDebug;
+            lab.hitbox = hitbox;
+            lab.colliderDebug = colliderDebug;
             BuildUI(cam, lab, camController);
             new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));
 
@@ -200,7 +230,7 @@ namespace DamageLab.EditorTools
             var scenes = EditorBuildSettings.scenes.ToList();
             if (!scenes.Any(s => s.path == ScenePath)) scenes.Add(new EditorBuildSettingsScene(ScenePath, true));
             EditorBuildSettings.scenes = scenes.ToArray();
-            Debug.Log($"[CollisionLab] Built {ScenePath}: body box {lower.size}, cabin box {upper.size}, car lifted {groundLift:0.000} m");
+            Debug.Log($"[CollisionLab] Built {ScenePath}: core box {lower.size}, front sections {frontSections[0].size} x3, cabin box {upper.size}, car lifted {groundLift:0.000} m");
         }
 
         static PhysicsMaterial PhysicsMat(string name, float dynamicFriction, float staticFriction, PhysicsMaterialCombine combine)
@@ -309,6 +339,14 @@ namespace DamageLab.EditorTools
             foreach (var t in massRow.GetComponentsInChildren<Text>()) if (t.name == "Max") t.text = "4000";
             foreach (var t in massRow.GetComponentsInChildren<Text>()) if (t.name == "Min") t.text = "100";
             foreach (var t in speedRow.GetComponentsInChildren<Text>()) if (t.name == "Max") t.text = "30";
+            var offsetRow = Row(sliders.transform, "OffsetRow", 80);
+            SliderWidgets(offsetRow, "Aim Offset (m)", out lab.offsetSlider, out lab.offsetField);
+            lab.offsetSlider.wholeNumbers = false; lab.offsetSlider.minValue = -0.8f; lab.offsetSlider.maxValue = 0.8f; lab.offsetSlider.value = 0f;
+            lab.offsetField.contentType = InputField.ContentType.DecimalNumber; lab.offsetField.characterLimit = 5;
+            lab.offsetField.text = "0.00";
+            foreach (var t in offsetRow.GetComponentsInChildren<Text>()) if (t.name == "Max") t.text = "+0.8"; else if (t.name == "Min") t.text = "-0.8";
+            var offsetHint = Label("OffsetHint", sliders.transform, "Front / rear / corner: + towards car's right  ·  Sides: + towards front", 14, TextDim, FontStyle.Normal, TextAnchor.MiddleLeft);
+            Layout(offsetHint.gameObject, 22);
 
             // Direction
             var dirCard = AutoCard("Direction", content);
@@ -354,10 +392,22 @@ namespace DamageLab.EditorTools
             }
             lab.footprintToggle = CheckToggle(Row(dirCard.transform, "FootprintRow", 42), "Show Contact Footprint");
             lab.footprintToggle.isOn = true;
+            lab.anchorToggle = CheckToggle(Row(dirCard.transform, "AnchorRow", 42), "Anchor Vehicle");
+            lab.anchorToggle.isOn = lab.anchored;
+            lab.collidersToggle = CheckToggle(Row(dirCard.transform, "CollidersRow", 42), "Show Physics Colliders");
+            lab.collidersToggle.isOn = false;
 
             // Launch / Reset
             lab.launchButton = BigButton(content, "LaunchButton", "LAUNCH", Accent, Color.white, 58, "ArrowRight");
-            lab.resetButton = BigButton(content, "ResetButton", "RESET", Hex("33373C"), TextMain, 46, "IconReset");
+            var resetRow = new GameObject("ResetButtons", typeof(RectTransform)).GetComponent<RectTransform>();
+            resetRow.SetParent(content, false);
+            var rgl = resetRow.gameObject.AddComponent<GridLayoutGroup>();
+            rgl.cellSize = new Vector2(140, 44); rgl.spacing = new Vector2(8, 8);
+            rgl.constraint = GridLayoutGroup.Constraint.FixedColumnCount; rgl.constraintCount = 3;
+            Layout(resetRow.gameObject, 44);
+            lab.resetBlockButton = SmallButton(resetRow, "ResetBlockButton", "RESET BLOCK");
+            lab.repairButton = SmallButton(resetRow, "RepairCarButton", "REPAIR CAR");
+            lab.resetButton = SmallButton(resetRow, "ResetAllButton", "RESET ALL");
             lab.statusText = Label("Status", content, "Ready", 15, TextDim, FontStyle.Normal, TextAnchor.MiddleCenter);
             Layout(lab.statusText.gameObject, 24);
 
@@ -407,6 +457,17 @@ namespace DamageLab.EditorTools
             return b;
         }
 
+
+        static Button SmallButton(Transform parent, string name, string text)
+        {
+            var bg = Img(name, parent, Hex("33373C"), DamageLabAssets.GetSprite("RoundedRectSmall"), sliced: true);
+            var b = bg.gameObject.AddComponent<Button>();
+            b.targetGraphic = bg;
+            b.colors = ButtonColors();
+            var l = Label("Label", bg.transform, text, 15, TextMain, FontStyle.Bold, TextAnchor.MiddleCenter);
+            Stretch(l.rectTransform, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+            return b;
+        }
         static Color Hex(string hex)
         {
             ColorUtility.TryParseHtmlString("#" + hex, out var c);

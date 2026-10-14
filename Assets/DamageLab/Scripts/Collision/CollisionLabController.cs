@@ -34,6 +34,12 @@ namespace DamageLab.CollisionTest
         public float wideWidth = 1.9f;
         public float narrowWidth = 0.5f;
         public ImpactFootprintDebug footprintDebug;
+        [Tooltip("Sideways shift (m) of the aim point: towards the car's right for front/rear/corner hits, towards the front for side hits.")]
+        [Range(-0.8f, 0.8f)] public float aimOffset;
+        [Tooltip("Freeze the car in place (it still collides and still takes damage). Off = free physics.")]
+        public bool anchored = true;
+        public FrontHitbox hitbox;
+        public PhysicsHitboxDebug colliderDebug;
 
         [Header("UI")]
         public Slider speedSlider;
@@ -45,7 +51,13 @@ namespace DamageLab.CollisionTest
         public Button[] impactorButtons;    // wide, narrow
         public Toggle footprintToggle;
         public Button launchButton;
-        public Button resetButton;
+        public Button resetButton;          // RESET ALL
+        public Button resetBlockButton;
+        public Button repairButton;
+        public Toggle anchorToggle;
+        public Toggle collidersToggle;
+        public Slider offsetSlider;
+        public InputField offsetField;
         public Text diagnosticsText;
         public Text statusText;
         public Color selectedColor = new Color(0.95f, 0.48f, 0.1f);
@@ -76,27 +88,29 @@ namespace DamageLab.CollisionTest
 
         void LateUpdate()
         {
-            // After launch the camera's orbit pivot follows the car (a heavy hit can shove it many metres).
+            // The orbit pivot follows the car (in free mode a heavy hit can shove it many metres).
             if (cameraController == null || !Application.isPlaying) return;
-            Vector3 target = launched ? car.position + Vector3.up * 0.6f : homePivot;
+            Vector3 target = car.position + (homePivot - carStartPos);
             cameraController.pivot = Vector3.Lerp(cameraController.pivot, target, 1f - Mathf.Exp(-3f * Time.unscaledDeltaTime));
         }
 
         void Start()
         {
             if (model != null && !model.IsInitialized) model.Initialize();
+            if (hitbox != null) hitbox.Setup();
             BindUI();
-            ResetTest();
+            SetAnchored(anchored);
+            ResetAll();
             if (receiver != null) receiver.ImpactRegistered += _ => RefreshDiagnostics();
         }
 
         // ------------------------------------------------------------------ test control
 
-        /// <summary>Fresh experiment: reset, then give the sled its launch velocity. Physics does the rest.
-        /// With <paramref name="keepDamage"/> only the poses are reset, so a second hit adds to the existing damage.</summary>
-        public void Launch(bool keepDamage = false)
+        /// <summary>Park the block for the current settings and give it its launch velocity. Physics does the rest.
+        /// The car is NOT repaired: damage from earlier launches stays and new hits add to it.</summary>
+        public void Launch()
         {
-            if (keepDamage) ResetPoses(); else ResetTest();
+            ResetBlock();
             sled.mass = mass;
             sled.isKinematic = false;
             sled.linearVelocity = sled.transform.forward * speed;
@@ -106,30 +120,73 @@ namespace DamageLab.CollisionTest
             SetStatus($"Launched: {speed:0} m/s, {mass:0} kg, {Label(direction)}, {(narrowImpactor ? "narrow block" : "wide sled")}");
         }
 
-        /// <summary>Restore car and sled poses and velocities, remove all impacts and restore the original mesh.</summary>
-        public void ResetTest()
+        /// <summary>Only the block: back to its starting pose for the current settings, at rest, with the collision
+        /// cooldown cleared so the next launch registers. The car's damage (visual and physical) is kept.</summary>
+        public void ResetBlock()
+        {
+            if (hitbox != null) hitbox.ApplyPending();     // collider changes are in effect before the next launch
+            PlaceSled();
+            Physics.SyncTransforms();
+            if (receiver != null) receiver.ClearCooldowns();
+            launched = false;
+        }
+
+        /// <summary>Remove all damage: original mesh and original physical hitbox. Settings are kept.</summary>
+        public void RepairCar()
         {
             if (model != null)
             {
                 model.ResetAll();
                 model.SetDamageImmediate(0f, 0f, 0f, 0f);
             }
-            ResetPoses();
+            if (hitbox != null) hitbox.ApplyPending();
+            // The restored hitbox is larger than the crushed one; a block resting in the dent would now overlap it.
+            if (SledOverlapsCar()) ResetBlock();
+            if (receiver != null) receiver.ResetState();
             RefreshDiagnostics();
-            SetStatus("Ready");
+            SetStatus("Car repaired");
         }
 
-        void ResetPoses()
+        /// <summary>The whole experiment: repair, car back to its start pose at rest, block parked.</summary>
+        public void ResetAll()
         {
+            if (model != null)
+            {
+                model.ResetAll();
+                model.SetDamageImmediate(0f, 0f, 0f, 0f);
+            }
+            if (hitbox != null) hitbox.ApplyPending();
             car.linearVelocity = Vector3.zero;
             car.angularVelocity = Vector3.zero;
             car.position = carStartPos;
             car.rotation = carStartRot;
             car.transform.SetPositionAndRotation(carStartPos, carStartRot);
-            PlaceSled();
-            Physics.SyncTransforms();
+            ResetBlock();
             if (receiver != null) receiver.ResetState();
-            launched = false;
+            RefreshDiagnostics();
+            SetStatus("Ready");
+        }
+
+        /// <summary>Anchored: the car keeps its pose (all position/rotation axes frozen on the dynamic Rigidbody, so it
+        /// still collides with continuous detection and still receives collision events). Off: free physics.</summary>
+        public void SetAnchored(bool on)
+        {
+            anchored = on;
+            car.constraints = on ? RigidbodyConstraints.FreezeAll : RigidbodyConstraints.None;
+            if (on) { car.linearVelocity = Vector3.zero; car.angularVelocity = Vector3.zero; }
+            if (anchorToggle != null) anchorToggle.SetIsOnWithoutNotify(on);
+        }
+
+        bool SledOverlapsCar()
+        {
+            var sc = sled.GetComponent<BoxCollider>();
+            if (sc == null) return false;
+            Physics.SyncTransforms();
+            foreach (var c in car.GetComponentsInChildren<Collider>())
+                if (c.enabled && !c.isTrigger && Physics.ComputePenetration(sc, sc.transform.position, sc.transform.rotation,
+                        c, c.transform.position, c.transform.rotation, out _, out float dist) && dist > 1e-4f)
+                    return true;
+            return false;
         }
 
         public void SetDirection(ImpactDirection d)
@@ -139,7 +196,6 @@ namespace DamageLab.CollisionTest
             RefreshDirectionButtons();
         }
 
-        /// <summary>Park the sled (kinematic, at rest) facing the target point for the current direction.</summary>
         public void SetNarrowImpactor(bool narrow)
         {
             narrowImpactor = narrow;
@@ -157,12 +213,18 @@ namespace DamageLab.CollisionTest
             sled.transform.localScale = s;
         }
 
+        /// <summary>Park the sled (kinematic, at rest) facing the target point for the current direction, relative to
+        /// the car's current ground pose (the start pose when anchored), shifted sideways by the aim offset.</summary>
         void PlaceSled()
         {
             ApplySledWidth();
             Aim(direction, out Vector3 localTarget, out Vector3 localDir);
-            Vector3 target = carStartPos + carStartRot * localTarget;
-            Vector3 dir = carStartRot * localDir;
+            localTarget += AimOffsetVector(direction) * aimOffset;
+            Vector3 fwd = car.transform.forward; fwd.y = 0f;
+            Quaternion yaw = fwd.sqrMagnitude > 1e-6f ? Quaternion.LookRotation(fwd.normalized, Vector3.up) : carStartRot;
+            Vector3 basePos = new Vector3(car.transform.position.x, carStartPos.y, car.transform.position.z);
+            Vector3 target = basePos + yaw * localTarget;
+            Vector3 dir = yaw * localDir;
             dir.y = 0f;
             dir.Normalize();
             float halfLength = sled.GetComponent<BoxCollider>() is BoxCollider bc ? bc.size.z * 0.5f * sled.transform.lossyScale.z : 2f;
@@ -173,6 +235,11 @@ namespace DamageLab.CollisionTest
             sled.rotation = Quaternion.LookRotation(dir, Vector3.up);
             sled.transform.SetPositionAndRotation(pos, sled.rotation);
         }
+
+        /// <summary>Car-space direction of a positive aim offset: towards the car's right (+X) for front, rear and corner
+        /// hits, towards the front (+Z) for side hits.</summary>
+        public static Vector3 AimOffsetVector(ImpactDirection d) =>
+            d == ImpactDirection.LeftSide || d == ImpactDirection.RightSide ? Vector3.forward : Vector3.right;
 
         /// <summary>Aim point on the car's outline and travel direction, in car space (car faces +Z, left is -X).</summary>
         public static void Aim(ImpactDirection d, out Vector3 target, out Vector3 dir)
@@ -201,10 +268,24 @@ namespace DamageLab.CollisionTest
 
         void FixedUpdate()
         {
-            // Settle: once both bodies are slow after an impact, stop the sled so it doesn't creep on.
+            AfterPhysicsStep();
+            // Settle: once both bodies are slow after an impact, report it.
             if (launched && Time.time - launchTime > 1f && sled.linearVelocity.sqrMagnitude < 0.04f && car.linearVelocity.sqrMagnitude < 0.04f)
-                SetStatus(receiver != null && receiver.HasReport ? "Impact recorded. Orbit to inspect, Reset to run again." : "Stopped without contact.");
+                SetStatus(receiver != null && receiver.HasReport ? "Impact recorded. Reset Block to hit again, Repair Car to undo damage." : "Stopped without contact.");
         }
+
+        /// <summary>Safe point for hitbox changes (also called by the edit-mode validation after each physics step):
+        /// a crushed region retracts only once the block has stopped pressing into the car (parked, or moving with
+        /// it), never while the solver is still resolving the impact.</summary>
+        public void AfterPhysicsStep()
+        {
+            if (hitbox == null || !hitbox.HasPending) return;
+            if (sled.isKinematic || (sled.linearVelocity - car.linearVelocity).magnitude < settleSpeed)
+                hitbox.ApplyPending();
+        }
+
+        [Tooltip("Relative speed (m/s) below which the impact counts as resolved and crushed hitbox regions may retract.")]
+        public float settleSpeed = 0.3f;
 
         // ------------------------------------------------------------------ UI
 
@@ -244,7 +325,23 @@ namespace DamageLab.CollisionTest
                 footprintToggle.onValueChanged.AddListener(on => { if (footprintDebug != null) footprintDebug.SetVisible(on); });
             }
             if (launchButton != null) launchButton.onClick.AddListener(() => Launch());
-            if (resetButton != null) resetButton.onClick.AddListener(ResetTest);
+            if (resetButton != null) resetButton.onClick.AddListener(ResetAll);
+            if (resetBlockButton != null) resetBlockButton.onClick.AddListener(() => { ResetBlock(); SetStatus("Block reset"); });
+            if (repairButton != null) repairButton.onClick.AddListener(RepairCar);
+            if (anchorToggle != null) { anchorToggle.SetIsOnWithoutNotify(anchored); anchorToggle.onValueChanged.AddListener(SetAnchored); }
+            if (collidersToggle != null)
+            {
+                collidersToggle.SetIsOnWithoutNotify(colliderDebug != null && colliderDebug.show);
+                collidersToggle.onValueChanged.AddListener(on => { if (colliderDebug != null) colliderDebug.SetVisible(on); });
+            }
+            if (offsetSlider != null)
+            {
+                offsetSlider.minValue = -0.8f; offsetSlider.maxValue = 0.8f; offsetSlider.wholeNumbers = false;
+                offsetSlider.SetValueWithoutNotify(aimOffset);
+                offsetSlider.onValueChanged.AddListener(v => { aimOffset = Mathf.Round(v * 20f) / 20f; if (!launched) PlaceSled(); RefreshValues(); });
+            }
+            if (offsetField != null)
+                offsetField.onEndEdit.AddListener(t => { if (float.TryParse(t, out float v)) aimOffset = Mathf.Clamp(Mathf.Round(v * 20f) / 20f, -0.8f, 0.8f); if (!launched) PlaceSled(); RefreshValues(); });
             RefreshValues();
             RefreshDirectionButtons();
         }
@@ -257,6 +354,8 @@ namespace DamageLab.CollisionTest
             if (speedMphText != null) speedMphText.text = $"{speed:0} m/s  ≈  {speed * 2.23694f:0} mph  ·  {speed * 3.6f:0} km/h";
             if (massSlider != null) massSlider.SetValueWithoutNotify(mass);
             if (massField != null && !massField.isFocused) massField.SetTextWithoutNotify(mass.ToString("0"));
+            if (offsetSlider != null) offsetSlider.SetValueWithoutNotify(aimOffset);
+            if (offsetField != null && !offsetField.isFocused) offsetField.SetTextWithoutNotify(aimOffset.ToString("0.00"));
             RefreshDirectionButtons();
         }
 

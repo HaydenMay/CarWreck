@@ -44,6 +44,8 @@ namespace DamageLab.EditorTools
             var prevMode = Physics.simulationMode;
             Physics.simulationMode = SimulationMode.Script;
             model.Initialize();
+            bool wasAnchored = lab.anchored;
+            lab.SetAnchored(false);   // these suites measure the free-moving car
             lab.Setup();
             receiver.logImpacts = false;
             try
@@ -53,7 +55,7 @@ namespace DamageLab.EditorTools
                 foreach (var f in filters) if (f.GetComponent<LineRenderer>() == null) filtersDeform.Add(f);
                 filters = filtersDeform.ToArray();
                 lab.narrowImpactor = false;
-                lab.ResetTest();
+                lab.ResetAll();
                 var baseVerts = CollisionLabValidation.Snapshot(filters);
                 var baseNormals = new List<Vector3[]>();
                 foreach (var f in filters) baseNormals.Add(f.sharedMesh.normals);
@@ -99,7 +101,7 @@ namespace DamageLab.EditorTools
                             debug.SetVisible(true);
                         }
                     }
-                    lab.ResetTest();
+                    lab.ResetAll();
                 }
 
                 // ---------------------------------------------------------------- comparisons
@@ -126,7 +128,8 @@ namespace DamageLab.EditorTools
                               $"separating input (-3 m/s along n) -> closing {CollisionDamageReceiver.ClosingSpeed(-3f * Vector3.forward, Vector3.forward, out bool sep):0.00}, separating {sep} {(sep ? "PASS (no impact)" : "FAIL")}");
 
                 // ---------------------------------------------------------------- accumulation + saturation
-                lab.ResetTest();
+                lab.SetAnchored(true);    // repeated hits on the same spot: anchored, since Launch no longer resets the car pose
+                lab.ResetAll();
                 lab.narrowImpactor = false;
                 Launch(lab, receiver, C("acc1", ImpactDirection.Front, 12f, 1500f, false, 160f), false);
                 float after1 = CollisionLabValidation.MaxDiff(baseVerts, CollisionLabValidation.Snapshot(filters));
@@ -134,8 +137,8 @@ namespace DamageLab.EditorTools
                 float after2 = CollisionLabValidation.MaxDiff(baseVerts, CollisionLabValidation.Snapshot(filters));
                 int count2 = model.ImpactCount;
                 if (screenshots) ShotAfter(lab, cam, "4x_A1_Accumulated_Front_then_Corner", C("acc", ImpactDirection.FrontCornerAngled, 0, 0, false, 125f, 12f, 6.5f));
-                sb.AppendLine($"  Accumulation: front then corner without reset -> {count2} impacts, max disp {after1:0.000} -> {after2:0.000} m {(count2 == 2 && after2 >= after1 ? "PASS" : "FAIL")}");
-                lab.ResetTest();
+                sb.AppendLine($"  Accumulation (anchored): front then corner without reset -> {count2} impacts, max disp {after1:0.000} -> {after2:0.000} m {(count2 == 2 && after2 >= after1 ? "PASS" : "FAIL")}");
+                lab.ResetAll();
                 var sat = new float[4];
                 for (int k = 0; k < 4; k++)
                 {
@@ -144,11 +147,12 @@ namespace DamageLab.EditorTools
                 }
                 DamageLabValidation.CheckSanity(filters, baseVerts, out int satNan, out int satFlip, out int satTris);
                 if (screenshots) ShotAfter(lab, cam, "4x_S1_Saturation_4x_Heavy_Front", C("sat", ImpactDirection.Front, 0, 0, false, 135f, 12f, 6.5f));
-                sb.AppendLine($"  Saturation: 4 heavy wide front hits (3000 kg, 20 m/s) -> max disp {sat[0]:0.000} / {sat[1]:0.000} / {sat[2]:0.000} / {sat[3]:0.000} m, impacts {model.ImpactCount}, " +
+                sb.AppendLine($"  Saturation (anchored): 4 heavy wide front hits (3000 kg, 20 m/s) -> max disp {sat[0]:0.000} / {sat[1]:0.000} / {sat[2]:0.000} / {sat[3]:0.000} m, impacts {model.ImpactCount}, " +
                               $"flipped {satFlip} of {satTris:N0}, NaN {satNan} {(sat[3] - sat[2] < sat[1] - sat[0] + 1e-4f && sat[3] < 0.75f ? "PASS (diminishing, bounded)" : "CHECK")}");
 
+                lab.SetAnchored(false);
                 // ---------------------------------------------------------------- reset + repeatability
-                lab.ResetTest();
+                lab.ResetAll();
                 CollisionLabValidation.Compare(filters, baseVerts, baseNormals, out float ep, out float en);
                 sb.AppendLine($"  Reset: max vertex error {ep:E2} m, normal error {en:E2} {(ep == 0f && en == 0f ? "PASS (exact)" : "FAIL")}");
                 // Same launch three times from reset (physics + footprint + mesh must repeat).
@@ -171,9 +175,10 @@ namespace DamageLab.EditorTools
             {
                 receiver.geometryAwareFootprint = true;
                 lab.narrowImpactor = false;
-                lab.ResetTest();
+                lab.ResetAll();
                 receiver.logImpacts = true;
                 Physics.simulationMode = prevMode;
+                lab.SetAnchored(wasAnchored);
                 model.Shutdown();
                 cam.pivot = new Vector3(0f, 0.6f, 1.5f);
                 cam.SetView(cam.defaultYaw, cam.defaultPitch, cam.defaultDistance);
@@ -210,7 +215,8 @@ namespace DamageLab.EditorTools
         {
             receiver.geometryAwareFootprint = !c.pointOnly;
             lab.direction = c.dir; lab.speed = c.speed; lab.mass = c.mass; lab.narrowImpactor = c.narrow;
-            lab.Launch(keepDamage);
+            if (!keepDamage) lab.ResetAll();
+            lab.Launch();
             if (c.glancing)
             {
                 // Side swipe: sled travelling forward along the car's left side at 15°, overlapping 0.35 m (as in phase 1).

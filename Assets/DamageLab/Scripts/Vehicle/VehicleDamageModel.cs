@@ -53,6 +53,8 @@ namespace DamageLab.Vehicle
         public bool Wireframe => wireframe;
 
         readonly List<DeformablePart> parts = new List<DeformablePart>();
+        /// <summary>The deformable parts (original + deformed vertex access), available after Initialize.</summary>
+        public IReadOnlyList<DeformablePart> Parts => parts;
         readonly List<RigidPart> rigidParts = new List<RigidPart>();
         readonly List<GameObject> rigidWireframes = new List<GameObject>();
         readonly float[] applied = new float[DamageDirections.Count];
@@ -200,9 +202,10 @@ namespace DamageLab.Vehicle
             if (ImpactLimitReached || impact.strength <= 0f) return false;
             if (impact.impactor.valid && !impact.footprint.valid)
             {
-                // Geometry-aware impact: find the contact patch on the original bodywork once, store it with the impact.
+                // Geometry-aware impact: find the contact patch on the CURRENT (already damaged) bodywork once and store
+                // it with the impact; the mesh itself is still rebuilt from the original vertices.
                 if (!IsInitialized) Initialize();
-                impactField.ResolveFootprint(ref impact, parts.Select(p => p.VehiclePositions));
+                impactField.ResolveFootprint(ref impact, parts.Select(p => p.ImpactedVehiclePositions(impactField)), impacts.Count > 0);
             }
             impacts.Add(impact);
             if (IsInitialized) AccumulateImpact(impact);
