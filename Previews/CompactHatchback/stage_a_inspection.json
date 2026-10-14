@@ -1,0 +1,49 @@
+{
+  "stage": "A",
+  "orientation": "Blender +Y forward; +Z up",
+  "units": "metres",
+  "dimensions_xyz_m": [
+    1.8919999599456787,
+    4.042999863624573,
+    1.4229999780654907
+  ],
+  "wheelbase_m": 2.32,
+  "body_loft_station_spacing_m": 0.0584,
+  "meshes": 87,
+  "base_vertices": 13381,
+  "body_vertices": 5604,
+  "wheels": [
+    "Wheel_FL",
+    "Wheel_RL",
+    "Wheel_FR",
+    "Wheel_RR"
+  ],
+  "wheel_pivots_m": {
+    "Wheel_FL": [
+      -0.7450000047683716,
+      1.159999966621399,
+      0.32499998807907104
+    ],
+    "Wheel_RL": [
+      -0.7450000047683716,
+      -1.159999966621399,
+      0.32499998807907104
+    ],
+    "Wheel_FR": [
+      0.7450000047683716,
+      1.159999966621399,
+      0.32499998807907104
+    ],
+    "Wheel_RR": [
+      0.7450000047683716,
+      -1.159999966621399,
+      0.32499998807907104
+    ]
+  },
+  "deformation_tested": false,
+  "fbx_exported": false,
+  "all_meshes_have_uvs": true,
+  "wheel_backing_normals_outward": true,
+  "collapsed_uv_faces": 0,
+  "body_quad_fraction": 0.9953220582943505
+}
