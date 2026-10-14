@@ -159,9 +159,6 @@ namespace DamageLab.EditorTools
                 case "vehicle-hatch-legacy":
                     Debug.Log(CollisionPersistenceValidation.RunVehicle(1, true));
                     break;
-                case "probe-hatch-corner":
-                    Debug.Log(CollisionPersistenceValidation.RunCornerProbe(1));
-                    break;
                 case "collision-webgl":
                     DamageLabWebBuild.BuildCollision();
                     break;

@@ -80,7 +80,7 @@ namespace DamageLab.EditorTools
                     model.SurfacePointAlong(c.p, c.d, out Vector3 sp, 0.12f, 0f);
                     model.AddImpact(new LocalImpact { point = sp, direction = c.d, normal = -c.d, strength = 0.8f });
                     Report($"{c.n} at {sp.ToString("F2")} (vehicle space)", "Body", "LicenseRecess", "GrilleSurround", "DoorSeam");
-                    Shot(c.n, "Body", c.yaw, c.pitch, 1.8f, lab.car.TransformPoint(sp));
+                    Shot(c.n, "Body", c.yaw, c.pitch, 1.8f, lab.car.transform.TransformPoint(sp));
                 }
                 lab.RepairCar();
             }

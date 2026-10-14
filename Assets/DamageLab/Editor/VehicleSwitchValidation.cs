@@ -35,11 +35,11 @@ namespace DamageLab.EditorTools
             var def = lab.vehicles[index];
             var model = lab.model; var hb = lab.hitbox; var g = lab.Geometry;
             bool oldGone = oldCar == null;
-            int models = Object.FindObjectsByType<VehicleDamageModel>(FindObjectsSortMode.None).Length;
-            int receivers = Object.FindObjectsByType<CollisionDamageReceiver>(FindObjectsSortMode.None).Length;
-            int hitboxes = Object.FindObjectsByType<VehicleHitbox>(FindObjectsSortMode.None).Length;
+            int models = Object.FindObjectsByType<VehicleDamageModel>().Length;
+            int receivers = Object.FindObjectsByType<CollisionDamageReceiver>().Length;
+            int hitboxes = Object.FindObjectsByType<VehicleHitbox>().Length;
             // Every car collider in the scene must belong to the current car.
-            int strayColliders = Object.FindObjectsByType<BoxCollider>(FindObjectsSortMode.None)
+            int strayColliders = Object.FindObjectsByType<BoxCollider>()
                 .Count(c => c.GetComponentInParent<VehicleHitbox>() != null && c.GetComponentInParent<VehicleHitbox>() != hb);
             bool rightVehicle = model.definition == def && model.profile == def.profile && lab.car.mass == def.mass;
             float meshErr = CollisionLabValidation.MaxDiff(SourceVerts(model), CollisionLabValidation.Snapshot(filters));
