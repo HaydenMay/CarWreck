@@ -126,6 +126,9 @@ namespace DamageLab.EditorTools
                 case "collision-overflow":
                     Debug.Log(CollisionPersistenceValidation.RunOverflow());
                     break;
+                case "vehicle-switch":
+                    Debug.Log(CollisionPersistenceValidation.RunSwitching());
+                    break;
                 case "repeat-probe":
                     Debug.Log(CollisionPersistenceValidation.RunRepeatProbe(0));
                     break;

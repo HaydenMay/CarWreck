@@ -81,6 +81,27 @@ namespace DamageLab.EditorTools
             return -lead;
         }
 
+        /// <summary>
+        /// Where the block will first touch the car's physical hitbox on its next launch, measured outward along the
+        /// approach: the parked block swept (Physics.BoxCast) along its launch path against the car's current colliders.
+        /// Exact and independent of the physics step: at 15 m/s a 4 m block moves 30 cm per 20 ms step and PhysX does not
+        /// sweep it (it is large relative to that motion), so poses and contact points reported after the step land 0-15 cm
+        /// past the true first touch depending on the step phase.
+        /// </summary>
+        static float SweptFirstTouch(Target t, bool narrow = true)
+        {
+            lab.narrowImpactor = narrow; lab.aimOffset = Off(t); lab.direction = t.d;
+            lab.ResetBlock();
+            var bc = lab.sled.GetComponent<BoxCollider>(); var tr = bc.transform;
+            Vector3 c = tr.TransformPoint(bc.center), half = Vector3.Scale(bc.size, tr.lossyScale) * 0.5f, dir = tr.forward;
+            float best = float.MaxValue;
+            foreach (var h in Physics.BoxCastAll(c, half, dir, tr.rotation, 20f, ~0, QueryTriggerInteraction.Ignore))
+                if (h.distance > 0f && h.collider.GetComponentInParent<VehicleHitbox>() == lab.hitbox) best = Mathf.Min(best, h.distance);
+            if (best == float.MaxValue) return float.NaN;
+            Vector3 lead = lab.car.transform.InverseTransformPoint(c + dir * (half.z + best));
+            return -Vector3.Dot(lead, CollisionLabController.Direction(t.d).normalized);
+        }
+
         static float FaceValue(VehicleHitbox hb, Target t) { var f = hb.FaceOf(t.region, t.axis, t.sign); return f != null ? f.current : float.NaN; }
         static float FaceOriginal(VehicleHitbox hb, Target t) { var f = hb.FaceOf(t.region, t.axis, t.sign); return f != null ? f.original : float.NaN; }
 
@@ -141,30 +162,33 @@ namespace DamageLab.EditorTools
                 }
 
                 // ---------------------------------------------------------------- A. coverage: every region, two identical hits
-                sb.AppendLine("  A. COVERAGE (narrow block, 15 m/s, 1500 kg; Repair Car before each target). Depth = the impactor's leading point at first touch");
-                sb.AppendLine("     (penetration-corrected pose), outward along the approach; the averaged PhysX contact point is listed for reference only.");
-                sb.AppendLine("     target                      region       hit1 impactor  face before->after hit1   hit2 impactor (deeper by)   contact pt 1->2   region retract  result");
+                sb.AppendLine("  A. COVERAGE (narrow block, 15 m/s, 1500 kg; Repair Car before each target). Depth = where the block first touches the car's physical");
+                sb.AppendLine("     hitbox (parked block swept along its launch path), outward along the approach. For reference: the recorded impactor pose and the");
+                sb.AppendLine("     averaged PhysX contact point, both reported after a 30 cm physics step, so 0-15 cm past the true first touch depending on step phase.");
+                sb.AppendLine("     target                      region       hit1 touch  face before->after hit1   hit2 touch (deeper by)   pose 1->2       contact 1->2    region retract  result");
                 bool coverageOk = true;
                 foreach (var t in Targets)
                 {
                     lab.RepairCar();
+                    float s1 = SweptFirstTouch(t);
                     var r1 = Hit(t.d, 15f, 1500f, true, Off(t), out _);
                     float i1 = ImpactorFront(t.d);
                     float fBefore = FaceOriginal(hb, t), fAfter = FaceValue(hb, t);
                     string cornerFaces = "";
                     if (t.axis < 0)
                         foreach (var f in hb.Faces) if (f.region.name == t.region) cornerFaces += $"{f.Label} {f.sign * f.original:0.000}->{f.sign * f.current:0.000} ";
+                    float s2 = SweptFirstTouch(t);
                     var r2 = Hit(t.d, 15f, 1500f, true, Off(t), out _);
                     float i2 = ImpactorFront(t.d);
                     float c1 = Outward(r1, t.d), c2 = Outward(r2, t.d);
-                    bool deeper = i2 < i1 - 0.03f;
+                    bool deeper = s2 < s1 - 0.03f;
                     bool follows = t.axis < 0 || Mathf.Abs(t.sign * (t.axis == 2 ? r2.contactPoint.z : r2.contactPoint.x) - fAfter) < 0.06f;
                     bool retracted = RegionRetract(hb, t.region) > 0.05f;
                     bool ok = r1.applied && r2.applied && deeper && follows && retracted;
                     coverageOk &= ok;
-                    sb.AppendLine($"     {t.name,-27} {t.region,-12} {i1,8:0.000}      " +
+                    sb.AppendLine($"     {t.name,-27} {t.region,-12} {s1,8:0.000}   " +
                                   $"{(t.axis < 0 ? "   (two faces)        " : $"{fBefore,6:0.000} -> {fAfter,6:0.000}      ")}" +
-                                  $"{i2,8:0.000} ({(i1 - i2) * 100f,5:0.0} cm)      {c1,6:0.000}->{c2,6:0.000}    {RegionRetract(hb, t.region) * 100f,6:0.0} cm      {P(ok)}  [{r1.carCollider} -> {r2.carCollider}]");
+                                  $"{s2,8:0.000} ({(s1 - s2) * 100f,5:0.0} cm)    {i1,6:0.000}->{i2,6:0.000}   {c1,6:0.000}->{c2,6:0.000}   {RegionRetract(hb, t.region) * 100f,6:0.0} cm      {P(ok)}  [{r1.carCollider} -> {r2.carCollider}]");
                     if (cornerFaces.Length > 0) sb.AppendLine($"        corner faces after hit 1: {cornerFaces}");
                 }
                 sb.AppendLine($"  Coverage: every region's second identical hit lands deeper, at the retracted face {P(coverageOk)}");

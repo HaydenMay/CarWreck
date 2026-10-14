@@ -180,6 +180,7 @@ namespace DamageLab.CollisionTest
             {
                 var old = car.gameObject;
                 if (model != null) model.Shutdown();
+                old.SetActive(false);   // its colliders leave the physics scene now; Destroy only happens at the end of the frame
                 if (Application.isPlaying) Destroy(old); else DestroyImmediate(old);
             }
             var rig = VehicleRig.Build(vehicles[index], transform.parent, vehicleBase, rigSettings);
