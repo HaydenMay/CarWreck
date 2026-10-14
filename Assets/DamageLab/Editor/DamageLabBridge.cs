@@ -124,7 +124,8 @@ namespace DamageLab.EditorTools
                     Debug.Log(CollisionPersistenceValidation.RunB());
                     break;
                 case "collision-overflow":
-                    Debug.Log(CollisionPersistenceValidation.RunOverflow());
+                    // Optional vehicle index (definition order in the Collision Lab): "collision-overflow 2". Screenshots for the muscle car only.
+                    { int v = a.Length > 1 ? int.Parse(a[1]) : 0; Debug.Log(CollisionPersistenceValidation.RunOverflow(v == 0, v)); }
                     break;
                 case "hatch-defects":
                     Debug.Log(CollisionPersistenceValidation.RunHatchbackDefects());
@@ -142,13 +143,16 @@ namespace DamageLab.EditorTools
                     Debug.Log(CollisionPersistenceValidation.RunOverflow(false, 1));
                     break;
                 case "collision-phase4":
-                    Debug.Log(CollisionPersistenceValidation.RunWholeVehicle());
+                    Debug.Log(CollisionPersistenceValidation.RunWholeVehicle(a.Length > 1 ? int.Parse(a[1]) : 0));   // optional vehicle index
                     break;
                 case "vehicles-setup":
                     VehicleDefinitionSetup.Build();
                     break;
                 case "collision-phase4-hatch":
                     Debug.Log(CollisionPersistenceValidation.RunWholeVehicle(1));
+                    break;
+                case "vehicle":   // "vehicle 2": integration run for any vehicle by index
+                    Debug.Log(CollisionPersistenceValidation.RunVehicle(int.Parse(a[1])));
                     break;
                 case "vehicle-muscle":
                     Debug.Log(CollisionPersistenceValidation.RunVehicle(0));
