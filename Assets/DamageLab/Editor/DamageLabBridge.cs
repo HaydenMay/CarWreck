@@ -126,6 +126,15 @@ namespace DamageLab.EditorTools
                 case "collision-overflow":
                     Debug.Log(CollisionPersistenceValidation.RunOverflow());
                     break;
+                case "repeat-probe":
+                    Debug.Log(CollisionPersistenceValidation.RunRepeatProbe(0));
+                    break;
+                case "repeat-probe-hatch":
+                    Debug.Log(CollisionPersistenceValidation.RunRepeatProbe(1));
+                    break;
+                case "collision-overflow-hatch":
+                    Debug.Log(CollisionPersistenceValidation.RunOverflow(false, 1));
+                    break;
                 case "collision-phase4":
                     Debug.Log(CollisionPersistenceValidation.RunWholeVehicle());
                     break;

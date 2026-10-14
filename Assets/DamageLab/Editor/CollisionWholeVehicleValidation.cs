@@ -37,6 +37,8 @@ namespace DamageLab.EditorTools
             T("right side rear", ImpactDirection.RightSide, -1.05f, "RightRear", 0, +1),
             T("front-left corner angled", ImpactDirection.FrontCornerAngled, 0f, "FrontLeft", -1, 0),
             T("rear-right corner angled", ImpactDirection.RearCornerAngled, 0f, "RearRight", -1, 0),
+            T("front-right corner angled", ImpactDirection.FrontRightCornerAngled, 0f, "FrontRight", -1, 0),
+            T("rear-left corner angled", ImpactDirection.RearLeftCornerAngled, 0f, "RearLeft", -1, 0),
         };
 
 
@@ -46,7 +48,7 @@ namespace DamageLab.EditorTools
         /// <summary>Aim offset that puts the impactor on the target region's centre (from the vehicle's own hitbox layout).</summary>
         static float Off(Target t)
         {
-            if (t.d == ImpactDirection.FrontCornerAngled || t.d == ImpactDirection.RearCornerAngled) return 0f;
+            if (t.axis < 0) return 0f;   // corners aim at the body corner itself
             var r = lab.hitbox.Find(t.region);
             if (r == null) return t.offset;
             lab.Aim(t.d, out Vector3 target, out _);
@@ -58,6 +60,25 @@ namespace DamageLab.EditorTools
         {
             Vector3 dir = CollisionLabController.Direction(d);
             return -Vector3.Dot(r.contactPoint, dir.normalized);
+        }
+
+        /// <summary>
+        /// Where the impactor's leading point was when it first touched the car, measured outward along the approach: the
+        /// latest impact's box at its first-contact pose (backed out by the penetration the solver reported), projected
+        /// onto the approach direction. Unlike the averaged contact point this does not slide along a corner when PhysX
+        /// reports contacts on two faces, so it is the reliable "how far in did the block get before it hit" measure.
+        /// </summary>
+        static float ImpactorFront(ImpactDirection d)
+        {
+            var m = lab.model;
+            if (m.ImpactCount == 0 || !m.Impacts[m.ImpactCount - 1].impactor.valid) return float.NaN;
+            var b = m.Impacts[m.ImpactCount - 1].impactor;
+            Vector3 dir = CollisionLabController.Direction(d).normalized;
+            float lead = Vector3.Dot(b.center, dir)
+                       + Mathf.Abs(Vector3.Dot(b.rotation * Vector3.right, dir)) * b.halfExtents.x
+                       + Mathf.Abs(Vector3.Dot(b.rotation * Vector3.up, dir)) * b.halfExtents.y
+                       + Mathf.Abs(Vector3.Dot(b.rotation * Vector3.forward, dir)) * b.halfExtents.z;
+            return -lead;
         }
 
         static float FaceValue(VehicleHitbox hb, Target t) { var f = hb.FaceOf(t.region, t.axis, t.sign); return f != null ? f.current : float.NaN; }
@@ -120,24 +141,31 @@ namespace DamageLab.EditorTools
                 }
 
                 // ---------------------------------------------------------------- A. coverage: every region, two identical hits
-                sb.AppendLine("  A. COVERAGE (narrow block, 15 m/s, 1500 kg; Repair Car before each target; contact measured outward along the approach):");
-                sb.AppendLine("     target                      region       hit1 contact  face before->after hit1   hit2 contact (deeper by)   region retract  result");
+                sb.AppendLine("  A. COVERAGE (narrow block, 15 m/s, 1500 kg; Repair Car before each target). Depth = the impactor's leading point at first touch");
+                sb.AppendLine("     (penetration-corrected pose), outward along the approach; the averaged PhysX contact point is listed for reference only.");
+                sb.AppendLine("     target                      region       hit1 impactor  face before->after hit1   hit2 impactor (deeper by)   contact pt 1->2   region retract  result");
                 bool coverageOk = true;
                 foreach (var t in Targets)
                 {
                     lab.RepairCar();
                     var r1 = Hit(t.d, 15f, 1500f, true, Off(t), out _);
+                    float i1 = ImpactorFront(t.d);
                     float fBefore = FaceOriginal(hb, t), fAfter = FaceValue(hb, t);
+                    string cornerFaces = "";
+                    if (t.axis < 0)
+                        foreach (var f in hb.Faces) if (f.region.name == t.region) cornerFaces += $"{f.Label} {f.sign * f.original:0.000}->{f.sign * f.current:0.000} ";
                     var r2 = Hit(t.d, 15f, 1500f, true, Off(t), out _);
+                    float i2 = ImpactorFront(t.d);
                     float c1 = Outward(r1, t.d), c2 = Outward(r2, t.d);
-                    bool deeper = c2 < c1 - 0.03f;
+                    bool deeper = i2 < i1 - 0.03f;
                     bool follows = t.axis < 0 || Mathf.Abs(t.sign * (t.axis == 2 ? r2.contactPoint.z : r2.contactPoint.x) - fAfter) < 0.06f;
                     bool retracted = RegionRetract(hb, t.region) > 0.05f;
                     bool ok = r1.applied && r2.applied && deeper && follows && retracted;
                     coverageOk &= ok;
-                    sb.AppendLine($"     {t.name,-27} {t.region,-12} {c1,8:0.000}     " +
+                    sb.AppendLine($"     {t.name,-27} {t.region,-12} {i1,8:0.000}      " +
                                   $"{(t.axis < 0 ? "   (two faces)        " : $"{fBefore,6:0.000} -> {fAfter,6:0.000}      ")}" +
-                                  $"{c2,8:0.000} ({(c1 - c2) * 100f,5:0.0} cm)     {RegionRetract(hb, t.region) * 100f,6:0.0} cm      {P(ok)}  [{r1.carCollider} -> {r2.carCollider}]");
+                                  $"{i2,8:0.000} ({(i1 - i2) * 100f,5:0.0} cm)      {c1,6:0.000}->{c2,6:0.000}    {RegionRetract(hb, t.region) * 100f,6:0.0} cm      {P(ok)}  [{r1.carCollider} -> {r2.carCollider}]");
+                    if (cornerFaces.Length > 0) sb.AppendLine($"        corner faces after hit 1: {cornerFaces}");
                 }
                 sb.AppendLine($"  Coverage: every region's second identical hit lands deeper, at the retracted face {P(coverageOk)}");
 
@@ -196,7 +224,7 @@ namespace DamageLab.EditorTools
                 var hbStart = hitboxMs.Count;
                 Vector3 carPos = lab.car.position;
                 for (int round = 0; round < 6; round++)
-                    for (int k = 0; k < Targets.Length; k++)
+                    for (int k = 0; k < 14; k++)   // the original 14 targets, so the long run stays comparable with earlier runs
                     {
                         bool narrow = (round + k) % 2 == 0;
                         float speed = round % 3 == 2 ? 15f : 30f;

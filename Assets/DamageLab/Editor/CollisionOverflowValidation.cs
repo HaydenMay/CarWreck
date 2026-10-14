@@ -31,12 +31,12 @@ namespace DamageLab.EditorTools
             return seq;
         }
 
-        public static string RunOverflow(bool screenshots = true)
+        public static string RunOverflow(bool screenshots = true, int vehicle = 0)
         {
             var sb = new StringBuilder("[CollisionLab] Impact-history overflow regression: 33 hits at 30 m/s, 4000 kg, anchored (real PhysX)\n");
             var prev = Physics.simulationMode;
             Physics.simulationMode = SimulationMode.Script;
-            Open();
+            Open(vehicle);
             var model = lab.model;
             var hb = lab.hitbox;
             var colliderDebug = Object.FindAnyObjectByType<PhysicsHitboxDebug>();
@@ -46,9 +46,22 @@ namespace DamageLab.EditorTools
                 sb.AppendLine($"  model: maxImpacts {model.maxImpacts} records, overflow {model.impactOverflow}");
                 sb.AppendLine("   #  target                               applied  strength  this hit moved  total max disp  stored/merged/total  hitbox faces L/C/R       deform ms  diagnostics");
                 var seq = Sequence();
+                // Reference: the same right-side and rear hits (launches 27, 28) on an undamaged car. After 25 impacts elsewhere
+                // they must still deform about as much (the overflow bug stopped them entirely). Relative, so it holds for any vehicle.
+                var fresh = new float[2];
+                for (int j = 0; j < 2; j++)
+                {
+                    lab.ResetAll();
+                    var b0 = CollisionLabValidation.Snapshot(filters);
+                    receiver.logImpacts = false;
+                    Hit(seq[26 + j].d, 30f, 4000f, seq[26 + j].narrow, seq[26 + j].offset, out _);
+                    fresh[j] = CollisionLabValidation.MaxDiff(b0, CollisionLabValidation.Snapshot(filters));
+                }
+                lab.ResetAll();
                 var recorded = new List<DamageLab.Deformation.LocalImpact>();
                 var launchImpactsA = new List<int>(); var contactA = new List<float>();
                 var fpA = new List<ImpactFootprintSnap>();
+                var snapsA = new List<List<Vector3[]>>();
                 int lastTotal = 0;
                 System.Action rec = () => { if (model.TotalImpactCount > lastTotal && model.ImpactCount > 0) recorded.Add(model.Impacts[model.ImpactCount - 1]); lastTotal = model.TotalImpactCount; };
                 model.ImpactsChanged += rec;
@@ -56,7 +69,7 @@ namespace DamageLab.EditorTools
                 receiver.ImpactRegistered += r0 => { if (r0.suppressed) suppressedCount++; };
                 var deformBefore = new List<float>(); var deformAfter = new List<float>();
                 List<Vector3[]> finalA = null;
-                bool allApplied = true, diagOk = true, hitboxOk = true, undamagedOk = true;
+                bool allApplied = true, diagOk = true, hitboxOk = true, undamagedOk = true; string undamagedNote = "";
                 float[] satMoves = new float[4]; int satIdx = 0;
                 for (int i = 0; i < seq.Count; i++)
                 {
@@ -67,6 +80,7 @@ namespace DamageLab.EditorTools
                     int t0 = model.TotalImpactCount;
                     var r = Hit(s.d, 30f, 4000f, s.narrow, s.offset, out _);
                     launchImpactsA.Add(model.TotalImpactCount - t0); contactA.Add(r.contactPoint.z); fpA.Add(new ImpactFootprintSnap(r));
+                    snapsA.Add(CollisionLabValidation.Snapshot(filters));
                     receiver.logImpacts = false;
                     float moved = CollisionLabValidation.MaxDiff(before, CollisionLabValidation.Snapshot(filters));
                     lab.RefreshDiagnostics();
@@ -80,7 +94,7 @@ namespace DamageLab.EditorTools
                     int n = i + 1;
                     if (n == 26) hitboxOk &= facesBefore[0] - hb.CurrentFront[0] > 0.05f;   // front-left retracts after the 25th
                     if (n == 30) hitboxOk &= facesBefore[2] - hb.CurrentFront[2] > 0.05f;   // front-right too
-                    if (n == 27 || n == 28) undamagedOk &= moved > 0.15f;
+                    if (n == 27 || n == 28) { undamagedOk &= moved > 0.7f * fresh[n - 27]; undamagedNote += $"{seq[i].name}: {moved:0.000} m vs {fresh[n - 27]:0.000} m on an undamaged car; "; }
                     if (n == 29 || n >= 31) satMoves[satIdx++] = moved;
                     if (n <= 3 || (n >= 23 && n <= 30) || n >= 31)
                         sb.AppendLine($"  {n,2}  {s.name,-36} {(r.applied ? "yes" : "NO "),5}  {r.strength * 100f,7:0.0}  {moved,10:0.000} m  {Disp(),10:0.000} m  " +
@@ -100,7 +114,7 @@ namespace DamageLab.EditorTools
                 model.ImpactsChanged -= rec;
                 sb.AppendLine($"  Every hit 1-{seq.Count} applied (incl. 24, 25, 26, 30) {P(allApplied)}; diagnostics show each hit {P(diagOk)}; " +
                               $"records stay bounded at {model.ImpactCount} (+{model.MergedImpactCount} merged) {P(model.ImpactCount <= model.maxImpacts)}");
-                sb.AppendLine($"  Undamaged regions after 25 impacts (right side, rear) deform normally {P(undamagedOk)}; front-left/right hitbox sections still retract after hit 25 {P(hitboxOk)}");
+                sb.AppendLine($"  Undamaged regions after 25 impacts (right side, rear) deform normally (at least 70 % of the same hit on an undamaged car: {undamagedNote}) {P(undamagedOk)}; front-left/right hitbox sections still retract after hit 25 {P(hitboxOk)}");
                 sb.AppendLine($"  Saturated front centre (hits 29, 31, 32, 33): mesh moved {satMoves[0]:0.000} / {satMoves[1]:0.000} / {satMoves[2]:0.000} / {satMoves[3]:0.000} m (saturation caps it; the hit still registers)");
                 sb.AppendLine($"  Deformation cost per hit: {Avg(deformBefore):0.0} ms avg for hits 1-24, {Avg(deformAfter):0.0} ms avg for hits 25+ (merging is O(1); per-hit cost does not grow)");
 
@@ -116,11 +130,13 @@ namespace DamageLab.EditorTools
                 foreach (var im in recorded) model.AddImpact(im);
                 float replay = CollisionLabValidation.MaxDiff(finalA, CollisionLabValidation.Snapshot(filters));
                 sb.AppendLine($"  Replaying the {recorded.Count} recorded impacts (incl. {model.MergedImpactCount} merges) into a repaired car: mesh difference {replay:E1} m {P(replay < 1e-5f)}");
+                sb.Append(RepeatabilityInvestigation(recorded));
 
                 // Physics repeat: the same 33 launches again. PhysX contacts are not bit-identical across different solver
                 // histories, so this measures how far physics variation carries, and where the launches first differ.
                 lab.ResetAll();
                 int firstDiff = -1, extraB = 0; string diffNote = ""; float worstDev = 0f; string worstNote = "";
+                var perLaunch = new StringBuilder(); int firstMesh1cm = -1;
                 for (int i = 0; i < seq.Count; i++)
                 {
                     int t0 = model.TotalImpactCount;
@@ -131,6 +147,9 @@ namespace DamageLab.EditorTools
                     if (dImp > 1) extraB++;
                     var snap = new ImpactFootprintSnap(r);
                     float dev = snap.Deviation(fpA[i]);
+                    float meshDev = CollisionLabValidation.MaxDiff(snapsA[i], CollisionLabValidation.Snapshot(filters));
+                    perLaunch.Append($" {i + 1}:{dev * 1000f:0.0}/{meshDev * 1000f:0}");
+                    if (firstMesh1cm < 0 && meshDev > 0.01f) firstMesh1cm = i + 1;
                     if (dev > worstDev) { worstDev = dev; worstNote = $"launch {i + 1} ({seq[i].name}): centre {fpA[i].centre.ToString("F4")} vs {snap.centre.ToString("F4")}, crush {fpA[i].travel:0.0000} vs {snap.travel:0.0000}, area {fpA[i].area:0.0000} vs {snap.area:0.0000}, contact {fpA[i].contact.ToString("F4")} vs {snap.contact.ToString("F4")}, strength {fpA[i].strength:0.0000} vs {snap.strength:0.0000}"; }
                     if (firstDiff < 0 && (dImp != launchImpactsA[i] || Mathf.Abs(r.contactPoint.z - contactA[i]) > 1e-3f))
                     {
@@ -142,6 +161,8 @@ namespace DamageLab.EditorTools
                 sb.AppendLine($"  Same 33 launches again (physics re-run): mesh difference {rep:E1} m {(rep < 1e-3f ? "PASS" : "CHECK")}; " +
                               $"{(firstDiff < 0 ? "all launches matched" : "first difference at " + diffNote)}; launches with a 2nd damaging contact: run 1 {launchImpactsA.FindAll(x => x > 1).Count}, run 2 {extraB} (of {seq.Count} each); second contacts with impact strength suppressed by one-impact-per-launch over both runs: {suppressedCount}");
                 sb.AppendLine($"    largest per-launch input difference between the two runs: {(worstNote.Length > 0 ? worstNote : "none")}");
+                sb.AppendLine($"    per launch (input deviation mm / mesh difference mm after that launch):{perLaunch}");
+                sb.AppendLine($"    first launch whose mesh differs by more than 1 cm: {(firstMesh1cm < 0 ? "none" : firstMesh1cm.ToString())}");
 
                 // Repair Car / Reset All after overflow.
                 lab.RepairCar();

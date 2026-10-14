@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 namespace DamageLab.CollisionTest
 {
-    public enum ImpactDirection { Front, Rear, LeftSide, RightSide, FrontCornerAngled, RearCornerAngled }
+    public enum ImpactDirection { Front, Rear, LeftSide, RightSide, FrontCornerAngled, RearCornerAngled, FrontRightCornerAngled, RearLeftCornerAngled }
 
     /// <summary>
     /// Collision Lab: places the test sled for the chosen direction, launches it with a real Rigidbody velocity
@@ -387,6 +387,8 @@ namespace DamageLab.CollisionTest
                 case ImpactDirection.RightSide: return Vector3.left;
                 case ImpactDirection.FrontCornerAngled: return new Vector3(0.55f, 0f, -0.835f).normalized;
                 case ImpactDirection.RearCornerAngled: return new Vector3(-0.55f, 0f, 0.835f).normalized;
+                case ImpactDirection.FrontRightCornerAngled: return new Vector3(-0.55f, 0f, -0.835f).normalized;
+                case ImpactDirection.RearLeftCornerAngled: return new Vector3(0.55f, 0f, 0.835f).normalized;
                 default: return Vector3.back;
             }
         }
@@ -405,6 +407,8 @@ namespace DamageLab.CollisionTest
                 case ImpactDirection.RightSide: target = new Vector3(b.max.x, 0f, cz); break;
                 case ImpactDirection.FrontCornerAngled: target = new Vector3(b.min.x + 0.08f * w, 0f, b.max.z - 0.05f * l); break;
                 case ImpactDirection.RearCornerAngled: target = new Vector3(b.max.x - 0.08f * w, 0f, b.min.z + 0.05f * l); break;
+                case ImpactDirection.FrontRightCornerAngled: target = new Vector3(b.max.x - 0.08f * w, 0f, b.max.z - 0.05f * l); break;
+                case ImpactDirection.RearLeftCornerAngled: target = new Vector3(b.min.x + 0.08f * w, 0f, b.min.z + 0.05f * l); break;
                 default: target = new Vector3(cx, 0f, b.max.z); break;
             }
         }
@@ -418,6 +422,8 @@ namespace DamageLab.CollisionTest
                 case ImpactDirection.RightSide: return "Right side";
                 case ImpactDirection.FrontCornerAngled: return "Front-left corner (angled)";
                 case ImpactDirection.RearCornerAngled: return "Rear-right corner (angled)";
+                case ImpactDirection.FrontRightCornerAngled: return "Front-right corner (angled)";
+                case ImpactDirection.RearLeftCornerAngled: return "Rear-left corner (angled)";
                 default: return "Front";
             }
         }

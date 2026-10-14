@@ -18,6 +18,7 @@ namespace DamageLab.Deformation
         public int VertexCount => baseVerts.Length;
         /// <summary>Original vertex positions in vehicle space (read only).</summary>
         public Vector3[] VehiclePositions => vehiclePos;
+        public Vector3 VehicleNormal(int i) => vehicleNormal[i];
         public int TriangleCount => triangles.Length / 3;
 
         readonly Vector3[] baseVerts;     // mesh space, original
@@ -260,13 +261,22 @@ namespace DamageLab.Deformation
                 Parallel.For(0, (n + ChunkSize - 1) / ChunkSize, chunk =>
                 {
                     int end = Mathf.Min(n, (chunk + 1) * ChunkSize);
-                    field.AccumulateRange(index, vehiclePos, vehicleNormal, crumple, impactSum, impactCap, chunk * ChunkSize, end);
+                    Accumulate(field, index, chunk * ChunkSize, end);
                 });
             }
             else
             {
-                field.AccumulateRange(index, vehiclePos, vehicleNormal, crumple, impactSum, impactCap, 0, n);
+                Accumulate(field, index, 0, n);
             }
+        }
+
+        /// <summary>Evaluate impacts with <see cref="ImpactField.AccumulateRange"/> (exact). Off = one Contribution call per vertex (for validation).</summary>
+        public static bool AccumulateByRange = true;
+
+        void Accumulate(ImpactField field, int index, int start, int end)
+        {
+            if (AccumulateByRange) { field.AccumulateRange(index, vehiclePos, vehicleNormal, crumple, impactSum, impactCap, start, end); return; }
+            for (int i = start; i < end; i++) impactSum[i] += field.Contribution(index, vehiclePos[i], vehicleNormal[i], crumple, impactSum[i], impactCap[i]);
         }
 
 

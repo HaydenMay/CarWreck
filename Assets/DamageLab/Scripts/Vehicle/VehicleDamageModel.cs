@@ -157,6 +157,23 @@ namespace DamageLab.Vehicle
         public int MergedImpactCount => mergedImpacts;
         public int TotalImpactCount => mergedImpacts + impacts.Count;
         public IReadOnlyList<LocalImpact> Impacts => impacts;
+
+        /// <summary>Diagnostics: the terms of stored impact <paramref name="impactIndex"/> at one vertex, given the vertex's summed damage before it.</summary>
+        public string ExplainImpactVertex(MeshFilter filter, int vertex, int impactIndex, Vector3 priorSum)
+        {
+            var part = parts.Find(p => p.filter == filter);
+            if (part == null || impactField == null) return "no part";
+            Vector3 x = part.VehiclePositions[vertex];
+            return impactField.ExplainBox(impactIndex, x, part.VehicleNormal(vertex), part.crumple, priorSum, impactField.Capacity(x, part.crumple));
+        }
+
+        /// <summary>Diagnostics: a vertex's summed (unsaturated) impact displacement so far.</summary>
+        public Vector3 ImpactSumAt(MeshFilter filter, int vertex)
+        {
+            var sum = parts.Find(p => p.filter == filter)?.ImpactSumCopy();
+            return sum != null ? sum[vertex] : Vector3.zero;
+        }
+
         /// <summary>Vehicle-space bounds of the parts that define the impact faces (body + bumpers).</summary>
         public Bounds BodyBounds { get; private set; }
 
@@ -223,7 +240,7 @@ namespace DamageLab.Vehicle
                 // could reach (its box swept 3 m along the impact direction) can hold the first contact.
                 if (!IsInitialized) Initialize();
                 Bounds sweep = ImpactorSweep(impact);
-                if (impactField.ResolveFootprint(ref impact, parts.Where(p => p.VehicleBounds().Intersects(sweep)).ToList(), TotalImpactCount > 0))
+                if (impactField.ResolveFootprint(ref impact, SweepPartFilter ? parts.Where(p => p.VehicleBounds().Intersects(sweep)).ToList() : parts, TotalImpactCount > 0))
                     impact.footprint.seed = TotalImpactCount + 1;
             }
             LastResolveMilliseconds = (float)impactWatch.Elapsed.TotalMilliseconds;
@@ -295,6 +312,8 @@ namespace DamageLab.Vehicle
 
         /// <summary>Skip parts outside an impact's influence bounds (exact: their contribution is zero). Off = evaluate all (for validation).</summary>
         public static bool CullImpactsByBounds = true;
+        /// <summary>Resolve footprints only against parts whose original bounds meet the impactor's sweep. Off = all parts (for validation).</summary>
+        public static bool SweepPartFilter = true;
         /// <summary>Rebuild only parts whose impact damage changed when the directional sliders did not move (for validation: off = rebuild all).</summary>
         public static bool SkipUnchangedParts = true;
         public int LastImpactPartsEvaluated { get; private set; }
