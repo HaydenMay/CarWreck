@@ -1,0 +1,466 @@
+{
+  "schema_version": "0.1-proposal",
+  "status": "design_example_only",
+  "usable_at_runtime": false,
+  "coordinate_system": {
+    "space": "vehicle_local",
+    "units": "metres",
+    "right": "+X",
+    "forward": "+Y",
+    "up": "+Z",
+    "quaternion_order": "xyzw",
+    "unity_position_mapping": "[x,z,y]",
+    "unity_rotation_mapping": "S*R*inverse(S); then convert matrix to quaternion"
+  },
+  "attachments": [
+    {
+      "attachment_id": "carwreck.roof_rack.simple.v1",
+      "category": "roof_equipment",
+      "mounting_mode": "chassis_rigid",
+      "failure_capability": "none",
+      "asset_frame": {
+        "position_m": [
+          0,
+          0,
+          0
+        ],
+        "rotation_xyzw": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      "mounts": [
+        {
+          "id": "rear_left",
+          "position_m": [
+            -0.53,
+            -0.4,
+            0
+          ],
+          "rotation_xyzw": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "id": "rear_right",
+          "position_m": [
+            0.53,
+            -0.4,
+            0
+          ],
+          "rotation_xyzw": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "id": "front_left",
+          "position_m": [
+            -0.53,
+            0.4,
+            0
+          ],
+          "rotation_xyzw": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "id": "front_right",
+          "position_m": [
+            0.53,
+            0.4,
+            0
+          ],
+          "rotation_xyzw": [
+            0,
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "body_scaling_allowed": false
+    },
+    {
+      "attachment_id": "carwreck.hood_scoop.low.v1",
+      "category": "hood_accessory",
+      "mounting_mode": "panel_follow",
+      "failure_capability": "none",
+      "asset_frame": {
+        "position_m": [
+          0,
+          0,
+          0
+        ],
+        "rotation_xyzw": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      "mounts": [
+        {
+          "id": "rear_left",
+          "position_m": [
+            -0.21,
+            -0.25,
+            0
+          ],
+          "rotation_xyzw": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "id": "rear_right",
+          "position_m": [
+            0.21,
+            -0.25,
+            0
+          ],
+          "rotation_xyzw": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "id": "front_left",
+          "position_m": [
+            -0.21,
+            0.25,
+            0
+          ],
+          "rotation_xyzw": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "id": "front_right",
+          "position_m": [
+            0.21,
+            0.25,
+            0
+          ],
+          "rotation_xyzw": [
+            0,
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "body_scaling_allowed": false
+    },
+    {
+      "attachment_id": "carwreck.push_bar.tubular.v1",
+      "category": "front_reinforcement",
+      "mounting_mode": "multi_point_rigid",
+      "failure_capability": "detachable_future",
+      "asset_frame": {
+        "position_m": [
+          0,
+          0,
+          0
+        ],
+        "rotation_xyzw": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      "mounts": [
+        {
+          "id": "bracket_left",
+          "position_m": [
+            -0.46,
+            0,
+            0
+          ],
+          "rotation_xyzw": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "id": "bracket_right",
+          "position_m": [
+            0.46,
+            0,
+            0
+          ],
+          "rotation_xyzw": [
+            0,
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "orientation_constraint": "two points do not define twist; adapter supplies rest-up orientation or additional support anchor",
+      "failure_metadata": {
+        "force_limit_N": null,
+        "torque_limit_Nm": null,
+        "failure_group": "front_push_bar",
+        "policy": "diagnostic_only"
+      },
+      "body_scaling_allowed": false
+    }
+  ],
+  "vehicle_example": {
+    "vehicle_id": "carwreck.compact_hatchback",
+    "adapter_revision": "proposal-v1",
+    "source": {
+      "path": "Blender/CompactHatchback.blend",
+      "sha256": "6385a079f750a8762910308c6ea66b4ec0024e13cf7f069199d2d63b318ffef5"
+    },
+    "mesh_roles": {
+      "body_shell": {
+        "source_object_name": "Body",
+        "surface_regions": {
+          "hood": {
+            "bounds_min_m": [
+              -0.4,
+              0.9,
+              0.7
+            ],
+            "bounds_max_m": [
+              0.4,
+              1.8,
+              1
+            ]
+          }
+        }
+      }
+    },
+    "socket_groups": [
+      {
+        "id": "hood.scoop",
+        "mounting_mode": "panel_follow",
+        "mesh_role": "body_shell",
+        "surface_region": "hood",
+        "sockets": [
+          {
+            "id": "hood.scoop.rear_left",
+            "binding_seed": {
+              "ray_origin_m": [
+                -0.21,
+                1.1,
+                1.05
+              ],
+              "ray_direction": [
+                0,
+                0,
+                -1
+              ],
+              "max_distance_m": 0.4,
+              "expected_normal": [
+                0,
+                0,
+                1
+              ],
+              "max_normal_angle_deg": 45
+            }
+          },
+          {
+            "id": "hood.scoop.rear_right",
+            "binding_seed": {
+              "ray_origin_m": [
+                0.21,
+                1.1,
+                1.05
+              ],
+              "ray_direction": [
+                0,
+                0,
+                -1
+              ],
+              "max_distance_m": 0.4,
+              "expected_normal": [
+                0,
+                0,
+                1
+              ],
+              "max_normal_angle_deg": 45
+            }
+          },
+          {
+            "id": "hood.scoop.front_left",
+            "binding_seed": {
+              "ray_origin_m": [
+                -0.21,
+                1.6,
+                1.05
+              ],
+              "ray_direction": [
+                0,
+                0,
+                -1
+              ],
+              "max_distance_m": 0.4,
+              "expected_normal": [
+                0,
+                0,
+                1
+              ],
+              "max_normal_angle_deg": 45
+            }
+          },
+          {
+            "id": "hood.scoop.front_right",
+            "binding_seed": {
+              "ray_origin_m": [
+                0.21,
+                1.6,
+                1.05
+              ],
+              "ray_direction": [
+                0,
+                0,
+                -1
+              ],
+              "max_distance_m": 0.4,
+              "expected_normal": [
+                0,
+                0,
+                1
+              ],
+              "max_normal_angle_deg": 45
+            }
+          }
+        ]
+      }
+    ],
+    "fit_example": {
+      "attachment_id": "carwreck.hood_scoop.low.v1",
+      "socket_group": "hood.scoop",
+      "compatibility_status": "candidate_requires_rest_fit_validation",
+      "mount_map": [
+        {
+          "attachment_mount": "rear_left",
+          "vehicle_socket": "hood.scoop.rear_left"
+        },
+        {
+          "attachment_mount": "rear_right",
+          "vehicle_socket": "hood.scoop.rear_right"
+        },
+        {
+          "attachment_mount": "front_left",
+          "vehicle_socket": "hood.scoop.front_left"
+        },
+        {
+          "attachment_mount": "front_right",
+          "vehicle_socket": "hood.scoop.front_right"
+        }
+      ],
+      "alignment": {
+        "policy": "proper_rotation_rigid_fit",
+        "normal_clearance_m": 0.003,
+        "translation_offset_m": [
+          0,
+          0,
+          0
+        ],
+        "rotation_offset_xyzw": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "allow_scale": false,
+        "allow_shear": false
+      },
+      "quality_limits": {
+        "status": "initial_experiment_values_not_calibrated",
+        "rest_max_residual_m": 0.01,
+        "strained_max_residual_m": 0.025,
+        "invalid_max_residual_m": 0.06,
+        "invalid_pairwise_spacing_change_fraction": 0.25,
+        "invalid_normal_spread_deg": 55,
+        "invalid_support_area_ratio": 0.01,
+        "invalid_policy": "retain_last_valid_pose_and_show_residuals"
+      },
+      "blender_binding_cache": null,
+      "unity_binding_cache": null
+    }
+  },
+  "binding_cache_contract": {
+    "scope": "one exact mesh representation, never shared Blender-to-Unity",
+    "signature_inputs": [
+      "geometry_rest_positions",
+      "ordered_triangle_indices",
+      "triangulation",
+      "mesh_role",
+      "adapter_revision",
+      "coordinate_frame",
+      "import_settings_for_Unity"
+    ],
+    "anchor_fields": [
+      "socket_id",
+      "mesh_reference",
+      "submesh_index_if_Unity",
+      "vertex_indices_abc",
+      "barycentric_weights_abc",
+      "rest_surface_normal"
+    ],
+    "invalidation": "reject cache and explicitly rebind against constrained rest geometry when any signature input changes"
+  },
+  "candidate_compatibility": [
+    {
+      "attachment_id": "carwreck.roof_rack.simple.v1",
+      "vehicle_id": "carwreck.compact_hatchback",
+      "status": "planned_test"
+    },
+    {
+      "attachment_id": "carwreck.roof_rack.simple.v1",
+      "vehicle_id": "carwreck.muscle_car",
+      "status": "planned_test"
+    },
+    {
+      "attachment_id": "carwreck.hood_scoop.low.v1",
+      "vehicle_id": "carwreck.compact_hatchback",
+      "status": "planned_test"
+    },
+    {
+      "attachment_id": "carwreck.push_bar.tubular.v1",
+      "vehicle_id": "carwreck.compact_hatchback",
+      "status": "planned_test"
+    }
+  ],
+  "unknown_pair_policy": "unsupported"
+}

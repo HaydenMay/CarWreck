@@ -1,0 +1,696 @@
+{
+  "status": "inspection_only; no accessory prototypes or deformation tests yet",
+  "date": "2026-10-14",
+  "baseline_commit": "2a9ca8bebb296557ed75513c9ad892c8f5153d92",
+  "remote_main_verified": true,
+  "branch": "feature/attachment-prototype",
+  "blender_version": "5.2.0 LTS fbe6228777e7",
+  "method": "Independent background Blender processes opened verified saved sources without saving, inspected hierarchy and hood ray hits, then reimported existing FBXs into disposable empty scenes. Geometry comparisons use Blender scene world after dependency graph update, because reimport adds a +90 degree X root transform. The interactive Blender file had unsaved sculpt edits and was not used as source.",
+  "source_sha256": {
+    "Blender/CompactHatchback.blend": "6385a079f750a8762910308c6ea66b4ec0024e13cf7f069199d2d63b318ffef5",
+    "Blender/MuscleCar.blend": "8836620ad6d85cd3d6aae2bd861efd7f060621f9cbb5953a236a88ace51871ad"
+  },
+  "vehicles": {
+    "CompactHatchback": {
+      "saved_source": {
+        "vehicle": "CompactHatchback",
+        "units": [
+          "METRIC",
+          1
+        ],
+        "root_transform": {
+          "location": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "mesh_count": 76,
+        "source_vertices": 68446,
+        "parts": {
+          "Body": {
+            "vertices": 30586,
+            "polygons": 31814,
+            "triangles": 61168,
+            "origin": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ],
+            "bounds": [
+              [
+                -0.925367,
+                -1.9,
+                0.215
+              ],
+              [
+                0.925367,
+                1.925,
+                0.928688
+              ]
+            ],
+            "modifiers": []
+          },
+          "Bumper_Front": {
+            "vertices": 1206,
+            "polygons": 1204,
+            "triangles": 2408,
+            "origin": [
+              0,
+              1.897,
+              0.462
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ],
+            "bounds": [
+              [
+                -0.895,
+                1.797,
+                0.388
+              ],
+              [
+                0.895,
+                2.0114,
+                0.536
+              ]
+            ],
+            "modifiers": []
+          },
+          "Cabin": {
+            "vertices": 13750,
+            "polygons": 13752,
+            "triangles": 27496,
+            "origin": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ],
+            "bounds": [
+              [
+                -0.762047,
+                -1.715679,
+                0.863
+              ],
+              [
+                0.762047,
+                0.645419,
+                1.424999
+              ]
+            ],
+            "modifiers": []
+          },
+          "Wheel_FL": {
+            "vertices": 1970,
+            "polygons": 2010,
+            "triangles": 3916,
+            "origin": [
+              -0.745,
+              1.16,
+              0.325
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ],
+            "bounds": [
+              [
+                -0.8905,
+                0.835,
+                0
+              ],
+              [
+                -0.606,
+                1.485,
+                0.65
+              ]
+            ],
+            "modifiers": []
+          },
+          "Wheel_RL": {
+            "vertices": 1970,
+            "polygons": 2010,
+            "triangles": 3916,
+            "origin": [
+              -0.745,
+              -1.16,
+              0.325
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ],
+            "bounds": [
+              [
+                -0.8905,
+                -1.485,
+                0
+              ],
+              [
+                -0.606,
+                -0.835,
+                0.65
+              ]
+            ],
+            "modifiers": []
+          }
+        },
+        "hood_rays": [
+          {
+            "xy": [
+              0,
+              1.35
+            ],
+            "hit": true,
+            "position": [
+              0,
+              1.35,
+              0.883826
+            ],
+            "normal": [
+              0.00424,
+              0.108036,
+              0.994138
+            ],
+            "polygon": 18884
+          },
+          {
+            "xy": [
+              -0.21,
+              1.1
+            ],
+            "hit": true,
+            "position": [
+              -0.21,
+              1.1,
+              0.901439
+            ],
+            "normal": [
+              -0.045251,
+              0.075768,
+              0.996098
+            ],
+            "polygon": 17510
+          },
+          {
+            "xy": [
+              0.21,
+              1.1
+            ],
+            "hit": true,
+            "position": [
+              0.21,
+              1.1,
+              0.901437
+            ],
+            "normal": [
+              0.045249,
+              0.076184,
+              0.996067
+            ],
+            "polygon": 17369
+          },
+          {
+            "xy": [
+              0,
+              1.6
+            ],
+            "hit": true,
+            "position": [
+              0,
+              1.6,
+              0.852781
+            ],
+            "normal": [
+              -0.004066,
+              0.138033,
+              0.990419
+            ],
+            "polygon": 21675
+          }
+        ]
+      },
+      "fbx_blender_reimport": {
+        "vehicle": "CompactHatchback",
+        "source_meshes": 76,
+        "imported_meshes": 76,
+        "imported_root_rotation_degrees": [
+          90,
+          0,
+          0
+        ],
+        "comparison_frame": "Blender scene world; authored source root is identity",
+        "parts": {
+          "Body": {
+            "source_vertices": 30586,
+            "fbx_vertices": 30586,
+            "same_parent_name": true,
+            "max_same_index_position_difference_m": 1.7e-7,
+            "source_triangles": 61168,
+            "fbx_triangles": 61168,
+            "same_triangle_vertex_index_sequence": true
+          },
+          "Cabin": {
+            "source_vertices": 13750,
+            "fbx_vertices": 13750,
+            "same_parent_name": true,
+            "max_same_index_position_difference_m": 1.7e-7,
+            "source_triangles": 27496,
+            "fbx_triangles": 27496,
+            "same_triangle_vertex_index_sequence": true
+          },
+          "Bumper_Front": {
+            "source_vertices": 1206,
+            "fbx_vertices": 1206,
+            "same_parent_name": true,
+            "max_same_index_position_difference_m": 2.8e-7,
+            "source_triangles": 2408,
+            "fbx_triangles": 2408,
+            "same_triangle_vertex_index_sequence": true
+          }
+        }
+      }
+    },
+    "MuscleCar": {
+      "saved_source": {
+        "vehicle": "MuscleCar",
+        "units": [
+          "METRIC",
+          1
+        ],
+        "root_transform": {
+          "location": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "mesh_count": 16,
+        "source_vertices": 77454,
+        "parts": {
+          "Body": {
+            "vertices": 31284,
+            "polygons": 31128,
+            "triangles": 62564,
+            "origin": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ],
+            "bounds": [
+              [
+                -0.995202,
+                -2.41,
+                0.322049
+              ],
+              [
+                0.995202,
+                2.425,
+                1.035271
+              ]
+            ],
+            "modifiers": []
+          },
+          "Bumper_Front": {
+            "vertices": 1540,
+            "polygons": 1518,
+            "triangles": 3068,
+            "origin": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ],
+            "bounds": [
+              [
+                -1.013635,
+                1.9,
+                0.395
+              ],
+              [
+                1.013635,
+                2.513833,
+                0.605
+              ]
+            ],
+            "modifiers": []
+          },
+          "Cabin": {
+            "vertices": 3180,
+            "polygons": 3075,
+            "triangles": 6252,
+            "origin": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ],
+            "bounds": [
+              [
+                -0.84,
+                -1.4,
+                0.93
+              ],
+              [
+                0.84,
+                0.92,
+                1.47
+              ]
+            ],
+            "modifiers": []
+          },
+          "HoodScoop": {
+            "vertices": 1390,
+            "polygons": 1386,
+            "triangles": 2772,
+            "origin": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ],
+            "bounds": [
+              [
+                -0.20822,
+                0.92,
+                0.971245
+              ],
+              [
+                0.20822,
+                1.528,
+                1.089204
+              ]
+            ],
+            "modifiers": []
+          },
+          "Wheel_FL": {
+            "vertices": 3860,
+            "polygons": 3692,
+            "triangles": 7268,
+            "origin": [
+              -0.8,
+              1.36,
+              0.4
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ],
+            "bounds": [
+              [
+                -0.971,
+                0.944025,
+                -0.015975
+              ],
+              [
+                -0.629,
+                1.775975,
+                0.815975
+              ]
+            ],
+            "modifiers": []
+          },
+          "Wheel_RL": {
+            "vertices": 3860,
+            "polygons": 3692,
+            "triangles": 7268,
+            "origin": [
+              -0.8,
+              -1.36,
+              0.4
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ],
+            "bounds": [
+              [
+                -0.971,
+                -1.775975,
+                -0.015975
+              ],
+              [
+                -0.629,
+                -0.944025,
+                0.815975
+              ]
+            ],
+            "modifiers": []
+          }
+        },
+        "hood_rays": [
+          {
+            "xy": [
+              0,
+              1.35
+            ],
+            "hit": true,
+            "position": [
+              0,
+              1.35,
+              0.997101
+            ],
+            "normal": [
+              0.001756,
+              0.05838,
+              0.998293
+            ],
+            "polygon": 22752
+          },
+          {
+            "xy": [
+              -0.21,
+              1.1
+            ],
+            "hit": true,
+            "position": [
+              -0.21,
+              1.1,
+              1.007398
+            ],
+            "normal": [
+              -0.020522,
+              0.038188,
+              0.99906
+            ],
+            "polygon": 21166
+          },
+          {
+            "xy": [
+              0.21,
+              1.1
+            ],
+            "hit": true,
+            "position": [
+              0.21,
+              1.1,
+              1.007399
+            ],
+            "normal": [
+              0.020522,
+              0.038333,
+              0.999054
+            ],
+            "polygon": 21019
+          },
+          {
+            "xy": [
+              0,
+              1.6
+            ],
+            "hit": true,
+            "position": [
+              0,
+              1.6,
+              0.980385
+            ],
+            "normal": [
+              0.001617,
+              0.074569,
+              0.997214
+            ],
+            "polygon": 24648
+          }
+        ]
+      },
+      "fbx_blender_reimport": {
+        "vehicle": "MuscleCar",
+        "source_meshes": 16,
+        "imported_meshes": 16,
+        "imported_root_rotation_degrees": [
+          90,
+          0,
+          0
+        ],
+        "comparison_frame": "Blender scene world; authored source root is identity",
+        "parts": {
+          "Body": {
+            "source_vertices": 31284,
+            "fbx_vertices": 31284,
+            "same_parent_name": true,
+            "max_same_index_position_difference_m": 2.1e-7,
+            "source_triangles": 62564,
+            "fbx_triangles": 62564,
+            "same_triangle_vertex_index_sequence": true
+          },
+          "Cabin": {
+            "source_vertices": 3180,
+            "fbx_vertices": 3180,
+            "same_parent_name": true,
+            "max_same_index_position_difference_m": 1.7e-7,
+            "source_triangles": 6252,
+            "fbx_triangles": 6252,
+            "same_triangle_vertex_index_sequence": true
+          },
+          "HoodScoop": {
+            "source_vertices": 1390,
+            "fbx_vertices": 1390,
+            "same_parent_name": true,
+            "max_same_index_position_difference_m": 1.7e-7,
+            "source_triangles": 2772,
+            "fbx_triangles": 2772,
+            "same_triangle_vertex_index_sequence": true
+          },
+          "Bumper_Front": {
+            "source_vertices": 1540,
+            "fbx_vertices": 1540,
+            "same_parent_name": true,
+            "max_same_index_position_difference_m": 1.8e-7,
+            "source_triangles": 3068,
+            "fbx_triangles": 3068,
+            "same_triangle_vertex_index_sequence": true
+          }
+        }
+      }
+    }
+  },
+  "unity_evidence": {
+    "status": "historical committed report; not rerun in this investigation",
+    "path": "Previews/CompactHatchback/StageC/unity_import_report.json",
+    "unity_version": "6000.6.0f1",
+    "mesh_count": 76,
+    "imported_vertices": 97188,
+    "bounds_xyz_m": [
+      1.8919999599456787,
+      1.4249989986419678,
+      4.0503997802734375
+    ],
+    "forward_positive_z": true,
+    "left_negative_x": true,
+    "readable": true,
+    "destruction_tests_run": false
+  },
+  "limitations": [
+    "FBX triangle comparisons cover only the listed parts, not every source mesh.",
+    "Blender reimport does not establish Unity vertex or triangle identity.",
+    "No generated attachments, simulated deformation, fitting results, strength tests, Unity tests or runtime benchmarks exist at this stage."
+  ]
+}
