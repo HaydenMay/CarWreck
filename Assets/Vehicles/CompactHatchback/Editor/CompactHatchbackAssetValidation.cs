@@ -14,6 +14,7 @@ namespace CompactHatchback.EditorTools
     {
         const string Root = "Assets/Vehicles/CompactHatchback";
         const string Model = Root + "/Models/CompactHatchback.fbx";
+        const string PreviewRoot = "Previews/CompactHatchback/StageC";
         [Serializable] class PaletteEntry
         {
             public string name;
@@ -36,6 +37,7 @@ namespace CompactHatchback.EditorTools
         {
             try
             {
+                Directory.CreateDirectory(PreviewRoot);
                 AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
                 string maskPath = Root + "/Textures/StripeMask.png";
                 var textureImporter = (TextureImporter)AssetImporter.GetAtPath(maskPath);
@@ -136,7 +138,7 @@ namespace CompactHatchback.EditorTools
                         leftNegativeX = true, maskLinear = !textureImporter.sRGBTexture,
                         independentPaintProperties = true, shaderCompiled = true, destructionTestsRun = false, renderedColorChanges = true, additionalLightRendered = true
                     };
-                    File.WriteAllText("Previews/CompactHatchback/StageB/unity_import_report.json", JsonUtility.ToJson(report, true));
+                    File.WriteAllText(PreviewRoot + "/unity_import_report.json", JsonUtility.ToJson(report, true));
                     Debug.Log("COMPACT_HATCHBACK_VALIDATION_PASS " + JsonUtility.ToJson(report));
                 }
                 finally { UnityEngine.Object.DestroyImmediate(instance); }
@@ -188,7 +190,7 @@ namespace CompactHatchback.EditorTools
                     RenderTexture.active = target;
                     var texture = new Texture2D(960,640,TextureFormat.RGB24,false);
                     texture.ReadPixels(new Rect(0,0,960,640),0,0); texture.Apply();
-                    File.WriteAllBytes("Previews/CompactHatchback/StageB/" + filename + ".png", texture.EncodeToPNG());
+                    File.WriteAllBytes(PreviewRoot + "/" + filename + ".png", texture.EncodeToPNG());
                     var pixels = texture.GetPixels32(); UnityEngine.Object.DestroyImmediate(texture); return pixels;
                 }
                 temporaryPaint.SetColor("_PrimaryColor", new Color(.86f,.065f,.035f).linear);

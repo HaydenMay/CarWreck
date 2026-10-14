@@ -1,5 +1,9 @@
 # Compact Hatchback — Stage B
 
+Archived Stage B evidence from `f870cf2`. Current Blender source, FBX and generator
+now contain [Stage C](../StageC/README.md); the commands below describe the original
+Stage B workflow at that commit. Stage B preview images and measurements are retained.
+
 Refinement of the approved Stage A design at `4cea7f9`, on the isolated
 `feature/compact-hatchback` branch. The original proportions, four axle locations,
 three-door identity, black trim, dark wheels and twin stripes are retained.

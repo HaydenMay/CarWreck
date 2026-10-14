@@ -1,4 +1,4 @@
-"""Stage B refinement of the approved hatchback, in metres: +X right, +Y forward, +Z up.
+"""Stage C sculpting of the approved hatchback, in metres: +X right, +Y forward, +Z up.
 
 Run: blender -b --factory-startup --python build_compact_hatchback.py -- <root>
      [--render] [--view NAME] [--samples 48] [--primary R G B] [--secondary R G B]
@@ -28,6 +28,16 @@ BOTTOM = 0.215
 PRIMARY = (.86,.065,.035)
 SECONDARY = (.94,.93,.88)
 SPACING = .035
+FRONT_FACE = 1.925
+REAR_FACE = -1.90
+FRONT_SOCKETS=[(-.568,.568,.555,.785),(-.827,-.578,.553,.772),(.578,.827,.553,.772),
+               (-.505,.505,.228,.382),(-.75,-.535,.244,.366),(.535,.75,.244,.366)]
+REAR_SOCKETS=[(-.791,-.493,.548,.836),(.493,.791,.548,.836),(-.27,.27,.570,.724)]
+
+
+def smooth(a,b,x):
+    t=max(0,min(1,(x-a)/(b-a)))
+    return t*t*(3-2*t)
 
 
 def mix(a, b, t):
@@ -204,6 +214,143 @@ def fill_caps(obj):
     bm=bmesh.new(); bm.from_mesh(obj.data); print('CAP_REMAINING',obj.name,sum(e.is_boundary for e in bm.edges),flush=True); bm.free()
 
 
+def recess_cap(obj,plane,sign,rectangles,depth):
+    """Fit a constrained cap patch around closed, gridded component sockets.
+
+    Retains every outer boundary vertex of the loft. Constraint triangulation
+    avoids cutting slivers through an unrelated cap grid; socket backs are quads.
+    """
+    from mathutils.geometry import delaunay_2d_cdt
+    bm=bmesh.new(); bm.from_mesh(obj.data)
+    faces=[f for f in bm.faces if all(abs(v.co.y-plane)<.00005 for v in f.verts)]
+    assert faces,('Missing cap',obj.name,plane)
+    bmesh.ops.delete(bm,geom=faces,context='FACES_ONLY')
+    bmesh.ops.delete(bm,geom=[v for v in bm.verts if not v.link_faces],context='VERTS')
+    # FACES_ONLY can leave old diagonals between surviving boundary vertices.
+    # They are wire edges, not part of the replacement cap or deforming shell.
+    bmesh.ops.delete(bm,geom=[e for e in bm.edges if e.is_wire],context='EDGES')
+    pending={e for e in bm.edges if e.is_boundary and all(abs(v.co.y-plane)<.00005 for v in e.verts)}
+    loops=[]
+    while pending:
+        edge=next(iter(pending)); first=edge.verts[0]; current=first; loop=[]
+        while True:
+            loop.append(current)
+            edge=next(e for e in current.link_edges if e in pending)
+            pending.remove(edge); current=edge.other_vert(current)
+            if current==first: break
+        loops.append(loop)
+    def signed_area(loop):
+        return sum(a.co.x*b.co.z-b.co.x*a.co.z for a,b in zip(loop,loop[1:]+loop[:1]))/2
+    loops.sort(key=lambda loop:abs(signed_area(loop)),reverse=True)
+    outer=[Vector((v.co.x,v.co.z)) for v in loops[0]]
+    existing_holes=[[Vector((v.co.x,v.co.z)) for v in loop] for loop in loops[1:]]
+    def contains(p,polygon):
+        inside=False
+        for a,b in zip(polygon,polygon[1:]+polygon[:1]):
+            if (a.y>p.y)!=(b.y>p.y) and p.x<(b.x-a.x)*(p.y-a.y)/(b.y-a.y)+a.x: inside=not inside
+        return inside
+    def in_domain(p): return contains(p,outer) and not any(contains(p,h) for h in existing_holes)
+    def in_socket(p): return any(a<p.x<b and c<p.y<d for a,b,c,d in rectangles)
+    inputs=[]; owners=[]; constraints=[]
+    def add_loop(verts):
+        start=len(inputs)
+        for v in verts: inputs.append(Vector((v.co.x,v.co.z))); owners.append(v)
+        constraints.extend((start+k,start+(k+1)%len(verts)) for k in range(len(verts)))
+    for loop in loops: add_loop(loop)
+    socket_loops=[]
+    for xmin,xmax,zmin,zmax in rectangles:
+        nx=max(2,math.ceil((xmax-xmin)/SPACING)); nz=max(2,math.ceil((zmax-zmin)/SPACING))
+        keys=[(k,0) for k in range(nx)]+[(nx,k) for k in range(nz)]+[(nx-k,nz) for k in range(nx)]+[(0,nz-k) for k in range(nz)]
+        front=[]
+        for i,j in keys:
+            x=mix(xmin,xmax,i/nx); z=mix(zmin,zmax,j/nz)
+            assert in_domain(Vector((x,z))),('Socket outside body',obj.name,x,z)
+            front.append(bm.verts.new((x,plane,z)))
+        add_loop(front); socket_loops.append((front,keys,nx,nz,(xmin,xmax,zmin,zmax)))
+    segments=[(inputs[a],inputs[b]) for a,b in constraints]
+    def separation(p):
+        def distance(a,b):
+            direction=b-a; t=max(0,min(1,(p-a).dot(direction)/direction.length_squared))
+            return (p-(a+t*direction)).length
+        return min(distance(a,b) for a,b in segments)
+    xmin,xmax=min(p.x for p in outer),max(p.x for p in outer)
+    zmin,zmax=min(p.y for p in outer),max(p.y for p in outer)
+    nx,nz=math.ceil((xmax-xmin)/SPACING),math.ceil((zmax-zmin)/SPACING)
+    for i in range(1,nx):
+        for j in range(1,nz):
+            p=Vector((mix(xmin,xmax,i/nx),mix(zmin,zmax,j/nz)))
+            if in_domain(p) and not in_socket(p) and separation(p)>.012:
+                inputs.append(p); owners.append(bm.verts.new((p.x,plane,p.y)))
+    coords,_,triangles,originals,_,_=delaunay_2d_cdt(inputs,constraints,[],0,.0000001,True)
+    mapped=[owners[ids[0]] if ids else bm.verts.new((p.x,plane,p.y)) for p,ids in zip(coords,originals)]
+    for triangle in triangles:
+        centre=sum((coords[i] for i in triangle),Vector((0,0)))/len(triangle)
+        if in_domain(centre) and not in_socket(centre): bm.faces.new([mapped[i] for i in triangle])
+    for front,keys,nx,nz,bounds in socket_loops:
+        xmin,xmax,zmin,zmax=bounds
+        # Model the lip explicitly. A global bevel on the triangulated cap can
+        # clamp to microscopic corner faces; this 3 mm chamfer stays uniform.
+        lip=.003
+        back=[[bm.verts.new((mix(xmin+lip,xmax-lip,i/nx),plane-sign*depth,mix(zmin+lip,zmax-lip,j/nz))) for j in range(nz+1)] for i in range(nx+1)]
+        middle=[bm.verts.new((mix(xmin+lip,xmax-lip,i/nx),plane-sign*lip,mix(zmin+lip,zmax-lip,j/nz))) for i,j in keys]
+        rear=[back[i][j] for i,j in keys]
+        for a,b in ((front,middle),(middle,rear)):
+            for k in range(len(a)):
+                q=(k+1)%len(a); bm.faces.new((a[k],a[q],b[q],b[k]))
+        for i in range(nx):
+            for j in range(nz): bm.faces.new((back[i][j],back[i+1][j],back[i+1][j+1],back[i][j+1]))
+    bmesh.ops.delete(bm,geom=[v for v in bm.verts if not v.link_faces],context='VERTS')
+    bmesh.ops.recalc_face_normals(bm,faces=list(bm.faces)); bm.to_mesh(obj.data); bm.free(); obj.data.update()
+    assign_uvs(obj.data)
+
+
+def body_bevel_weights(obj):
+    bm=bmesh.new(); bm.from_mesh(obj.data)
+    weights=bm.edges.layers.float.new('bevel_weight_edge')
+    for edge in bm.edges:
+        sharp=edge.is_manifold and edge.calc_face_angle()>.5236
+        weight=1.0 if sharp else 0
+        if sharp:
+            for plane,sign,rectangles,depth in ((FRONT_FACE,1,FRONT_SOCKETS,.063),(REAR_FACE,-1,REAR_SOCKETS,.045)):
+                for a,b,c,d in rectangles:
+                    points=[v.co for v in edge.verts]
+                    in_box=all(a-.0001<=p.x<=b+.0001 and c-.0001<=p.z<=d+.0001 and -.0001<=sign*(plane-p.y)<=depth+.0001 for p in points)
+                    if in_box: weight=0
+        edge[weights]=weight
+    bm.to_mesh(obj.data); bm.free()
+    mod=next(m for m in obj.modifiers if m.type=='BEVEL')
+    options=[i.identifier for i in mod.bl_rna.properties['limit_method'].enum_items]
+    mod.limit_method=next(i for i in options if i=='WEIGHT')
+
+
+def housing(name,x,z,outer,inner,front,back,mat='Trim'):
+    """A closed rectangular bezel with an open centre, not a solid cover slab."""
+    hw,hh=outer[0]/2,outer[1]/2; iw,ih=inner[0]/2,inner[1]/2
+    nx,nz=max(2,math.ceil(outer[0]/SPACING)),max(2,math.ceil(outer[1]/SPACING))
+    def loop(w,h,y):
+        coords=[(-w+2*w*k/nx,-h) for k in range(nx)]
+        coords += [(w,-h+2*h*k/nz) for k in range(nz)]
+        coords += [(w-2*w*k/nx,h) for k in range(nx)]
+        coords += [(-w,h-2*h*k/nz) for k in range(nz)]
+        return [(x+a,y,z+b) for a,b in coords]
+    mb=Mesh(); rows=[loop(hw,hh,back),loop(hw,hh,front),loop(iw,ih,front),loop(iw,ih,back),loop(hw,hh,back)]
+    mb.grid(rows,mat,closed=True)
+    obj=mb.object(name); obj['deformable']=True
+    bevel(obj,.0035,2)
+    return obj
+
+
+def sculpt_bumper(obj,sign):
+    # Curved end returns, a shallow horizontal relief and a bevelled lower face.
+    for v in obj.data.vertices:
+        side=abs(v.co.x)/.895; height=v.co.z/.074
+        front=max(0,sign*v.co.y/.1)
+        relief=.005*math.exp(-((height+.20)/.13)**2)
+        lower=.018*smooth(.15,.95,-height)
+        end=.048*smooth(.78,1,side)
+        v.co.y+=sign*front*(.015*(1-height*height)-relief-lower-end)
+
+
 def bevel(obj, width=.012, segments=3):
     mod = obj.modifiers.new('Soft manufactured edges', 'BEVEL')
     mod.width, mod.segments = min(width,min(obj.dimensions)*.4), segments
@@ -213,7 +360,7 @@ def bevel(obj, width=.012, segments=3):
 
 
 def box(name, loc, size, mat, radius=.012, rot=None):
-    deform = name.startswith(('Bumper','FrontValance','RearValance','FrontSplitter','Sill','Spoiler','HeadlightHousing','TaillightHousing'))
+    deform = name.startswith(('Bumper','FrontValance','RearValance','FrontSplitter','Sill','Spoiler','HeadlightHousing','TaillightHousing','FrontIndicator'))
     if deform:
         half=Vector(size)/2; r=min(radius,*half)
         counts=[max(2,math.ceil(s/.035)) for s in size]; mb=Mesh(); lookup={}
@@ -281,7 +428,26 @@ def body_params(y):
     top = curve([(-1.87,.865),(-1.5,.88),(.48,.88),(.78,.87),(1.3,.825),(1.87,.765)],y)
     width = curve([(-1.87,.765),(-1.60,.795),(-.55,.793),(.50,.793),(1.55,.795),(1.87,.757)], y)
     flare = max(.045*math.exp(-((y-axle)/.52)**2)+.016*math.exp(-((y-axle)/.33)**4) for axle in AXLES)
-    return top, width + flare
+    nose=smooth(1.66,FRONT_FACE,y)
+    tail=smooth(1.65,-REAR_FACE,-y)
+    # The local nose shoulder returns around the lamp corners, leaving actual
+    # painted metal beside the sockets. Axle, cabin and wheelbase stay fixed.
+    return top+.030*nose, width+flare+.100*nose+.045*tail
+
+
+def stamped_side(x,y,z):
+    # A radial roll forms the arch in the metal itself. The same loft vertices
+    # continue over its shoulder and into the inner wheelwell, without overlays.
+    bulge=0
+    for axle,amount in zip(AXLES,(.067,.073)):
+        distance=math.hypot(y-axle,z-RADIUS)
+        roll=math.exp(-((distance-(ARCH+.044))/.093)**2)
+        roll*=1-smooth(ARCH+.15,ARCH+.24,distance)
+        roll*=smooth(BOTTOM,BOTTOM+.12,z)
+        bulge=max(bulge,amount*roll)
+    door=(1-smooth(.34,.83,abs(y)))*.014*math.exp(-((z-.63)/.18)**2)
+    quarter=.012*math.exp(-((y-AXLES[1])/.62)**2)*math.exp(-((z-.77)/.18)**2)
+    return x+bulge+door+quarter
 
 
 def arch_z(y):
@@ -298,22 +464,32 @@ def arch_z(y):
 
 def body_half(y):
     top, width = body_params(y)
-    shoulder = width - .105
+    end=max(smooth(1.66,FRONT_FACE,y),smooth(1.65,-REAR_FACE,-y))
+    radius=mix(.065,.030,end)
+    tumble=mix(.040,.010,end)
+    shoulder=width-tumble-radius
     lower = arch_z(y)
-    points = [(shoulder*k/20,top+.046*(1-(k/20)**2)) for k in range(21)]
+    hood=math.sin(math.pi*max(0,min(1,(y-.63)/(FRONT_FACE-.63)))) if y>.63 else 0
+    crown=.046+.018*hood
+    points=[]
+    for k in range(21):
+        u=k/20; x=shoulder*u
+        pressed=.008*hood*math.exp(-((u-.68)/.13)**2)*(1-u)
+        points.append((x,top+crown*(1-u*u)+pressed))
     for k in range(1,6):
         a=math.pi/2*(1-k/5)
-        points.append((shoulder+.065*math.cos(a),top-.065+.065*math.sin(a)))
+        x=shoulder+radius*math.cos(a); z=top-radius+radius*math.sin(a)
+        points.append((stamped_side(x,y,z),z))
     for k in range(1,19):
-        z=mix(top-.065,lower,k/18)
+        z=mix(top-radius,lower,k/18)
         if z>=.575:
-            t=max(0,min(1,(top-.065-z)/max(.02,top-.065-.575)))
-            x=mix(width-.04,width,1-(1-t)**2)
+            t=max(0,min(1,(top-radius-z)/max(.02,top-radius-.575)))
+            x=mix(width-tumble,width,1-(1-t)**2)
         else:
             t=max(0,min(1,(.575-z)/(.575-BOTTOM)))
             x=width-.068*t**1.8
         x+=.004*math.exp(-((z-.575)/.026)**2)
-        points.append((x,z))
+        points.append((stamped_side(x,y,z),z))
     # The contour folds into the wheel well, then reaches the inner chassis.
     points.extend([(mix(points[-1][0],.575,k/8),lower+.008*math.sin(math.pi*k/8)) for k in range(1,9)])
     points.extend([(.575,mix(lower,BOTTOM,k/14)) for k in range(1,15)])
@@ -323,6 +499,7 @@ def body_half(y):
 
 def body():
     ys = {-1.87+3.74*k/108 for k in range(109)}
+    ys.update((REAR_FACE,1.90,FRONT_FACE))
     for axle in AXLES:
         ys.update(axle+ARCH*math.cos(math.pi*k/36) for k in range(37))
         ys.update((axle-ARCH-.025,axle+ARCH+.025))
@@ -348,16 +525,19 @@ def body():
         rings.append([(x,y,z) for x,z in contour])
     mb = Mesh()
     ids = mb.grid(rings, closed=True)
+    # Choose the inner well / underside by its loft band, not by the normal.
+    # Sculpted lower fenders can face down while still being exterior paint.
+    ring_size=len(rings[0])
+    for i in range(len(mb.faces)):
+        if 43<=i%ring_size<=ring_size-44: mb.mats[i]='Underbody'
     ob = mb.object('Body')
     fill_caps(ob)
+    recess_cap(ob,FRONT_FACE,1,FRONT_SOCKETS,.063)
+    recess_cap(ob,REAR_FACE,-1,REAR_SOCKETS,.045)
     bevel(ob,.018,3)
-    ob['stage'] = 'B: refined continuous loft; destruction integration untested'
+    body_bevel_weights(ob)
+    ob['stage'] = 'C: integrated sculpted arches and recessed fascia; destruction integration untested'
     ob['deformable']=True
-    for poly in ob.data.polygons:
-        if poly.normal.z < -.5:
-            if MATS['Underbody'].name not in ob.data.materials:
-                ob.data.materials.append(MATS['Underbody'])
-            poly.material_index = list(ob.data.materials).index(MATS['Underbody'])
     # Arch lips now belong to the same shell instead of overlapping strips.
 
 
@@ -409,8 +589,10 @@ def cabin():
     # Thin roof gutters and hatch spoiler are part of the Stage A silhouette.
     for side in (-1,1):
         pipe('RoofGutter_' + str(side),[(side*.671,-1.25,1.388),(side*.671,.10,1.388)],.009,'Paint')
-    box('Spoiler', (0,-1.32,1.398),(1.45,.19,.05),'Paint',.022)
-    box('Spoiler_Underside',(0,-1.342,1.366),(1.31,.12,.027),'Trim',.008)
+    spoiler=box('Spoiler', (0,-1.32,1.398),(1.45,.19,.05),'Paint',.022)
+    for v in spoiler.data.vertices: v.co.z+=.009*(-v.co.y/.095)-.008
+    box('Spoiler_Underside',(0,-1.30,1.366),(1.31,.10,.027),'Trim',.008)
+    for side in (-1,1): box('SpoilerMount',(side*.54,-1.28,1.352),(.065,.105,.065),'Trim',.010)
 
 
 def lathe(mb, profile, centre, mat, n=48):
@@ -460,27 +642,31 @@ def wheels():
 
 
 def details():
-    box('Bumper_Front',(0,1.897,.462),(1.79,.20,.148),'Trim',.025)
-    box('Bumper_Rear',(0,-1.888,.465),(1.79,.20,.148),'Trim',.025)
-    box('FrontValance',(0,1.858,.305),(1.67,.14,.17),'Paint',.017)
-    box('FrontSplitter',(0,1.923,.211),(1.79,.25,.042),'Trim',.015)
+    sculpt_bumper(box('Bumper_Front',(0,1.897,.462),(1.79,.20,.148),'Trim',.025),1)
+    sculpt_bumper(box('Bumper_Rear',(0,-1.888,.465),(1.79,.20,.148),'Trim',.025),-1)
+    valance=housing('FrontValance',0,.305,(1.67,.18),(1.01,.154),1.949,1.87,'Paint')
+    recess_cap(valance,1.949,1,[(-.75,-.535,.244,.366),(.535,.75,.244,.366)],.025)
+    splitter=box('FrontSplitter',(0,1.923,.211),(1.79,.25,.042),'Trim',.015)
+    for v in splitter.data.vertices:
+        v.co.y-=.055*smooth(.72,1,abs(v.co.x)/.895)
     box('RearValance',(0,-1.857,.296),(1.69,.15,.16),'Paint',.02)
-    box('Grille',(0,1.897,.676),(1.16,.055,.222),'Trim',.015)
+    housing('GrilleSurround',0,.672,(1.12,.214),(1.078,.174),1.915,1.875)
+    box('Grille',(0,1.875,.672),(1.09,.018,.183),'Trim',.006)
     for i in range(5):
-        box('GrilleSlat',(0,1.929,.587+i*.041),(1.12,.021,.017),'Underbody',.004)
-    box('LowerIntake',(0,1.945,.311),(.94,.027,.145),'Trim',.004)
+        box('GrilleSlat',(0,1.902,.590+i*.040),(1.085,.014,.015),'Underbody',.004)
+    box('LowerIntake',(0,1.882,.305),(.975,.016,.143),'Trim',.004)
     for i in range(4):
-        box('LowerSlat',(0,1.963,.260+i*.03),(.89,.011,.010),'Underbody',.002)
+        box('LowerSlat',(0,1.905,.254+i*.033),(.96,.011,.010),'Underbody',.002)
     for side in (-1,1):
-        box('HeadlightHousing',(side*.675,1.893,.677),(.303,.082,.241),'Trim',.022)
-        box('Headlight',(side*.675,1.940,.682),(.252,.027,.190),'Headlight',.015)
+        housing('HeadlightHousing',side*.7025,.663,(.231,.201),(.205,.170),1.915,1.874)
+        box('Headlight',(side*.7025,1.899,.663),(.202,.018,.167),'Headlight',.009)
         box('FrontIndicator',(side*.641,2.001,.467),(.245,.015,.054),'Indicator',.006)
-        box('FogHousing',(side*.642,1.952,.305),(.256,.044,.133),'Trim',.010)
-        box('FogLight',(side*.642,1.978,.312),(.181,.020,.079),'Headlight',.008)
-        box('TaillightHousing',(side*.652,-1.899,.695),(.30,.048,.278),'Trim',.012)
-        box('Taillight',(side*.652,-1.930,.735),(.260,.025,.141),'Taillight',.007)
-        box('RearIndicator',(side*.706,-1.935,.618),(.148,.025,.072),'Indicator',.006)
-        box('ReverseLight',(side*.574,-1.935,.618),(.099,.025,.072),'Reverse',.006)
+        housing('FogHousing',side*.6425,.305,(.196,.105),(.173,.080),1.944,1.91)
+        box('FogLight',(side*.6425,1.931,.305),(.170,.015,.078),'Headlight',.007)
+        housing('TaillightHousing',side*.642,.692,(.282,.272),(.252,.240),-1.892,-1.860)
+        box('Taillight',(side*.642,-1.883,.746),(.249,.015,.127),'Taillight',.007)
+        box('RearIndicator',(side*.696,-1.883,.618),(.139,.015,.073),'Indicator',.005)
+        box('ReverseLight',(side*.571,-1.883,.618),(.099,.015,.073),'Reverse',.005)
         box('DoorHandle',(side*.803,-.395,.781),(.025,.142,.046),'Trim',.007)
         box('MirrorStem',(side*.797,.45,.937),(.12,.095,.061),'Trim',.011)
         box('Mirror',(side*.866,.48,.987),(.16,.18,.115),'Paint',.022)
@@ -496,9 +682,9 @@ def details():
             pipe('SideMoulding',pts,.020,'Trim')
         pipe('DoorSeam',[(side*.789,.585,.817),(side*.802,.535,.58),(side*.785,.48,.326),(side*.785,-.54,.326),(side*.802,-.58,.58),(side*.790,-.58,.817)],.0023,'Trim')
         box('SideIndicator',(side*.857,.77,.740),(.016,.071,.033),'Indicator',.005)
-    box('LicenseRecess',(0,-1.910,.652),(.55,.028,.180),'Trim',.008)
-    box('BlankPlate',(0,-1.932,.652),(.43,.014,.114),'Reverse',.005)
-    box('HatchLock',(0,-1.946,.807),(.031,.016,.035),'Trim',.008)
+    housing('LicenseRecess',0,.647,(.523,.146),(.450,.116),-1.896,-1.875)
+    box('BlankPlate',(0,-1.884,.647),(.434,.014,.113),'Reverse',.005)
+    box('HatchLock',(0,-1.910,.807),(.031,.016,.035),'Trim',.008)
     # The hatch outline and single rear wiper are simple silhouette cues.
     pipe('HatchSeam',[(-.475,-1.874,.815),(-.475,-1.90,.568),(.475,-1.90,.568),(.475,-1.874,.815)],.0025,'Trim')
     pipe('RearWiper',[(0,-1.685,.939),(.37,-1.583,1.062)],.009,'Trim')
@@ -594,6 +780,9 @@ def render_view(view,camera,out,root):
            'wireframe':((-4.8,6.4,3.1),(0,0,.69),5.35),
            'color_blue':((-4.8,6.4,3.1),(0,0,.69),5.35),
            'color_ivory':((-4.8,6.4,3.1),(0,0,.69),5.35),
+           'front_fender':((-2.2,2.85,1.05),(-.72,1.13,.55),1.50),
+           'rear_fender':((-2.9,-2.7,1.02),(-.72,-1.16,.60),1.50),
+           'fascia':((-.42,4,1.05),(0,1.89,.59),2.05),
            'comparison':((-7.4,8.7,4.1),(0,0,.74),8.05)}
     loc,target,scale=views[view]
     reference=None
@@ -635,6 +824,21 @@ def finalize():
     from mathutils.bvhtree import BVHTree
     body=bpy.data.objects['Body']
     surface=BVHTree.FromPolygons([v.co for v in body.data.vertices],[list(p.vertices) for p in body.data.polygons])
+    bumper=bpy.data.objects['Bumper_Front']
+    bumper_surface=BVHTree.FromPolygons([bumper.matrix_world@v.co for v in bumper.data.vertices],[list(p.vertices) for p in bumper.data.polygons])
+    for obj in COLL.objects:
+        if obj.type=='MESH' and obj.name.startswith('FrontIndicator'):
+            inverse=obj.matrix_world.inverted()
+            for vertex in obj.data.vertices:
+                p=obj.matrix_world@vertex.co
+                hit=bumper_surface.ray_cast(Vector((p.x,2.3,p.z)),Vector((0,-1,0)))[0]
+                assert hit is not None,'Indicator must fit bumper'
+                p.y=hit.y+vertex.co.y-.0035
+                vertex.co=inverse@p
+        if obj.type=='MESH' and obj.name.startswith(('DoorHandle','SideIndicator')):
+            side=-1 if obj.location.x<0 else 1
+            hit=surface.ray_cast(Vector((side*1.5,obj.location.y,obj.location.z)),Vector((-side,0,0)))[0]
+            if hit: obj.location.x=hit.x+side*obj.dimensions.x*.48
     for obj in COLL.objects:
         if obj.type=='CURVE' and obj.name.startswith(('DoorSeam','SideMoulding','HatchSeam')):
             for spline in obj.data.splines:
@@ -667,7 +871,7 @@ def inspection():
     meshes=[o for o in COLL.objects if o.type=='MESH']
     corners=[o.matrix_world@Vector(c) for o in meshes for c in o.bound_box]
     extent=[max(p[i] for p in corners)-min(p[i] for p in corners) for i in range(3)]
-    result={'stage':'B','orientation':'Blender +Y forward; +Z up','units':'metres',
+    result={'stage':'C','orientation':'Blender +Y forward; +Z up','units':'metres',
             'dimensions_xyz_m':extent,'wheelbase_m':2.32,'body_loft_station_spacing_m':3.74/108,
             'meshes':len(meshes),'base_vertices':sum(len(o.data.vertices) for o in meshes),
             'body_vertices':len(bpy.data.objects['Body'].data.vertices),
@@ -703,8 +907,9 @@ def inspection():
     result['body_quad_fraction']=sum(len(p.vertices)==4 for p in bpy.data.objects['Body'].data.polygons)/len(bpy.data.objects['Body'].data.polygons)
     result['deformable_vertices']=sum(len(o.data.vertices) for o in meshes if o.get('deformable'))
     result['surface_metrics']={}
-    for name in ('Body','Cabin'):
-        obj=bpy.data.objects[name]; bm=bmesh.new(); bm.from_mesh(obj.data)
+    for obj in meshes:
+        if not obj.get('deformable'): continue
+        name=obj.name; bm=bmesh.new(); bm.from_mesh(obj.data)
         lengths=sorted(e.calc_length() for e in bm.edges)
         stats={'vertices':len(bm.verts),'faces':len(bm.faces),'boundary_edges':sum(e.is_boundary for e in bm.edges),
                'nonmanifold_edges':sum(not e.is_manifold for e in bm.edges),'zero_area_faces':sum(f.calc_area()<1e-12 for f in bm.faces),
@@ -751,12 +956,12 @@ def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('root',nargs='?',default=str(Path(__file__).resolve().parents[2]))
     parser.add_argument('--render',action='store_true')
-    parser.add_argument('--view',choices=['front34','side','rear34','front','rear','top','wireframe','comparison','color_blue','color_ivory'])
+    parser.add_argument('--view',choices=['front34','side','rear34','front','rear','top','wireframe','comparison','color_blue','color_ivory','front_fender','rear_fender','fascia'])
     parser.add_argument('--samples',type=int,default=48)
     parser.add_argument('--primary',type=float,nargs=3)
     parser.add_argument('--secondary',type=float,nargs=3)
     args=parser.parse_args(argv)
-    root=Path(args.root).resolve(); out=root/'Previews'/'CompactHatchback'/'StageB'; out.mkdir(parents=True,exist_ok=True)
+    root=Path(args.root).resolve(); out=root/'Previews'/'CompactHatchback'/'StageC'; out.mkdir(parents=True,exist_ok=True)
     # Preserve colors saved by the user when regenerating geometry.
     existing=root/'Blender'/'CompactHatchback.blend'
     if existing.exists():
@@ -771,7 +976,7 @@ def main():
     bpy.ops.wm.read_factory_settings(use_empty=True)
     COLL=bpy.data.collections.new('CompactHatchback'); bpy.context.scene.collection.children.link(COLL)
     CAR=bpy.data.objects.new('CompactHatchback',None); COLL.objects.link(CAR)
-    CAR['development_stage']='B — asset production; destruction integration untested'
+    CAR['development_stage']='C — sculpted bodywork; destruction integration untested'
     materials(); body(); cabin(); wheels(); details()
     # Primitives and curves receive the same top-down UV convention as the loft.
     for obj in COLL.objects:
@@ -784,16 +989,16 @@ def main():
     report=inspection()
     export(root)
     (out/'asset_inspection.json').write_text(json.dumps(report,indent=2)+'\n')
-    bpy.context.scene['stage_b_report']=json.dumps(report)
+    bpy.context.scene['stage_c_report']=json.dumps(report)
     bpy.context.scene.render.filepath=str(out/'front34.png')
     bpy.context.preferences.filepaths.save_version=0
     blend_path=root/'Blender'/'CompactHatchback.blend'
     pending=root/'Blender'/'CompactHatchback.pending.blend'
     bpy.ops.wm.save_as_mainfile(filepath=str(pending))
     os.replace(pending,blend_path)
-    print('STAGE_B_INSPECTION',json.dumps(report),flush=True)
+    print('STAGE_C_INSPECTION',json.dumps(report),flush=True)
     if args.render:
-        for view in ([args.view] if args.view else ['front34','rear34','side','front','rear','top','wireframe','comparison','color_blue','color_ivory']):
+        for view in ([args.view] if args.view else ['front34','side','rear34','front_fender','rear_fender','fascia','wireframe']):
             render_view(view,camera,out,root)
             print('RENDERED',view,flush=True)
 

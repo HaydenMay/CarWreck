@@ -1,0 +1,279 @@
+{
+  "stage_b": {
+    "body_vertices": 29616,
+    "body_max_width_m": 1.6973412036895752,
+    "arch_max_widths_m": {
+      "front": 1.692769169807434,
+      "rear": 1.6973412036895752
+    },
+    "triangle_aspect_metrics": {
+      "outer_panels": {
+        "triangles": 29212,
+        "aspect_over_20": 1940,
+        "area_m2": 9.629705576609972,
+        "aspect_over_20_area_m2": 0.007015683486365276,
+        "aspect_over_20_area_fraction": 0.0007285460007630958
+      },
+      "hidden_well_or_underside": {
+        "triangles": 30016,
+        "aspect_over_20": 5255,
+        "area_m2": 9.169779733360894,
+        "aspect_over_20_area_m2": 0.007350356654335144,
+        "aspect_over_20_area_fraction": 0.0008015848655113881
+      }
+    },
+    "body_wheel_triangle_intersections": {
+      "Wheel_FL": 0,
+      "Wheel_FR": 0,
+      "Wheel_RL": 0,
+      "Wheel_RR": 0
+    },
+    "max_stripe_projection_error": 5.960464477539063e-08,
+    "source_mesh_vertices": {
+      "Body": 29616,
+      "Cabin": 13750,
+      "RoofGutter_-1": 16,
+      "RoofGutter_1": 16,
+      "Spoiler": 698,
+      "Spoiler_Underside": 474,
+      "Wheel_FL": 1970,
+      "Wheel_RL": 1970,
+      "Wheel_FR": 1970,
+      "Wheel_RR": 1970,
+      "Bumper_Front": 1206,
+      "Bumper_Rear": 1206,
+      "FrontValance": 906,
+      "FrontSplitter": 1074,
+      "RearValance": 1032,
+      "Grille": 96,
+      "GrilleSlat": 96,
+      "GrilleSlat.001": 96,
+      "GrilleSlat.002": 96,
+      "GrilleSlat.003": 96,
+      "GrilleSlat.004": 96,
+      "LowerIntake": 96,
+      "LowerSlat": 96,
+      "LowerSlat.001": 96,
+      "LowerSlat.002": 96,
+      "LowerSlat.003": 96,
+      "HeadlightHousing": 224,
+      "Headlight": 96,
+      "FrontIndicator": 96,
+      "FogHousing": 96,
+      "FogLight": 96,
+      "TaillightHousing": 214,
+      "Taillight": 96,
+      "RearIndicator": 96,
+      "ReverseLight": 96,
+      "DoorHandle": 96,
+      "MirrorStem": 96,
+      "Mirror": 96,
+      "MirrorGlass": 96,
+      "Sill": 434,
+      "SideMoulding": 128,
+      "SideMoulding.001": 128,
+      "SideMoulding.002": 128,
+      "DoorSeam": 48,
+      "SideIndicator": 96,
+      "HeadlightHousing.001": 224,
+      "Headlight.001": 96,
+      "FrontIndicator.001": 96,
+      "FogHousing.001": 96,
+      "FogLight.001": 96,
+      "TaillightHousing.001": 214,
+      "Taillight.001": 96,
+      "RearIndicator.001": 96,
+      "ReverseLight.001": 96,
+      "DoorHandle.001": 96,
+      "MirrorStem.001": 96,
+      "Mirror.001": 96,
+      "MirrorGlass.001": 96,
+      "Sill.001": 434,
+      "SideMoulding.003": 128,
+      "SideMoulding.004": 128,
+      "SideMoulding.005": 128,
+      "DoorSeam.001": 48,
+      "SideIndicator.001": 96,
+      "LicenseRecess": 96,
+      "BlankPlate": 96,
+      "HatchLock": 96,
+      "HatchSeam": 32,
+      "RearWiper": 16,
+      "FrontWiper_L": 16,
+      "FrontWiper_R": 16,
+      "Underbody": 96,
+      "Exhaust": 128
+    },
+    "wheel_pivots": {
+      "Wheel_FL": [
+        -0.7450000047683716,
+        1.159999966621399,
+        0.32499998807907104
+      ],
+      "Wheel_RL": [
+        -0.7450000047683716,
+        -1.159999966621399,
+        0.32499998807907104
+      ],
+      "Wheel_FR": [
+        0.7450000047683716,
+        1.159999966621399,
+        0.32499998807907104
+      ],
+      "Wheel_RR": [
+        0.7450000047683716,
+        -1.159999966621399,
+        0.32499998807907104
+      ]
+    }
+  },
+  "stage_c": {
+    "body_vertices": 30805,
+    "body_max_width_m": 1.8507344722747803,
+    "arch_max_widths_m": {
+      "front": 1.8124130964279175,
+      "rear": 1.8507344722747803
+    },
+    "triangle_aspect_metrics": {
+      "outer_panels": {
+        "triangles": 31133,
+        "aspect_over_20": 1971,
+        "area_m2": 10.843661456815369,
+        "aspect_over_20_area_m2": 0.007012542061545446,
+        "aspect_over_20_area_fraction": 0.0006466950383385476
+      },
+      "hidden_well_or_underside": {
+        "triangles": 30473,
+        "aspect_over_20": 5311,
+        "area_m2": 9.880418285789984,
+        "aspect_over_20_area_m2": 0.007161984358042162,
+        "aspect_over_20_area_fraction": 0.0007248665138339868
+      }
+    },
+    "body_wheel_triangle_intersections": {
+      "Wheel_FL": 0,
+      "Wheel_FR": 0,
+      "Wheel_RL": 0,
+      "Wheel_RR": 0
+    },
+    "max_stripe_projection_error": 5.960464477539063e-08,
+    "source_mesh_vertices": {
+      "Body": 30805,
+      "Cabin": 13750,
+      "RoofGutter_-1": 16,
+      "RoofGutter_1": 16,
+      "Spoiler": 698,
+      "Spoiler_Underside": 394,
+      "SpoilerMount": 34,
+      "SpoilerMount.001": 34,
+      "Wheel_FL": 1970,
+      "Wheel_RL": 1970,
+      "Wheel_FR": 1970,
+      "Wheel_RR": 1970,
+      "Bumper_Front": 1206,
+      "Bumper_Rear": 1206,
+      "FrontValance": 1874,
+      "FrontSplitter": 1074,
+      "RearValance": 1032,
+      "GrilleSurround": 1000,
+      "Grille": 96,
+      "GrilleSlat": 96,
+      "GrilleSlat.001": 96,
+      "GrilleSlat.002": 96,
+      "GrilleSlat.003": 96,
+      "GrilleSlat.004": 96,
+      "LowerIntake": 96,
+      "LowerSlat": 96,
+      "LowerSlat.001": 96,
+      "LowerSlat.002": 96,
+      "LowerSlat.003": 96,
+      "HeadlightHousing": 376,
+      "Headlight": 96,
+      "FrontIndicator": 66,
+      "FogHousing": 280,
+      "FogLight": 96,
+      "TaillightHousing": 472,
+      "Taillight": 96,
+      "RearIndicator": 96,
+      "ReverseLight": 96,
+      "DoorHandle": 96,
+      "MirrorStem": 96,
+      "Mirror": 96,
+      "MirrorGlass": 96,
+      "Sill": 434,
+      "SideMoulding": 128,
+      "SideMoulding.001": 128,
+      "SideMoulding.002": 128,
+      "DoorSeam": 48,
+      "SideIndicator": 96,
+      "HeadlightHousing.001": 376,
+      "Headlight.001": 96,
+      "FrontIndicator.001": 66,
+      "FogHousing.001": 280,
+      "FogLight.001": 96,
+      "TaillightHousing.001": 472,
+      "Taillight.001": 96,
+      "RearIndicator.001": 96,
+      "ReverseLight.001": 96,
+      "DoorHandle.001": 96,
+      "MirrorStem.001": 96,
+      "Mirror.001": 96,
+      "MirrorGlass.001": 96,
+      "Sill.001": 434,
+      "SideMoulding.003": 128,
+      "SideMoulding.004": 128,
+      "SideMoulding.005": 128,
+      "DoorSeam.001": 48,
+      "SideIndicator.001": 96,
+      "LicenseRecess": 544,
+      "BlankPlate": 96,
+      "HatchLock": 96,
+      "HatchSeam": 32,
+      "RearWiper": 16,
+      "FrontWiper_L": 16,
+      "FrontWiper_R": 16,
+      "Underbody": 96,
+      "Exhaust": 128
+    },
+    "wheel_pivots": {
+      "Wheel_FL": [
+        -0.7450000047683716,
+        1.159999966621399,
+        0.32499998807907104
+      ],
+      "Wheel_RL": [
+        -0.7450000047683716,
+        -1.159999966621399,
+        0.32499998807907104
+      ],
+      "Wheel_FR": [
+        0.7450000047683716,
+        1.159999966621399,
+        0.32499998807907104
+      ],
+      "Wheel_RR": [
+        0.7450000047683716,
+        -1.159999966621399,
+        0.32499998807907104
+      ]
+    },
+    "body_fascia_triangle_intersections": {
+      "GrilleSurround": 0,
+      "Grille": 0,
+      "HeadlightHousing": 0,
+      "HeadlightHousing.001": 0,
+      "Headlight": 0,
+      "Headlight.001": 0,
+      "TaillightHousing": 0,
+      "TaillightHousing.001": 0,
+      "LicenseRecess": 0,
+      "BlankPlate": 0
+    }
+  },
+  "fbx_mesh_counts_match_source": true,
+  "arch_roll_addition_m": {
+    "front": 0.0598219633102417,
+    "rear": 0.07669663429260254
+  },
+  "wheel_pivots_unchanged": true
+}
