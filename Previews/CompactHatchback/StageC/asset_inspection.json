@@ -10,8 +10,8 @@
   "wheelbase_m": 2.32,
   "body_loft_station_spacing_m": 0.03462962962962963,
   "meshes": 76,
-  "base_vertices": 69155,
-  "body_vertices": 30805,
+  "base_vertices": 68446,
+  "body_vertices": 30586,
   "wheels": [
     "Wheel_FL",
     "Wheel_RL",
@@ -45,20 +45,20 @@
   "all_meshes_have_uvs": true,
   "wheel_backing_normals_outward": true,
   "collapsed_uv_faces": 0,
-  "body_quad_fraction": 0.9212249734921724,
-  "deformable_vertices": 56907,
+  "body_quad_fraction": 0.9226755516439303,
+  "deformable_vertices": 56198,
   "surface_metrics": {
     "Body": {
-      "vertices": 30805,
-      "faces": 32066,
+      "vertices": 30586,
+      "faces": 31814,
       "boundary_edges": 0,
       "nonmanifold_edges": 0,
       "zero_area_faces": 0,
       "ngons": 0,
-      "edge_length_p10_m": 0.006249904632568359,
-      "edge_length_median_m": 0.03302749991416931,
-      "edge_length_p90_m": 0.036723341792821884,
-      "max_edge_length_m": 0.061386264860630035
+      "edge_length_p10_m": 0.006248980760574341,
+      "edge_length_median_m": 0.033134400844573975,
+      "edge_length_p90_m": 0.03639832139015198,
+      "max_edge_length_m": 0.05504947155714035
     },
     "Cabin": {
       "vertices": 13750,
@@ -145,16 +145,16 @@
       "max_edge_length_m": 0.036541104316711426
     },
     "FrontValance": {
-      "vertices": 1874,
-      "faces": 2036,
+      "vertices": 1624,
+      "faces": 1740,
       "boundary_edges": 0,
       "nonmanifold_edges": 0,
       "zero_area_faces": 0,
       "ngons": 0,
       "edge_length_p10_m": 0.0016235517105087638,
-      "edge_length_median_m": 0.021041667088866234,
-      "edge_length_p90_m": 0.03479170799255371,
-      "max_edge_length_m": 0.32587501406669617
+      "edge_length_median_m": 0.0240476131439209,
+      "edge_length_p90_m": 0.03452381119132042,
+      "max_edge_length_m": 0.21593502163887024
     },
     "FrontSplitter": {
       "vertices": 1074,
@@ -181,28 +181,28 @@
       "max_edge_length_m": 0.03448981046676636
     },
     "GrilleSurround": {
-      "vertices": 1000,
-      "faces": 1000,
+      "vertices": 856,
+      "faces": 856,
       "boundary_edges": 0,
       "nonmanifold_edges": 0,
       "zero_area_faces": 0,
       "ngons": 0,
-      "edge_length_p10_m": 0.0026919839438050985,
-      "edge_length_median_m": 0.029593350365757942,
-      "edge_length_p90_m": 0.03493291139602661,
-      "max_edge_length_m": 0.0350000262260437
+      "edge_length_p10_m": 0.002690984634682536,
+      "edge_length_median_m": 0.0140000581741333,
+      "edge_length_p90_m": 0.03419405221939087,
+      "max_edge_length_m": 0.03428572416305542
     },
     "HeadlightHousing": {
-      "vertices": 376,
-      "faces": 376,
+      "vertices": 352,
+      "faces": 352,
       "boundary_edges": 0,
       "nonmanifold_edges": 0,
       "zero_area_faces": 0,
       "ngons": 0,
-      "edge_length_p10_m": 0.002651712391525507,
-      "edge_length_median_m": 0.024833381175994873,
-      "edge_length_p90_m": 0.03350001573562622,
-      "max_edge_length_m": 0.03400003910064697
+      "edge_length_p10_m": 0.00267876242287457,
+      "edge_length_median_m": 0.015000104904174805,
+      "edge_length_p90_m": 0.03057199716567993,
+      "max_edge_length_m": 0.033000051975250244
     },
     "FrontIndicator": {
       "vertices": 66,
@@ -217,15 +217,15 @@
       "max_edge_length_m": 0.0351407416164875
     },
     "FogHousing": {
-      "vertices": 280,
-      "faces": 280,
+      "vertices": 256,
+      "faces": 256,
       "boundary_edges": 0,
       "nonmanifold_edges": 0,
       "zero_area_faces": 0,
       "ngons": 0,
-      "edge_length_p10_m": 0.0026618745177984238,
-      "edge_length_median_m": 0.006253888830542564,
-      "edge_length_p90_m": 0.03180161118507385,
+      "edge_length_p10_m": 0.0025585396215319633,
+      "edge_length_median_m": 0.006066900212317705,
+      "edge_length_p90_m": 0.029213249683380127,
       "max_edge_length_m": 0.034999996423721313
     },
     "TaillightHousing": {
@@ -253,16 +253,16 @@
       "max_edge_length_m": 0.0350000262260437
     },
     "HeadlightHousing.001": {
-      "vertices": 376,
-      "faces": 376,
+      "vertices": 352,
+      "faces": 352,
       "boundary_edges": 0,
       "nonmanifold_edges": 0,
       "zero_area_faces": 0,
       "ngons": 0,
-      "edge_length_p10_m": 0.002651712391525507,
-      "edge_length_median_m": 0.024833381175994873,
-      "edge_length_p90_m": 0.03350001573562622,
-      "max_edge_length_m": 0.03400003910064697
+      "edge_length_p10_m": 0.00267876242287457,
+      "edge_length_median_m": 0.015000104904174805,
+      "edge_length_p90_m": 0.03057199716567993,
+      "max_edge_length_m": 0.033000051975250244
     },
     "FrontIndicator.001": {
       "vertices": 66,
@@ -277,15 +277,15 @@
       "max_edge_length_m": 0.03514068201184273
     },
     "FogHousing.001": {
-      "vertices": 280,
-      "faces": 280,
+      "vertices": 256,
+      "faces": 256,
       "boundary_edges": 0,
       "nonmanifold_edges": 0,
       "zero_area_faces": 0,
       "ngons": 0,
-      "edge_length_p10_m": 0.0026618745177984238,
-      "edge_length_median_m": 0.006253888830542564,
-      "edge_length_p90_m": 0.03180161118507385,
+      "edge_length_p10_m": 0.0025585396215319633,
+      "edge_length_median_m": 0.006066900212317705,
+      "edge_length_p90_m": 0.029213249683380127,
       "max_edge_length_m": 0.034999996423721313
     },
     "TaillightHousing.001": {

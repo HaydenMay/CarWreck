@@ -2,7 +2,7 @@
   "baseline_commit": "f870cf26e6f52d8d5b7f4b6716d1f05dda562a20",
   "source_sha256": {
     "stage_b": "fd57180384cdf644ce626a47403914027a16f1a98db5cf74713a093ff0161454",
-    "stage_c": "1fa0220bed6a8ba2f4182df8c00e68b281fe2cc737bd6d1a325f4abcbf2131d2"
+    "stage_c": "bf92ac9ffc39456fbd91aa4987173326196c0b05b29bb470d24911942ece942a"
   },
   "blender_version": "5.2.0 LTS",
   "conditions": {

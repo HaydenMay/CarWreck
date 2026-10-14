@@ -29,9 +29,10 @@ PRIMARY = (.86,.065,.035)
 SECONDARY = (.94,.93,.88)
 SPACING = .035
 FRONT_FACE = 1.925
+FRONT_RECESS = .054
 REAR_FACE = -1.90
-FRONT_SOCKETS=[(-.568,.568,.555,.785),(-.827,-.578,.553,.772),(.578,.827,.553,.772),
-               (-.505,.505,.228,.382),(-.75,-.535,.244,.366),(.535,.75,.244,.366)]
+FRONT_SOCKETS=[(-.491,.491,.568,.741),(-.727,-.501,.557,.744),(.501,.727,.557,.744),
+               (-.505,.505,.228,.382),(-.690,-.523,.244,.366),(.523,.690,.244,.366)]
 REAR_SOCKETS=[(-.791,-.493,.548,.836),(.493,.791,.548,.836),(-.27,.27,.570,.724)]
 
 
@@ -311,7 +312,7 @@ def body_bevel_weights(obj):
         sharp=edge.is_manifold and edge.calc_face_angle()>.5236
         weight=1.0 if sharp else 0
         if sharp:
-            for plane,sign,rectangles,depth in ((FRONT_FACE,1,FRONT_SOCKETS,.063),(REAR_FACE,-1,REAR_SOCKETS,.045)):
+            for plane,sign,rectangles,depth in ((FRONT_FACE,1,FRONT_SOCKETS,FRONT_RECESS),(REAR_FACE,-1,REAR_SOCKETS,.045)):
                 for a,b,c,d in rectangles:
                     points=[v.co for v in edge.verts]
                     in_box=all(a-.0001<=p.x<=b+.0001 and c-.0001<=p.z<=d+.0001 and -.0001<=sign*(plane-p.y)<=depth+.0001 for p in points)
@@ -428,11 +429,10 @@ def body_params(y):
     top = curve([(-1.87,.865),(-1.5,.88),(.48,.88),(.78,.87),(1.3,.825),(1.87,.765)],y)
     width = curve([(-1.87,.765),(-1.60,.795),(-.55,.793),(.50,.793),(1.55,.795),(1.87,.757)], y)
     flare = max(.045*math.exp(-((y-axle)/.52)**2)+.016*math.exp(-((y-axle)/.33)**4) for axle in AXLES)
-    nose=smooth(1.66,FRONT_FACE,y)
     tail=smooth(1.65,-REAR_FACE,-y)
-    # The local nose shoulder returns around the lamp corners, leaving actual
-    # painted metal beside the sockets. Axle, cabin and wheelbase stay fixed.
-    return top+.030*nose, width+flare+.100*nose+.045*tail
+    # Retain the original taper and descending hood line. Fascia dimensions
+    # must fit this section; never widen or raise the nose to fit the lamps.
+    return top, width+flare+.045*tail
 
 
 def stamped_side(x,y,z):
@@ -532,7 +532,7 @@ def body():
         if 43<=i%ring_size<=ring_size-44: mb.mats[i]='Underbody'
     ob = mb.object('Body')
     fill_caps(ob)
-    recess_cap(ob,FRONT_FACE,1,FRONT_SOCKETS,.063)
+    recess_cap(ob,FRONT_FACE,1,FRONT_SOCKETS,FRONT_RECESS)
     recess_cap(ob,REAR_FACE,-1,REAR_SOCKETS,.045)
     bevel(ob,.018,3)
     body_bevel_weights(ob)
@@ -644,25 +644,25 @@ def wheels():
 def details():
     sculpt_bumper(box('Bumper_Front',(0,1.897,.462),(1.79,.20,.148),'Trim',.025),1)
     sculpt_bumper(box('Bumper_Rear',(0,-1.888,.465),(1.79,.20,.148),'Trim',.025),-1)
-    valance=housing('FrontValance',0,.305,(1.67,.18),(1.01,.154),1.949,1.87,'Paint')
-    recess_cap(valance,1.949,1,[(-.75,-.535,.244,.366),(.535,.75,.244,.366)],.025)
+    valance=housing('FrontValance',0,.305,(1.45,.18),(1.01,.154),1.940,1.910,'Paint')
+    recess_cap(valance,1.940,1,[(-.690,-.523,.244,.366),(.523,.690,.244,.366)],.022)
     splitter=box('FrontSplitter',(0,1.923,.211),(1.79,.25,.042),'Trim',.015)
     for v in splitter.data.vertices:
         v.co.y-=.055*smooth(.72,1,abs(v.co.x)/.895)
     box('RearValance',(0,-1.857,.296),(1.69,.15,.16),'Paint',.02)
-    housing('GrilleSurround',0,.672,(1.12,.214),(1.078,.174),1.915,1.875)
-    box('Grille',(0,1.875,.672),(1.09,.018,.183),'Trim',.006)
+    housing('GrilleSurround',0,.650,(.960,.152),(.932,.130),1.904,1.883)
+    box('Grille',(0,1.883,.650),(.949,.012,.145),'Trim',.004)
     for i in range(5):
-        box('GrilleSlat',(0,1.902,.590+i*.040),(1.085,.014,.015),'Underbody',.004)
+        box('GrilleSlat',(0,1.896,.592+i*.029),(.928,.009,.012),'Underbody',.003)
     box('LowerIntake',(0,1.882,.305),(.975,.016,.143),'Trim',.004)
     for i in range(4):
         box('LowerSlat',(0,1.905,.254+i*.033),(.96,.011,.010),'Underbody',.002)
     for side in (-1,1):
-        housing('HeadlightHousing',side*.7025,.663,(.231,.201),(.205,.170),1.915,1.874)
-        box('Headlight',(side*.7025,1.899,.663),(.202,.018,.167),'Headlight',.009)
+        housing('HeadlightHousing',side*.614,.651,(.216,.165),(.191,.139),1.904,1.882)
+        box('Headlight',(side*.614,1.894,.651),(.187,.012,.135),'Headlight',.006)
         box('FrontIndicator',(side*.641,2.001,.467),(.245,.015,.054),'Indicator',.006)
-        housing('FogHousing',side*.6425,.305,(.196,.105),(.173,.080),1.944,1.91)
-        box('FogLight',(side*.6425,1.931,.305),(.170,.015,.078),'Headlight',.007)
+        housing('FogHousing',side*.6065,.305,(.148,.105),(.125,.080),1.936,1.922)
+        box('FogLight',(side*.6065,1.928,.305),(.122,.012,.078),'Headlight',.006)
         housing('TaillightHousing',side*.642,.692,(.282,.272),(.252,.240),-1.892,-1.860)
         box('Taillight',(side*.642,-1.883,.746),(.249,.015,.127),'Taillight',.007)
         box('RearIndicator',(side*.696,-1.883,.618),(.139,.015,.073),'Indicator',.005)
@@ -783,6 +783,7 @@ def render_view(view,camera,out,root):
            'front_fender':((-2.2,2.85,1.05),(-.72,1.13,.55),1.50),
            'rear_fender':((-2.9,-2.7,1.02),(-.72,-1.16,.60),1.50),
            'fascia':((-.42,4,1.05),(0,1.89,.59),2.05),
+           'nose_top':((0,4.6,7.5),(0,1.42,.55),2.35),
            'comparison':((-7.4,8.7,4.1),(0,0,.74),8.05)}
     loc,target,scale=views[view]
     reference=None
@@ -956,7 +957,7 @@ def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('root',nargs='?',default=str(Path(__file__).resolve().parents[2]))
     parser.add_argument('--render',action='store_true')
-    parser.add_argument('--view',choices=['front34','side','rear34','front','rear','top','wireframe','comparison','color_blue','color_ivory','front_fender','rear_fender','fascia'])
+    parser.add_argument('--view',choices=['front34','side','rear34','front','rear','top','wireframe','comparison','color_blue','color_ivory','front_fender','rear_fender','fascia','nose_top'])
     parser.add_argument('--samples',type=int,default=48)
     parser.add_argument('--primary',type=float,nargs=3)
     parser.add_argument('--secondary',type=float,nargs=3)

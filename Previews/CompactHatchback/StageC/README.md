@@ -4,6 +4,10 @@ Refines the approved Stage B asset at `f870cf26e6f52d8d5b7f4b6716d1f05dda562a20`
 on `feature/compact-hatchback`. The existing loft, arch station grid, cabin,
 wheel geometry, pivots and boxy three-door silhouette are retained.
 
+The front silhouette has been corrected after the initial Stage C at `c301057`.
+The nose no longer widens or rises to accommodate the grille. See the
+[matched front-correction evidence](FrontCorrection/README.md).
+
 ## Geometry changes
 
 - A radial roll in the existing shell vertices gives the front fenders and rear
@@ -14,15 +18,18 @@ wheel geometry, pivots and boxy three-door silhouette are retained.
   define the unchanged overall width of 1.892 m. Axles and wheelbase are unchanged.
 - The hood has longitudinal crown modulation and shallow pressed shoulders.
   Doors gain a restrained 1.4 cm convex shaping field, with a fuller rear quarter.
-- The local nose shoulder wraps the outside lamp corners. Its raised leading
-  edge provides actual painted metal over the grille and lamp recesses.
+- The original nose taper and descending hood line are retained. A thinner,
+  smaller grille and lamp assembly fits under the hood and inside the corners;
+  the former 10 cm per-side widening and 3 cm hood-edge lift are removed.
 - Front and rear end-cap patches are fitted around component sockets. The
   main shell remains connected and closed, including socket backs and walls.
   Each socket has an explicit 3 mm chamfer rather than a microscopic global bevel.
 - Grille, headlight, fog and taillight housings are open-centred, segmented
   bezels. The grille slats and lenses sit within the metal; they no longer form
-  a block in front of it. Headlight lenses sit about 7 mm behind bezel fronts
-  and 17 mm behind the painted nose face. Trim and lamp components remain separate.
+  a block in front of it. Front bezels are about 21–22 mm deep; headlight lenses
+  sit about 4 mm behind their bezel fronts and 25 mm behind the painted nose.
+  Trim and lamp components remain separate. The lower carrier and fog lamps are
+  also reduced to fit the restored nose width.
 - Both bumpers gain crown, lower chamfer, relief and curved end returns.
   The front bumper projects ahead of the metal and lamps. Its indicators follow
   the actual bumper surface. The splitter wraps its outer ends.
@@ -62,15 +69,15 @@ are retained. `unity_*.png` are separate import/paint tests, not comparison evid
 
 | Measurement | Stage B | Stage C |
 |---|---:|---:|
-| Body vertices | 29,616 | **30,805** |
+| Body vertices | 29,616 | **30,586** |
 | Cabin vertices | 13,750 | 13,750 |
-| Body median edge | 3.24 cm | 3.30 cm |
-| Body 90th percentile edge | 3.59 cm | 3.67 cm |
-| Longest body edge | 7.67 cm | 6.14 cm |
-| Body quads | 99.53% | 92.12% |
+| Body median edge | 3.24 cm | 3.31 cm |
+| Body 90th percentile edge | 3.59 cm | 3.64 cm |
+| Longest body edge | 7.67 cm | 5.50 cm |
+| Body quads | 99.53% | 92.27% |
 | Body boundary / nonmanifold / zero-area counts | 0 / 0 / 0 | 0 / 0 / 0 |
-| Deformation-tagged vertices, including accessories | 51,706 | 56,907 |
-| All source vertices | 64,434 | 69,155 |
+| Deformation-tagged vertices, including accessories | 51,706 | 56,198 |
+| All source vertices | 64,434 | 68,446 |
 | Mesh objects | 73 | 76 |
 
 The quad fraction changes because constrained triangles fit the front/rear cap
@@ -81,7 +88,7 @@ No new large body ngons are introduced. The unchanged cabin retains its one smal
 hidden five-sided mounting face, triangulated by FBX.
 
 Small bevel/well triangles remain from Stage B. Triangles with longest-edge to
-altitude ratio over 20 account for about 0.065% of the measured outer-panel area
+altitude ratio over 20 account for about 0.066% of the measured outer-panel area
 in C versus 0.073% in B. These counts include bevel detail; broad panels retain
 centimetre-scale spacing. This is preparation for deformation, not proof of
 crash behaviour.
@@ -97,6 +104,9 @@ axle movement, cabin rebuilding or proportion redesign was performed.
 checks unchanged axle pivots, zero body/tire and body/fascia surface crossings,
 and confirms all 76 FBX meshes match source vertex counts. Stripe UV1 still equals
 the car-space X/Y projection (maximum numerical error below 0.000001).
+Front-correction checks compare nose samples and component geometry against
+`c301057`: the nose narrows and descends, both arch widths match, and 39 unrelated
+component meshes and transforms are identical.
 
 `unity_import_report.json` records the actual Unity 6000.6.0f1 import and paint
 render tests. Imported counts include vertices split by material/normal/UV seams.

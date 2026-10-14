@@ -4,6 +4,7 @@ Run in background Blender with --python-exit-code 1 -- <project root>.
 Does not save either opened Blender source or modify the export.
 """
 import json
+import hashlib
 import math
 from pathlib import Path
 import sys
@@ -40,6 +41,20 @@ def measure():
     assert all(n==0 for n in wheels.values()),('Body intersects tire',wheels)
     stripe_error=0
     meshes=[o for o in bpy.data.collections['CompactHatchback'].objects if o.type=='MESH']
+    front_limit=max(p.y for p in points)-.0001
+    nose_samples=[]
+    for k in range(7):
+        y=1.70+(front_limit-1.70)*k/6
+        top=surface.ray_cast(Vector((0,y,2)),Vector((0,0,-1)))[0]
+        side=surface.ray_cast(Vector((2,y,.640)),Vector((-1,0,0)))[0]
+        assert top is not None and side is not None,'Missing nose shell'
+        nose_samples.append({'y_m':y,'hood_center_z_m':top.z,'half_width_at_z_640_m':side.x})
+    unchanged_prefixes=('Cabin','RoofGutter','Spoiler','Wheel_','Bumper_Rear','RearValance',
+                        'Taillight','RearIndicator','ReverseLight','Mirror','FrontWiper',
+                        'RearWiper','LicenseRecess','BlankPlate','HatchLock','Exhaust','Underbody','Sill','DoorHandle')
+    hashes={o.name:hashlib.sha256(json.dumps({'vertices':[list(v.co) for v in o.data.vertices],
+                                            'matrix':[list(row) for row in o.matrix_world]},separators=(',',':')).encode()).hexdigest()
+            for o in meshes if o.name.startswith(unchanged_prefixes)}
     for obj in meshes:
         uv=obj.data.uv_layers['StripeProjection']
         for loop in obj.data.loops:
@@ -50,6 +65,7 @@ def measure():
     return {'body_vertices':len(points),'body_max_width_m':2*max(p.x for p in points),
             'arch_max_widths_m':arch_widths,'triangle_aspect_metrics':triangle_stats,
             'body_wheel_triangle_intersections':wheels,'max_stripe_projection_error':stripe_error,
+            'nose_samples':nose_samples,'unchanged_component_geometry_sha256':hashes,
             'source_mesh_vertices':{o.name:len(o.data.vertices) for o in meshes},
             'wheel_pivots':{o.name:list(o.location) for o in meshes if o.name.startswith('Wheel_')}}
 
@@ -68,6 +84,20 @@ def main():
     assert all(n==0 for n in sockets.values()),('Housing intersects shell',sockets)
     report['stage_c']['body_fascia_triangle_intersections']=sockets
     source=report['stage_c']['source_mesh_vertices']
+    before=root/'Previews/CompactHatchback/StageC/FrontCorrection/.baseline/Before.blend'
+    if before.exists():
+        bpy.ops.wm.open_mainfile(filepath=str(before)); previous=measure()
+        current=report['stage_c']
+        assert previous['unchanged_component_geometry_sha256']==current['unchanged_component_geometry_sha256'],'Unrelated component geometry changed'
+        assert all(abs(previous['arch_max_widths_m'][name]-current['arch_max_widths_m'][name])<1e-6 for name in ('front','rear')),'Stage C arch shaping changed'
+        for key in ('hood_center_z_m','half_width_at_z_640_m'):
+            values=[sample[key] for sample in current['nose_samples']]
+            assert all(b<=a+.00001 for a,b in zip(values,values[1:])),('Nose swells or rises toward front',key,values)
+        report['front_correction']={'baseline_commit':'c3010572702a251b993c8d9c681287ee176715ce',
+                                   'previous_nose_samples':previous['nose_samples'],
+                                   'corrected_nose_samples':current['nose_samples'],
+                                   'nose_tapers_without_upturn':True,'arch_widths_unchanged':True,
+                                   'unrelated_components_identical':list(current['unchanged_component_geometry_sha256'])}
     bpy.ops.wm.read_factory_settings(use_empty=True)
     bpy.ops.import_scene.fbx(filepath=str(root/'Assets/Vehicles/CompactHatchback/Models/CompactHatchback.fbx'))
     imported={o.name:len(o.data.vertices) for o in bpy.context.scene.objects if o.type=='MESH'}

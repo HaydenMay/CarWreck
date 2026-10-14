@@ -58,22 +58,28 @@ def main():
     argv=sys.argv[sys.argv.index('--')+1:] if '--' in sys.argv else []
     parser=argparse.ArgumentParser(); parser.add_argument('root',type=Path)
     parser.add_argument('--baseline',type=Path); parser.add_argument('--samples',type=int,default=48)
+    parser.add_argument('--baseline-commit',default='f870cf26e6f52d8d5b7f4b6716d1f05dda562a20')
+    parser.add_argument('--output',type=Path,help='Preview directory, relative to project root or absolute')
+    parser.add_argument('--views',nargs='+',choices=VIEWS+('front','nose_top'),default=VIEWS)
+    parser.add_argument('--before-label',default='Stage B'); parser.add_argument('--after-label',default='Stage C')
     parser.add_argument('--stage',choices=('both','stage_c'),default='both',help='Resume C using an existing matched B manifest')
     args=parser.parse_args(argv); root=args.root.resolve()
-    out=root/'Previews/CompactHatchback/StageC'; out.mkdir(parents=True,exist_ok=True)
-    baseline=args.baseline or out/'.baseline/StageB.blend'
+    out=root/(args.output or 'Previews/CompactHatchback/StageC'); out.mkdir(parents=True,exist_ok=True)
+    # Blender's library loader resolves relative paths differently from Python.
+    baseline=(root/args.baseline).resolve() if args.baseline else out/'.baseline/StageB.blend'
     source=root/'Blender/CompactHatchback.blend'
     if not baseline.is_file():
         # Retrieve the committed LFS blob as bytes; PowerShell text redirection
         # would corrupt this binary file. This does not change the checkout.
         blob=subprocess.check_output(['git','cat-file','--filters',
-                                      'f870cf26e6f52d8d5b7f4b6716d1f05dda562a20:Blender/CompactHatchback.blend'],cwd=root)
+                                      args.baseline_commit+':Blender/CompactHatchback.blend'],cwd=root)
         assert len(blob)>100000,'Stage B LFS content unavailable; run git lfs fetch first'
         baseline.parent.mkdir(parents=True,exist_ok=True); baseline.write_bytes(blob)
     spec=importlib.util.spec_from_file_location('hatch',root/'Blender/Scripts/build_compact_hatchback.py')
     hatch=importlib.util.module_from_spec(spec); spec.loader.exec_module(hatch)
-    manifest={'baseline_commit':'f870cf26e6f52d8d5b7f4b6716d1f05dda562a20',
+    manifest={'baseline_commit':args.baseline_commit,
               'source_sha256':{'stage_b':sha(baseline),'stage_c':sha(source)},
+              'labels':{'stage_b':args.before_label,'stage_c':args.after_label},
               'blender_version':bpy.app.version_string,'conditions':{},'cameras':{},'outputs':{}}
     paint_colors=None
     stages=(('stage_b',baseline),('stage_c',source))
@@ -100,7 +106,7 @@ def main():
         if stage=='stage_c':
             assert manifest['conditions']['stage_b']==manifest['conditions']['stage_c'],'Render conditions differ between stages'
         manifest['cameras'][stage]={}; manifest['outputs'][stage]={}
-        for view in VIEWS:
+        for view in args.views:
             hatch.render_view(view,camera,out,root)
             bpy.context.view_layer.update()
             manifest['cameras'][stage][view]=camera_record(camera)

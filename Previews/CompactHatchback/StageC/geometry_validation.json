@@ -29,6 +29,82 @@
       "Wheel_RR": 0
     },
     "max_stripe_projection_error": 5.960464477539063e-08,
+    "nose_samples": [
+      {
+        "y_m": 1.7,
+        "hood_center_z_m": 0.8292129039764404,
+        "half_width_at_z_640_m": 0.787940502166748
+      },
+      {
+        "y_m": 1.72831672706604,
+        "hood_center_z_m": 0.82615065574646,
+        "half_width_at_z_640_m": 0.7817755937576294
+      },
+      {
+        "y_m": 1.75663345413208,
+        "hood_center_z_m": 0.8230960369110107,
+        "half_width_at_z_640_m": 0.7755813598632812
+      },
+      {
+        "y_m": 1.78495018119812,
+        "hood_center_z_m": 0.8200515508651733,
+        "half_width_at_z_640_m": 0.7694872617721558
+      },
+      {
+        "y_m": 1.8132669082641601,
+        "hood_center_z_m": 0.8170204162597656,
+        "half_width_at_z_640_m": 0.7636153697967529
+      },
+      {
+        "y_m": 1.8415836353302002,
+        "hood_center_z_m": 0.8140058517456055,
+        "half_width_at_z_640_m": 0.7580554485321045
+      },
+      {
+        "y_m": 1.8699003623962402,
+        "hood_center_z_m": 0.811010479927063,
+        "half_width_at_z_640_m": 0.7529040575027466
+      }
+    ],
+    "unchanged_component_geometry_sha256": {
+      "Cabin": "647fdab7cafabcaa3f6e91636d2e8bacd597558c08d40f65fbfc243074536310",
+      "RoofGutter_-1": "377e5babbd8e21cd23dc163ffd5682023fef51935f87aa525c02ad2c307b9376",
+      "RoofGutter_1": "de3ed5653f3685854aab504c28bca3803b2ef48c044e32edd0589a3f57c82b54",
+      "Spoiler": "b60393b4a2b7e7821881bff3d4f6dbef21d85b2488376cd6ff103522627505ba",
+      "Spoiler_Underside": "c29cf33019b3ace4f241819e36c0e5196dbef2e971bbd45a8cc59794100a47ec",
+      "Wheel_FL": "db7a629cf0e0ef9ed4024a130ed061773051585064c09ef155159b2f924c7eb1",
+      "Wheel_RL": "460c57a985a802b934203ee80b187de627173363b0974e5987a0ae757f5b4bc6",
+      "Wheel_FR": "ea0bd6eff095ea8412f928ed7aea3d258f58142f7eb237f5d01811e1a9ddd6e9",
+      "Wheel_RR": "323c6e22237a80d69a59cd4c49cd968511e0a5fe6a0254d00f8a38f4e5461d8f",
+      "Bumper_Rear": "2c600a2f8f42ee2dccebfe0269756c65d18ec3c82ba43db204630086a6506e7d",
+      "RearValance": "91fbafb9799cf459d21a7b566f25919be4ebe5ec1378672f2a50c07c38e7f220",
+      "TaillightHousing": "3050f501843d4c8d71298945204617ca3def0c612b8f4138215f5ad716779ae5",
+      "Taillight": "a6235e1d431d17810a32e993646b812f453558c849ad2140978db238348e6e91",
+      "RearIndicator": "26ee1ca05a7bec37b497cae1206b581a2519e4e68d38487688b1760c442d095f",
+      "ReverseLight": "511591a81ae989b46f75a0b07fb318ae5e4a8baab64a9dacb5977b18eed1ea01",
+      "DoorHandle": "bd332fe949801447bc1eef473408603280f0ec504594d843279051f920086ff2",
+      "MirrorStem": "cc481d02a20e0f5b51f7d30ba8c8fbac116a3dbe89d6a54bde21fd47d7604ce6",
+      "Mirror": "4aca6e4bd111246d57794a4cdd3ddf0bf6aecf88b4d88a153d39adbc4581d0fb",
+      "MirrorGlass": "d19571ffa8e4597473100144965153aab98c4d92fa63dd6e65838355169aaaf7",
+      "Sill": "fa3b628d727d2792196855d9985fad5ba78a7448cbe7f703a3e02e9dd489b24e",
+      "TaillightHousing.001": "ea0a8ccefb6bd3b6196519514294118a875678a0188e2759e83735f731217e0f",
+      "Taillight.001": "8b8c03884b52de3b9a443fbc4595235cf45eec050d49f131696269804955191a",
+      "RearIndicator.001": "6adf08cb70c049c41ef40574258f7faf7c9afe5f1a751324cc57cfdb90ba42b9",
+      "ReverseLight.001": "f78b40ed9b6431e74d26f11d28fdc26f06cc1063950c0f7f540d21263b57950d",
+      "DoorHandle.001": "66766fc3c3fcd4df626e461ded6b64967337742b9a1c8d3376b1013b2c5383d4",
+      "MirrorStem.001": "575076c33c05ee9d097ee632110853cf61064f70fd232ea38622972cc9e649fb",
+      "Mirror.001": "d58202d03d98d76b37e1abf59467f68c36973c030fb90ccaf0d795b333f371ba",
+      "MirrorGlass.001": "ecd930b01f5522e29c7d4d317c0359c62bee0bece02f847c180a0b788f7dee24",
+      "Sill.001": "47cd920b66f98b14d75c1f9d1b805aef34aa5c4eb9ee35883547009b167d0d62",
+      "LicenseRecess": "0a7b260a2e592693534e62c3aa53b44aebb5081d71cc93c55ffa5b6173aacb59",
+      "BlankPlate": "4a30a61a748486197dca8eceefce89ac12f68b4dd8f2d851dfde95c33b7a685e",
+      "HatchLock": "5eae33e320d110572bcc59f66f45690da6deef0a47a12b4a6086a6a132eaa051",
+      "RearWiper": "e224330602c70981d29240dd27df726c3dd1921ad5dae7e0cc7c50045d45f6a4",
+      "FrontWiper_L": "56aff81a645e2628a6e73ce0dd6ae4a68f66c4092ea8751953a2cc092cfe344b",
+      "FrontWiper_R": "c46df1403033af0285711cc9f4ad8446b1608508ca4111834fc5eb9134bebbe9",
+      "Underbody": "cfe0789d5c0c0ea5f5e3959fa4732f85dc8608215fcb6e5a1dac65eb884ce9e5",
+      "Exhaust": "9180b458ba606e4d60efd26ce0a7ceb28c1e6cdb115cc3d48010ae8ec48d8c39"
+    },
     "source_mesh_vertices": {
       "Body": 29616,
       "Cabin": 13750,
@@ -128,7 +204,7 @@
     }
   },
   "stage_c": {
-    "body_vertices": 30805,
+    "body_vertices": 30586,
     "body_max_width_m": 1.8507344722747803,
     "arch_max_widths_m": {
       "front": 1.8124130964279175,
@@ -136,18 +212,18 @@
     },
     "triangle_aspect_metrics": {
       "outer_panels": {
-        "triangles": 31133,
-        "aspect_over_20": 1971,
-        "area_m2": 10.843661456815369,
-        "aspect_over_20_area_m2": 0.007012542061545446,
-        "aspect_over_20_area_fraction": 0.0006466950383385476
+        "triangles": 30599,
+        "aspect_over_20": 1959,
+        "area_m2": 10.541577897929074,
+        "aspect_over_20_area_m2": 0.006987776466758078,
+        "aspect_over_20_area_fraction": 0.0006628776578249115
       },
       "hidden_well_or_underside": {
-        "triangles": 30473,
-        "aspect_over_20": 5311,
-        "area_m2": 9.880418285789984,
-        "aspect_over_20_area_m2": 0.007161984358042162,
-        "aspect_over_20_area_fraction": 0.0007248665138339868
+        "triangles": 30569,
+        "aspect_over_20": 5323,
+        "area_m2": 9.834080835340474,
+        "aspect_over_20_area_m2": 0.007147038557342,
+        "aspect_over_20_area_fraction": 0.0007267622340115284
       }
     },
     "body_wheel_triangle_intersections": {
@@ -157,8 +233,86 @@
       "Wheel_RR": 0
     },
     "max_stripe_projection_error": 5.960464477539063e-08,
+    "nose_samples": [
+      {
+        "y_m": 1.7,
+        "hood_center_z_m": 0.8385547399520874,
+        "half_width_at_z_640_m": 0.788719892501831
+      },
+      {
+        "y_m": 1.7374833253860473,
+        "hood_center_z_m": 0.8330662250518799,
+        "half_width_at_z_640_m": 0.7821764945983887
+      },
+      {
+        "y_m": 1.7749666507720947,
+        "hood_center_z_m": 0.8275271654129028,
+        "half_width_at_z_640_m": 0.7759732007980347
+      },
+      {
+        "y_m": 1.812449976158142,
+        "hood_center_z_m": 0.8219578266143799,
+        "half_width_at_z_640_m": 0.7700697183609009
+      },
+      {
+        "y_m": 1.8499333015441894,
+        "hood_center_z_m": 0.8163796663284302,
+        "half_width_at_z_640_m": 0.7645382881164551
+      },
+      {
+        "y_m": 1.8874166269302368,
+        "hood_center_z_m": 0.8126378059387207,
+        "half_width_at_z_640_m": 0.7614197731018066
+      },
+      {
+        "y_m": 1.9248999523162842,
+        "hood_center_z_m": 0.8110045194625854,
+        "half_width_at_z_640_m": 0.7605158090591431
+      }
+    ],
+    "unchanged_component_geometry_sha256": {
+      "Cabin": "647fdab7cafabcaa3f6e91636d2e8bacd597558c08d40f65fbfc243074536310",
+      "RoofGutter_-1": "377e5babbd8e21cd23dc163ffd5682023fef51935f87aa525c02ad2c307b9376",
+      "RoofGutter_1": "de3ed5653f3685854aab504c28bca3803b2ef48c044e32edd0589a3f57c82b54",
+      "Spoiler": "45150b10fea52e222609c9f8bcbdc0a21070660c1c55c75fb120fcbfa324000f",
+      "Spoiler_Underside": "e33651dd3ba72e57bcdbaa1965d21dbac9e812e0b4b68f703bb5b8fcf3f70def",
+      "SpoilerMount": "5392cd8daf32470874bddb8b8c8056b2f17dc018e61c80d1e8ad847a6727eedc",
+      "SpoilerMount.001": "8c3f9adc8e5f916bd691e93d2a7c62cc1393fb76a9ab2dd249fe771c18c55d8a",
+      "Wheel_FL": "db7a629cf0e0ef9ed4024a130ed061773051585064c09ef155159b2f924c7eb1",
+      "Wheel_RL": "460c57a985a802b934203ee80b187de627173363b0974e5987a0ae757f5b4bc6",
+      "Wheel_FR": "ea0bd6eff095ea8412f928ed7aea3d258f58142f7eb237f5d01811e1a9ddd6e9",
+      "Wheel_RR": "323c6e22237a80d69a59cd4c49cd968511e0a5fe6a0254d00f8a38f4e5461d8f",
+      "Bumper_Rear": "a5e6cda45f6b77e34dfa901edb04e19fefdab52f64a0e5790fd33813d959614f",
+      "RearValance": "91fbafb9799cf459d21a7b566f25919be4ebe5ec1378672f2a50c07c38e7f220",
+      "TaillightHousing": "a2bf3d3f59ec220a991b04b451c9af6e8c4aa87f10b464fdd43fa182aadc609f",
+      "Taillight": "46a3fc47534cade923d9b1d22c1b082c77d5cf3f3274abc46d80a192be6a58ff",
+      "RearIndicator": "8dd6e31d179ed907e5fc1d0ed4ce69de9a087531106b4aa7c5b1ba8dd8fed91d",
+      "ReverseLight": "e40fc04b92323cc53612868df0e1f1e7f391fc3a9b5bd4fa7e7e856e5a9ef2f6",
+      "DoorHandle": "57fe90c1f3401052e01a0afb5a54295ab98eac5d5cb8c70a5739deefd593c4ed",
+      "MirrorStem": "cc481d02a20e0f5b51f7d30ba8c8fbac116a3dbe89d6a54bde21fd47d7604ce6",
+      "Mirror": "4aca6e4bd111246d57794a4cdd3ddf0bf6aecf88b4d88a153d39adbc4581d0fb",
+      "MirrorGlass": "d19571ffa8e4597473100144965153aab98c4d92fa63dd6e65838355169aaaf7",
+      "Sill": "fa3b628d727d2792196855d9985fad5ba78a7448cbe7f703a3e02e9dd489b24e",
+      "TaillightHousing.001": "3ce9b797fb39b3cecfa5cf2dad09daa348c77de58b2c19dc51a6663a64b65960",
+      "Taillight.001": "a1b42141dfd966bb309b0caf2788dd45ef516ec88c1478934898957895be0092",
+      "RearIndicator.001": "fa3059244cca97942f6042ca9b3928ef5599664513cc008c9b3aa59a951d988d",
+      "ReverseLight.001": "11910e4c13ca8215b592ef77a4f791f05bbff78b1e81f9356b64820a2267a3d8",
+      "DoorHandle.001": "2cd4db07b21365d72eb91f628bd698e9d268455aaf2ec30ec88dde6ede07b9bc",
+      "MirrorStem.001": "575076c33c05ee9d097ee632110853cf61064f70fd232ea38622972cc9e649fb",
+      "Mirror.001": "d58202d03d98d76b37e1abf59467f68c36973c030fb90ccaf0d795b333f371ba",
+      "MirrorGlass.001": "ecd930b01f5522e29c7d4d317c0359c62bee0bece02f847c180a0b788f7dee24",
+      "Sill.001": "47cd920b66f98b14d75c1f9d1b805aef34aa5c4eb9ee35883547009b167d0d62",
+      "LicenseRecess": "0e7261927202d77ba18b476f33bc6b310342396c54534350a212ebe793e847fc",
+      "BlankPlate": "5169b70da9b27f3690f739929963777318184195b3526d7d728cad7f9ba8d65c",
+      "HatchLock": "cf2ad84734468beaa7d5e77857e708f7b24ac2877ded635fc36997a355027829",
+      "RearWiper": "e224330602c70981d29240dd27df726c3dd1921ad5dae7e0cc7c50045d45f6a4",
+      "FrontWiper_L": "56aff81a645e2628a6e73ce0dd6ae4a68f66c4092ea8751953a2cc092cfe344b",
+      "FrontWiper_R": "c46df1403033af0285711cc9f4ad8446b1608508ca4111834fc5eb9134bebbe9",
+      "Underbody": "cfe0789d5c0c0ea5f5e3959fa4732f85dc8608215fcb6e5a1dac65eb884ce9e5",
+      "Exhaust": "9180b458ba606e4d60efd26ce0a7ceb28c1e6cdb115cc3d48010ae8ec48d8c39"
+    },
     "source_mesh_vertices": {
-      "Body": 30805,
+      "Body": 30586,
       "Cabin": 13750,
       "RoofGutter_-1": 16,
       "RoofGutter_1": 16,
@@ -172,10 +326,10 @@
       "Wheel_RR": 1970,
       "Bumper_Front": 1206,
       "Bumper_Rear": 1206,
-      "FrontValance": 1874,
+      "FrontValance": 1624,
       "FrontSplitter": 1074,
       "RearValance": 1032,
-      "GrilleSurround": 1000,
+      "GrilleSurround": 856,
       "Grille": 96,
       "GrilleSlat": 96,
       "GrilleSlat.001": 96,
@@ -187,10 +341,10 @@
       "LowerSlat.001": 96,
       "LowerSlat.002": 96,
       "LowerSlat.003": 96,
-      "HeadlightHousing": 376,
+      "HeadlightHousing": 352,
       "Headlight": 96,
       "FrontIndicator": 66,
-      "FogHousing": 280,
+      "FogHousing": 256,
       "FogLight": 96,
       "TaillightHousing": 472,
       "Taillight": 96,
@@ -206,10 +360,10 @@
       "SideMoulding.002": 128,
       "DoorSeam": 48,
       "SideIndicator": 96,
-      "HeadlightHousing.001": 376,
+      "HeadlightHousing.001": 352,
       "Headlight.001": 96,
       "FrontIndicator.001": 66,
-      "FogHousing.001": 280,
+      "FogHousing.001": 256,
       "FogLight.001": 96,
       "TaillightHousing.001": 472,
       "Taillight.001": 96,
@@ -269,6 +423,126 @@
       "LicenseRecess": 0,
       "BlankPlate": 0
     }
+  },
+  "front_correction": {
+    "baseline_commit": "c3010572702a251b993c8d9c681287ee176715ce",
+    "previous_nose_samples": [
+      {
+        "y_m": 1.7,
+        "hood_center_z_m": 0.8404785394668579,
+        "half_width_at_z_640_m": 0.7953948974609375
+      },
+      {
+        "y_m": 1.7374833253860473,
+        "hood_center_z_m": 0.8393397331237793,
+        "half_width_at_z_640_m": 0.8036091327667236
+      },
+      {
+        "y_m": 1.7749666507720947,
+        "hood_center_z_m": 0.8395934104919434,
+        "half_width_at_z_640_m": 0.8169089555740356
+      },
+      {
+        "y_m": 1.812449976158142,
+        "hood_center_z_m": 0.8402584791183472,
+        "half_width_at_z_640_m": 0.8319282531738281
+      },
+      {
+        "y_m": 1.8499333015441894,
+        "hood_center_z_m": 0.8403542041778564,
+        "half_width_at_z_640_m": 0.8451616764068604
+      },
+      {
+        "y_m": 1.8874166269302368,
+        "hood_center_z_m": 0.8408008813858032,
+        "half_width_at_z_640_m": 0.855818510055542
+      },
+      {
+        "y_m": 1.9248999523162842,
+        "hood_center_z_m": 0.8410012722015381,
+        "half_width_at_z_640_m": 0.8610192537307739
+      }
+    ],
+    "corrected_nose_samples": [
+      {
+        "y_m": 1.7,
+        "hood_center_z_m": 0.8385547399520874,
+        "half_width_at_z_640_m": 0.788719892501831
+      },
+      {
+        "y_m": 1.7374833253860473,
+        "hood_center_z_m": 0.8330662250518799,
+        "half_width_at_z_640_m": 0.7821764945983887
+      },
+      {
+        "y_m": 1.7749666507720947,
+        "hood_center_z_m": 0.8275271654129028,
+        "half_width_at_z_640_m": 0.7759732007980347
+      },
+      {
+        "y_m": 1.812449976158142,
+        "hood_center_z_m": 0.8219578266143799,
+        "half_width_at_z_640_m": 0.7700697183609009
+      },
+      {
+        "y_m": 1.8499333015441894,
+        "hood_center_z_m": 0.8163796663284302,
+        "half_width_at_z_640_m": 0.7645382881164551
+      },
+      {
+        "y_m": 1.8874166269302368,
+        "hood_center_z_m": 0.8126378059387207,
+        "half_width_at_z_640_m": 0.7614197731018066
+      },
+      {
+        "y_m": 1.9248999523162842,
+        "hood_center_z_m": 0.8110045194625854,
+        "half_width_at_z_640_m": 0.7605158090591431
+      }
+    ],
+    "nose_tapers_without_upturn": true,
+    "arch_widths_unchanged": true,
+    "unrelated_components_identical": [
+      "Cabin",
+      "RoofGutter_-1",
+      "RoofGutter_1",
+      "Spoiler",
+      "Spoiler_Underside",
+      "SpoilerMount",
+      "SpoilerMount.001",
+      "Wheel_FL",
+      "Wheel_RL",
+      "Wheel_FR",
+      "Wheel_RR",
+      "Bumper_Rear",
+      "RearValance",
+      "TaillightHousing",
+      "Taillight",
+      "RearIndicator",
+      "ReverseLight",
+      "DoorHandle",
+      "MirrorStem",
+      "Mirror",
+      "MirrorGlass",
+      "Sill",
+      "TaillightHousing.001",
+      "Taillight.001",
+      "RearIndicator.001",
+      "ReverseLight.001",
+      "DoorHandle.001",
+      "MirrorStem.001",
+      "Mirror.001",
+      "MirrorGlass.001",
+      "Sill.001",
+      "LicenseRecess",
+      "BlankPlate",
+      "HatchLock",
+      "RearWiper",
+      "FrontWiper_L",
+      "FrontWiper_R",
+      "Underbody",
+      "Exhaust"
+    ]
   },
   "fbx_mesh_counts_match_source": true,
   "arch_roll_addition_m": {
