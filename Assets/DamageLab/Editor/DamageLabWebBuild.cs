@@ -15,9 +15,16 @@ namespace DamageLab.EditorTools
         [MenuItem("Damage Lab/Build WebGL", priority = 60)]
         public static void BuildMenu() => Build();
 
-        public static void Build()
+        public static void Build() => Build(new[] { DamageLabSceneBuilder.ScenePath }, OutputPath, "Vehicle Damage Lab");
+
+        public const string CollisionOutputPath = "Builds/WebGLCollision";
+
+        [MenuItem("Damage Lab/Build Collision Lab WebGL", priority = 61)]
+        public static void BuildCollision() => Build(new[] { CollisionLabSceneBuilder.ScenePath }, CollisionOutputPath, "Vehicle Collision Lab");
+
+        public static void Build(string[] scenes, string outputPath, string productName)
         {
-            PlayerSettings.productName = "Vehicle Damage Lab";
+            PlayerSettings.productName = productName;
             PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Gzip;
             PlayerSettings.WebGL.decompressionFallback = true;
             PlayerSettings.WebGL.dataCaching = false; // IndexedDB may be unavailable in sandboxed hosts
@@ -29,14 +36,14 @@ namespace DamageLab.EditorTools
 
             var options = new BuildPlayerOptions
             {
-                scenes = new[] { DamageLabSceneBuilder.ScenePath },
-                locationPathName = OutputPath,
+                scenes = scenes,
+                locationPathName = outputPath,
                 target = BuildTarget.WebGL,
                 options = BuildOptions.None,
             };
             var report = BuildPipeline.BuildPlayer(options);
             var s = report.summary;
-            Debug.Log($"[DamageLab] WebGL build {s.result}: {s.totalSize / (1024f * 1024f):0.0} MB, {s.totalErrors} errors, {s.totalTime.TotalSeconds:0}s -> {OutputPath}");
+            Debug.Log($"[DamageLab] WebGL build {s.result}: {s.totalSize / (1024f * 1024f):0.0} MB, {s.totalErrors} errors, {s.totalTime.TotalSeconds:0}s -> {outputPath}");
             if (s.result != BuildResult.Succeeded) throw new System.Exception("WebGL build failed");
         }
     }

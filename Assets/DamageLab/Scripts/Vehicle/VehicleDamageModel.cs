@@ -32,6 +32,8 @@ namespace DamageLab.Vehicle
         [Header("Click-to-damage")]
         [Tooltip("Maximum number of stored localized impacts.")]
         public int maxImpacts = 10;
+        [Tooltip("Build concave MeshColliders from the original meshes for click picking. Turn off when the car has a dynamic Rigidbody (Collision Lab).")]
+        public bool createPickingColliders = true;
 
         [Header("Debug")]
         public Material wireframeMaterial;
@@ -174,6 +176,23 @@ namespace DamageLab.Vehicle
             return true;
         }
 
+        /// <summary>
+        /// First point of the ORIGINAL car surface met when travelling along <paramref name="localDir"/> through
+        /// <paramref name="localPoint"/> (vehicle space): the original vertex nearest the start of a thin lane
+        /// around that line. Used to move a physics contact (on a simplified collider) onto the real bodywork.
+        /// Returns false if no vertex lies in the lane.
+        /// </summary>
+        public bool SurfacePointAlong(Vector3 localPoint, Vector3 localDir, out Vector3 surfacePoint, float lane = 0.12f, float backoff = 1.5f)
+        {
+            if (!IsInitialized) Initialize();
+            Vector3 d = localDir.normalized;
+            Vector3 origin = localPoint - d * backoff;
+            float best = float.MaxValue;
+            surfacePoint = localPoint;
+            foreach (var p in parts) p.FirstAlongLane(origin, d, lane * lane, ref best, ref surfacePoint);
+            return best < float.MaxValue;
+        }
+
         /// <summary>Add an impact given in vehicle space. Ignored once <see cref="maxImpacts"/> is reached.</summary>
         public bool AddImpact(LocalImpact impact)
         {
@@ -313,11 +332,15 @@ namespace DamageLab.Vehicle
             foreach (var im in impacts) AccumulateImpact(im);
 
             // Static picking colliders built from the ORIGINAL meshes (never re-cooked as the car deforms).
-            foreach (var p in parts) AddPickCollider(p.filter.gameObject, p.sourceMesh);
-            foreach (var rp in rigidParts)
+            // Skipped when the car is a dynamic Rigidbody: concave MeshColliders cannot be part of it.
+            if (createPickingColliders)
             {
-                var mf = rp.transform.GetComponent<MeshFilter>();
-                if (mf != null) AddPickCollider(mf.gameObject, mf.sharedMesh);
+                foreach (var p in parts) AddPickCollider(p.filter.gameObject, p.sourceMesh);
+                foreach (var rp in rigidParts)
+                {
+                    var mf = rp.transform.GetComponent<MeshFilter>();
+                    if (mf != null) AddPickCollider(mf.gameObject, mf.sharedMesh);
+                }
             }
 
             IsInitialized = true;

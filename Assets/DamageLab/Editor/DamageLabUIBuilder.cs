@@ -11,22 +11,22 @@ namespace DamageLab.EditorTools
     public static class DamageLabUIBuilder
     {
         // Palette: neutral greys + orange accent.
-        static readonly Color Bar = Hex("1F2124");
-        static readonly Color PanelBg = Hex("1A1C1F");
-        static readonly Color Card = Hex("26292D");
-        static readonly Color CardBorder = Hex("33373C");
-        static readonly Color Well = Hex("131416");
-        static readonly Color TextMain = Hex("ECEEF0");
-        static readonly Color TextDim = Hex("A3A8AE");
-        static readonly Color TextFaint = Hex("6E747B");
-        static readonly Color Accent = Hex("F27A1A");
-        static readonly Color AccentDark = Hex("C95F0E");
-        static readonly Color Good = Hex("5FD27A");
+        internal static readonly Color Bar = Hex("1F2124");
+        internal static readonly Color PanelBg = Hex("1A1C1F");
+        internal static readonly Color Card = Hex("26292D");
+        internal static readonly Color CardBorder = Hex("33373C");
+        internal static readonly Color Well = Hex("131416");
+        internal static readonly Color TextMain = Hex("ECEEF0");
+        internal static readonly Color TextDim = Hex("A3A8AE");
+        internal static readonly Color TextFaint = Hex("6E747B");
+        internal static readonly Color Accent = Hex("F27A1A");
+        internal static readonly Color AccentDark = Hex("C95F0E");
+        internal static readonly Color Good = Hex("5FD27A");
 
         const float PanelWidth = 470f;
         const float TopBarHeight = 64f;
 
-        static Font font;
+        internal static Font font;
 
         public static DamageLabUI Build(Camera cam, VehicleDamageModel model, ModelTurntable turntable, InspectionCameraController camController, ImpactPicker picker = null)
         {
@@ -239,7 +239,7 @@ namespace DamageLab.EditorTools
         }
 
         /// <summary>Title, numeric box, 0-100 slider and min/max labels inside an 80 px tall row.</summary>
-        static void SliderWidgets(RectTransform row, string title, out Slider slider, out InputField field)
+        internal static void SliderWidgets(RectTransform row, string title, out Slider slider, out InputField field)
         {
             var label = Label("Label", row, title, 19, TextMain, FontStyle.Bold, TextAnchor.MiddleLeft);
             Place(label.rectTransform, new Vector2(0, 1), new Vector2(0, -22), new Vector2(260, 28), new Vector2(0, 0.5f));
@@ -292,7 +292,7 @@ namespace DamageLab.EditorTools
             Place(max.rectTransform, new Vector2(1, 1), new Vector2(0, -72), new Vector2(40, 16), new Vector2(1, 0.5f));
         }
 
-        static RectTransform Row(Transform parent, string name, float height)
+        internal static RectTransform Row(Transform parent, string name, float height)
         {
             var row = new GameObject(name, typeof(RectTransform)).GetComponent<RectTransform>();
             row.SetParent(parent, false);
@@ -300,7 +300,7 @@ namespace DamageLab.EditorTools
             return row;
         }
 
-        static Toggle CheckToggle(RectTransform row, string text)
+        internal static Toggle CheckToggle(RectTransform row, string text)
         {
             var hit = Img("Hit", row, new Color(0, 0, 0, 0), null); // whole row is clickable
             Stretch(hit.rectTransform, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
@@ -446,7 +446,7 @@ namespace DamageLab.EditorTools
 
         // ------------------------------------------------------------------ helpers
 
-        static Image CardBox(string name, Transform parent, float height)
+        internal static Image CardBox(string name, Transform parent, float height)
         {
             var img = Img(name, parent, Card, DamageLabAssets.RoundedRectSprite, sliced: true);
             img.pixelsPerUnitMultiplier = 1.6f;
@@ -454,7 +454,7 @@ namespace DamageLab.EditorTools
             return img;
         }
 
-        static void Layout(GameObject go, float height)
+        internal static void Layout(GameObject go, float height)
         {
             var le = go.GetComponent<LayoutElement>();
             if (le == null) le = go.AddComponent<LayoutElement>();
@@ -462,7 +462,7 @@ namespace DamageLab.EditorTools
             le.preferredHeight = height;
         }
 
-        static ColorBlock ButtonColors()
+        internal static ColorBlock ButtonColors()
         {
             var c = ColorBlock.defaultColorBlock;
             c.normalColor = Color.white;
@@ -473,7 +473,7 @@ namespace DamageLab.EditorTools
             return c;
         }
 
-        static Image Img(string name, Transform parent, Color color, Sprite sprite, bool sliced = false)
+        internal static Image Img(string name, Transform parent, Color color, Sprite sprite, bool sliced = false)
         {
             var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
             go.transform.SetParent(parent, false);
@@ -486,7 +486,7 @@ namespace DamageLab.EditorTools
             return img;
         }
 
-        static Text Label(string name, Transform parent, string text, int size, Color color, FontStyle style, TextAnchor anchor)
+        internal static Text Label(string name, Transform parent, string text, int size, Color color, FontStyle style, TextAnchor anchor)
         {
             var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
             go.transform.SetParent(parent, false);
@@ -504,7 +504,7 @@ namespace DamageLab.EditorTools
             return t;
         }
 
-        static void Place(RectTransform rt, Vector2 anchor, Vector2 pos, Vector2 size, Vector2? pivot = null)
+        internal static void Place(RectTransform rt, Vector2 anchor, Vector2 pos, Vector2 size, Vector2? pivot = null)
         {
             rt.anchorMin = rt.anchorMax = anchor;
             rt.pivot = pivot ?? new Vector2(0.5f, 0.5f);
@@ -512,7 +512,7 @@ namespace DamageLab.EditorTools
             rt.anchoredPosition = pos;
         }
 
-        static void Stretch(RectTransform rt, Vector2 min, Vector2 max, Vector2 pivot, Vector2 pos, Vector2 size)
+        internal static void Stretch(RectTransform rt, Vector2 min, Vector2 max, Vector2 pivot, Vector2 pos, Vector2 size)
         {
             rt.anchorMin = min; rt.anchorMax = max; rt.pivot = pivot;
             rt.sizeDelta = size; rt.anchoredPosition = pos;

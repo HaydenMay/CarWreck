@@ -253,6 +253,20 @@ namespace DamageLab.Deformation
             }
         }
 
+        /// <summary>Original vertex with the smallest distance t ≥ 0 along d from o, within √r2 of the line.</summary>
+        public void FirstAlongLane(Vector3 o, Vector3 d, float r2, ref float bestT, ref Vector3 bestPoint)
+        {
+            for (int i = 0; i < vehiclePos.Length; i++)
+            {
+                Vector3 v = vehiclePos[i] - o;
+                float t = Vector3.Dot(v, d);
+                if (t < 0f || t >= bestT) continue;
+                if (v.sqrMagnitude - t * t > r2) continue;
+                bestT = t;
+                bestPoint = vehiclePos[i];
+            }
+        }
+
         public void ClearImpacts()
         {
             if (impactSum != null) System.Array.Clear(impactSum, 0, impactSum.Length);

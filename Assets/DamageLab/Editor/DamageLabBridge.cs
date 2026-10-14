@@ -108,6 +108,15 @@ namespace DamageLab.EditorTools
                 case "stress-set":
                     DamageLabCapture.CaptureStressSet();
                     break;
+                case "collision-build":
+                    CollisionLabSceneBuilder.Build();
+                    break;
+                case "collision-verify":
+                    Debug.Log(CollisionLabValidation.Run());
+                    break;
+                case "collision-webgl":
+                    DamageLabWebBuild.BuildCollision();
+                    break;
                 case "verify-stress":
                     Debug.Log(DamageLabValidation.RunStress());
                     break;

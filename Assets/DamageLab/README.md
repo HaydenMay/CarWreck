@@ -108,6 +108,34 @@ Click-to-damage limitations:
 * **Repeated extreme stacking.** Five strength-100 hits on one spot still fold some small triangles in the crumple (0.1–1.7% of the mesh, worst on the angled front corner). That's roughly half the count before saturation.
 * **The structure map is spatial.** It uses the roof line and the wheel centres, not real panels or a chassis. The four directional sliders are unchanged and are not saturated against impacts.
 
+## Collision Lab (physics-driven damage, phase 1)
+
+The `Scenes/VehicleCollisionLab.unity` scene is built by *Damage Lab ▸ Build Collision Lab Scene*. An orange test sled, a 1.9 × 1.1 × 3.8 m Rigidbody, is launched into the car with a real velocity. PhysX resolves the collision, and the contact creates the damage. The Damage Lab scene is unchanged.
+
+* **Car physics.**
+  * The car root gets a Rigidbody: 1400 kg, centre of mass lowered, continuous dynamic collision detection.
+  * Its physics shape is two boxes, body-to-tyres and cabin, with a tyre-like friction material.
+  * `VehicleDamageModel.createPickingColliders = false`, because concave MeshColliders can't be part of a dynamic Rigidbody. The Damage Lab keeps its picking colliders.
+* **Sled.** The sled has continuous dynamic collision detection and no gravity. Its height and its tilt are frozen. It's parked kinematic and launched by setting `linearVelocity` once; after that, only physics moves it.
+* **Severity** (`CollisionDamageReceiver`):
+  * All contacts with one other Rigidbody in one physics step merge into one event. The ground and other static colliders are ignored, and a 0.5 s cooldown per body blocks duplicates from resting contact and bounces.
+  * The contact normal `n` is averaged and oriented into the car. `v` is `Collision.relativeVelocity`, and `vn = v·n` is the closing speed.
+  * The reduced mass is `μ = m_car·m_sled / (m_car + m_sled)`. The normal-approach energy is `E = ½ μ vn²`.
+  * Strength is `1 − exp(−(E − 1.5 kJ) / 60 kJ)`, and 0 below 1.5 kJ. Speed counts quadratically. Mass counts, but saturates toward the car's own mass. Scraping only counts through `vn`.
+* **Into the existing damage.**
+  * The push direction is `n·vn + 0.5·vt`.
+  * The contact point sits on a box collider, so `VehicleDamageModel.SurfacePointAlong` moves it to the first original car vertex along that direction.
+  * The result goes to `VehicleDamageModel.AddImpact(LocalImpact)` with the existing impact maths and saturation.
+* **Reset** restores the car's pose and zeroes its velocities, re-parks the sled, clears cooldowns, and calls `ResetAll()`, which restores the mesh exactly.
+* **Validation:** bridge command `collision-verify` runs the scenarios with `Physics.Simulate` and writes the `Screenshots/3x_…` files. WebGL: `collision-webgl` builds to `Builds/WebGLCollision`.
+
+Collision Lab limitations:
+
+* **The colliders don't deform.** The car collides as two fixed boxes. A crushed corner still collides where the undamaged box corner was, the sled stops at the box surface rather than inside the dent, and box edges don't match the rounded bodywork.
+* **No suspension or wheels in the physics.** The car slides on its body box with tyre-like friction. Hard hits shove it many metres, because there's no rolling resistance model, no tyre grip direction and no structure absorbing energy.
+* **One impact per event.** A long push, such as the sled continuing to shove the car, adds no further damage after the first contact. A second strike needs a separate contact more than 0.5 s later.
+* **The severity mapping is tuned by eye** for a 1400 kg car (the energy threshold and scale). It isn't crash-test calibrated.
+
 ## Limitations / next steps
 
 * **Performance.** About 20 ms per rebuild is fine for a lab with eased sliders, but not for gameplay. Next steps: port `Displacement` and the normal pass to Burst + Jobs (`MeshData` API), or move them to a compute/vertex shader using the precomputed per-vertex data.

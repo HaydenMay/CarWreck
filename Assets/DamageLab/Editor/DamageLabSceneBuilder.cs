@@ -165,7 +165,7 @@ namespace DamageLab.EditorTools
             Debug.Log("[DamageLab] Built " + ScenePath);
         }
 
-        static void ConfigurePipeline()
+        internal static void ConfigurePipeline()
         {
             // The "Mobile" quality level is the default for WebGL builds: give it sharper soft shadows and MSAA.
             var mobile = AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>("Assets/Settings/Mobile_RPAsset.asset");
@@ -195,7 +195,7 @@ namespace DamageLab.EditorTools
         static void SetInt(SerializedObject so, string name, int v) { var p = so.FindProperty(name); if (p != null) p.intValue = v; }
         static void SetBool(SerializedObject so, string name, bool v) { var p = so.FindProperty(name); if (p != null) p.boolValue = v; }
 
-        static GameObject MeshObject(string name, Transform parent, Mesh mesh, Material mat, bool castShadows)
+        internal static GameObject MeshObject(string name, Transform parent, Mesh mesh, Material mat, bool castShadows)
         {
             var go = new GameObject(name);
             go.transform.SetParent(parent, false);
@@ -207,7 +207,7 @@ namespace DamageLab.EditorTools
             return go;
         }
 
-        static void Softbox(Transform parent, Material mat, Vector3 pos, Vector3 scale, Vector3 euler)
+        internal static void Softbox(Transform parent, Material mat, Vector3 pos, Vector3 scale, Vector3 euler)
         {
             var q = GameObject.CreatePrimitive(PrimitiveType.Quad);
             q.name = "Softbox";
@@ -221,7 +221,7 @@ namespace DamageLab.EditorTools
             r.shadowCastingMode = ShadowCastingMode.Off;
         }
 
-        static Light CreateLight(string name, LightType type, Color color, float intensity, Vector3 euler, LightShadows shadows)
+        internal static Light CreateLight(string name, LightType type, Color color, float intensity, Vector3 euler, LightShadows shadows)
         {
             var go = new GameObject(name);
             go.transform.rotation = Quaternion.Euler(euler);
