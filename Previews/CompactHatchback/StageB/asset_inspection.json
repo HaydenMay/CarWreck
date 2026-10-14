@@ -1,0 +1,76 @@
+{
+  "stage": "B",
+  "orientation": "Blender +Y forward; +Z up",
+  "units": "metres",
+  "dimensions_xyz_m": [
+    1.8919999599456787,
+    4.042999863624573,
+    1.4249991178512573
+  ],
+  "wheelbase_m": 2.32,
+  "body_loft_station_spacing_m": 0.03462962962962963,
+  "meshes": 73,
+  "base_vertices": 64434,
+  "body_vertices": 29616,
+  "wheels": [
+    "Wheel_FL",
+    "Wheel_RL",
+    "Wheel_FR",
+    "Wheel_RR"
+  ],
+  "wheel_pivots_m": {
+    "Wheel_FL": [
+      -0.7450000047683716,
+      1.159999966621399,
+      0.32499998807907104
+    ],
+    "Wheel_RL": [
+      -0.7450000047683716,
+      -1.159999966621399,
+      0.32499998807907104
+    ],
+    "Wheel_FR": [
+      0.7450000047683716,
+      1.159999966621399,
+      0.32499998807907104
+    ],
+    "Wheel_RR": [
+      0.7450000047683716,
+      -1.159999966621399,
+      0.32499998807907104
+    ]
+  },
+  "deformation_tested": false,
+  "fbx_exported": true,
+  "all_meshes_have_uvs": true,
+  "wheel_backing_normals_outward": true,
+  "collapsed_uv_faces": 0,
+  "body_quad_fraction": 0.9952836544940035,
+  "deformable_vertices": 51706,
+  "surface_metrics": {
+    "Body": {
+      "vertices": 29616,
+      "faces": 29684,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_length_p10_m": 0.006617985665798187,
+      "edge_length_median_m": 0.032366346567869186,
+      "edge_length_p90_m": 0.035910870879888535,
+      "max_edge_length_m": 0.07670926302671432
+    },
+    "Cabin": {
+      "vertices": 13750,
+      "faces": 13752,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 1,
+      "edge_length_p10_m": 0.015751833096146584,
+      "edge_length_median_m": 0.028635742142796516,
+      "edge_length_p90_m": 0.03789035230875015,
+      "max_edge_length_m": 0.06723573803901672
+    }
+  }
+}
