@@ -12,7 +12,7 @@ namespace DamageLab.CollisionTest
     /// (physics does the rest) and restores everything on Reset. Damage only comes from
     /// <see cref="CollisionDamageReceiver"/>, i.e. from the actual contact.
     /// </summary>
-    public class CollisionLabController : MonoBehaviour
+    public partial class CollisionLabController : MonoBehaviour
     {
         [Header("Scene")]
         public Rigidbody car;
@@ -174,6 +174,7 @@ namespace DamageLab.CollisionTest
         public void SelectVehicle(int index)
         {
             if (vehicles == null || vehicles.Length == 0) return;
+            StopChaos(true);
             index = Mathf.Clamp(index, 0, vehicles.Length - 1);
             UnsubscribeVehicle();
             if (car != null)
@@ -248,6 +249,8 @@ namespace DamageLab.CollisionTest
         /// The car is NOT repaired: damage from earlier launches stays and new hits add to it.</summary>
         public void Launch()
         {
+            if (ChaosRunning) { SetStatus("Chaos run in progress: press STOP first"); return; }
+            LastRandom = null;
             ResetBlock();
             sled.mass = mass;
             sled.isKinematic = false;
@@ -272,6 +275,7 @@ namespace DamageLab.CollisionTest
         /// <summary>Remove all damage: original mesh and original physical hitbox. Settings are kept.</summary>
         public void RepairCar()
         {
+            StopChaos(true);
             if (model != null)
             {
                 model.ResetAll();
@@ -288,6 +292,7 @@ namespace DamageLab.CollisionTest
         /// <summary>The whole experiment: repair, car back to its start pose at rest, block parked.</summary>
         public void ResetAll()
         {
+            StopChaos(true);
             if (model != null)
             {
                 model.ResetAll();
@@ -440,8 +445,9 @@ namespace DamageLab.CollisionTest
         void FixedUpdate()
         {
             AfterPhysicsStep();
+            ChaosTick();
             // Settle: once both bodies are slow after an impact, report it.
-            if (launched && Time.time - launchTime > 1f && sled.linearVelocity.sqrMagnitude < 0.04f && car.linearVelocity.sqrMagnitude < 0.04f)
+            if (!ChaosRunning && launched && Time.time - launchTime > 1f && sled.linearVelocity.sqrMagnitude < 0.04f && car.linearVelocity.sqrMagnitude < 0.04f)
                 SetStatus(receiver != null && receiver.HasReport ? "Impact recorded. Reset Block to hit again, Repair Car to undo damage." : "Stopped without contact.");
         }
 
@@ -519,6 +525,7 @@ namespace DamageLab.CollisionTest
             }
             if (offsetField != null)
                 offsetField.onEndEdit.AddListener(t => { if (float.TryParse(t, out float v)) aimOffset = Mathf.Clamp(Mathf.Round(v * 20f) / 20f, -1.5f, 1.5f); if (!launched) PlaceSled(); RefreshValues(); });
+            BindRandomUI();
             RefreshValues();
             RefreshDirectionButtons();
         }
@@ -551,13 +558,14 @@ namespace DamageLab.CollisionTest
         public void RefreshDiagnostics()
         {
             if (diagnosticsText == null) return;
+            string random = RandomDiagnostics();
             if (receiver == null || !receiver.HasReport)
             {
-                diagnosticsText.text = "No collision yet.\nPick a speed, mass and direction, then press LAUNCH.";
+                diagnosticsText.text = random + "No collision yet.\nPick a speed, mass and direction, then press LAUNCH (or RANDOM LAUNCH).";
                 return;
             }
             var r = receiver.Last;
-            diagnosticsText.text =
+            diagnosticsText.text = random +
                 $"Relative speed       {r.relativeSpeed:0.0} m/s  ({r.relativeSpeed * 2.23694f:0} mph)\n" +
                 $"Closing (normal)     {r.closingSpeed:0.0} m/s\n" +
                 $"Impulse              {r.impulse:N0} N·s\n" +
