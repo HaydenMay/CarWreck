@@ -29,6 +29,11 @@ namespace DamageLab.CollisionTest
         public float startGap = 5f;
         [Tooltip("Height (m, car space) of the sled's centre line.")]
         public float sledHeight = 0.7f;
+        [Tooltip("Impactor width (m): the full-width sled or a narrow block of the same length and height.")]
+        public bool narrowImpactor;
+        public float wideWidth = 1.9f;
+        public float narrowWidth = 0.5f;
+        public ImpactFootprintDebug footprintDebug;
 
         [Header("UI")]
         public Slider speedSlider;
@@ -37,6 +42,8 @@ namespace DamageLab.CollisionTest
         public Slider massSlider;
         public InputField massField;
         public Button[] directionButtons;   // in ImpactDirection order
+        public Button[] impactorButtons;    // wide, narrow
+        public Toggle footprintToggle;
         public Button launchButton;
         public Button resetButton;
         public Text diagnosticsText;
@@ -85,17 +92,18 @@ namespace DamageLab.CollisionTest
 
         // ------------------------------------------------------------------ test control
 
-        /// <summary>Fresh experiment: reset, then give the sled its launch velocity. Physics does the rest.</summary>
-        public void Launch()
+        /// <summary>Fresh experiment: reset, then give the sled its launch velocity. Physics does the rest.
+        /// With <paramref name="keepDamage"/> only the poses are reset, so a second hit adds to the existing damage.</summary>
+        public void Launch(bool keepDamage = false)
         {
-            ResetTest();
+            if (keepDamage) ResetPoses(); else ResetTest();
             sled.mass = mass;
             sled.isKinematic = false;
             sled.linearVelocity = sled.transform.forward * speed;
             sled.angularVelocity = Vector3.zero;
             launched = true;
             launchTime = Time.time;
-            SetStatus($"Launched: {speed:0} m/s, {mass:0} kg, {Label(direction)}");
+            SetStatus($"Launched: {speed:0} m/s, {mass:0} kg, {Label(direction)}, {(narrowImpactor ? "narrow block" : "wide sled")}");
         }
 
         /// <summary>Restore car and sled poses and velocities, remove all impacts and restore the original mesh.</summary>
@@ -106,6 +114,13 @@ namespace DamageLab.CollisionTest
                 model.ResetAll();
                 model.SetDamageImmediate(0f, 0f, 0f, 0f);
             }
+            ResetPoses();
+            RefreshDiagnostics();
+            SetStatus("Ready");
+        }
+
+        void ResetPoses()
+        {
             car.linearVelocity = Vector3.zero;
             car.angularVelocity = Vector3.zero;
             car.position = carStartPos;
@@ -115,8 +130,6 @@ namespace DamageLab.CollisionTest
             Physics.SyncTransforms();
             if (receiver != null) receiver.ResetState();
             launched = false;
-            RefreshDiagnostics();
-            SetStatus("Ready");
         }
 
         public void SetDirection(ImpactDirection d)
@@ -127,8 +140,26 @@ namespace DamageLab.CollisionTest
         }
 
         /// <summary>Park the sled (kinematic, at rest) facing the target point for the current direction.</summary>
+        public void SetNarrowImpactor(bool narrow)
+        {
+            narrowImpactor = narrow;
+            if (!launched) PlaceSled();
+            RefreshDirectionButtons();
+        }
+
+        /// <summary>Width of the sled's box collider (and mesh) via its x scale; the box asset is 1.9 m wide.</summary>
+        void ApplySledWidth()
+        {
+            var bc = sled.GetComponent<BoxCollider>();
+            float baseWidth = bc != null ? bc.size.x : 1.9f;
+            var s = sled.transform.localScale;
+            s.x = (narrowImpactor ? narrowWidth : wideWidth) / Mathf.Max(0.01f, baseWidth);
+            sled.transform.localScale = s;
+        }
+
         void PlaceSled()
         {
+            ApplySledWidth();
             Aim(direction, out Vector3 localTarget, out Vector3 localDir);
             Vector3 target = carStartPos + carStartRot * localTarget;
             Vector3 dir = carStartRot * localDir;
@@ -201,7 +232,18 @@ namespace DamageLab.CollisionTest
                     var d = (ImpactDirection)i;
                     if (directionButtons[i] != null) directionButtons[i].onClick.AddListener(() => SetDirection(d));
                 }
-            if (launchButton != null) launchButton.onClick.AddListener(Launch);
+            if (impactorButtons != null)
+                for (int i = 0; i < impactorButtons.Length; i++)
+                {
+                    bool narrow = i == 1;
+                    if (impactorButtons[i] != null) impactorButtons[i].onClick.AddListener(() => SetNarrowImpactor(narrow));
+                }
+            if (footprintToggle != null)
+            {
+                footprintToggle.SetIsOnWithoutNotify(footprintDebug != null && footprintDebug.show);
+                footprintToggle.onValueChanged.AddListener(on => { if (footprintDebug != null) footprintDebug.SetVisible(on); });
+            }
+            if (launchButton != null) launchButton.onClick.AddListener(() => Launch());
             if (resetButton != null) resetButton.onClick.AddListener(ResetTest);
             RefreshValues();
             RefreshDirectionButtons();
@@ -224,6 +266,10 @@ namespace DamageLab.CollisionTest
             for (int i = 0; i < directionButtons.Length; i++)
                 if (directionButtons[i] != null && directionButtons[i].targetGraphic != null)
                     directionButtons[i].targetGraphic.color = i == (int)direction ? selectedColor : unselectedColor;
+            if (impactorButtons != null)
+                for (int i = 0; i < impactorButtons.Length; i++)
+                    if (impactorButtons[i] != null && impactorButtons[i].targetGraphic != null)
+                        impactorButtons[i].targetGraphic.color = (i == 1) == narrowImpactor ? selectedColor : unselectedColor;
         }
 
         public void RefreshDiagnostics()
@@ -242,6 +288,10 @@ namespace DamageLab.CollisionTest
                 $"Energy (½μv²)        {r.energy / 1000f:0.0} kJ   μ {r.reducedMass:0} kg\n" +
                 $"Impact strength      {r.strength * 100f:0} / 100{(r.applied ? "" : "  (below threshold)")}\n" +
                 $"Location             {r.region}  {r.localPoint.ToString("F2")}\n" +
+                (r.footprint.valid
+                    ? $"Contact footprint    {r.footprint.kind}, {r.footprint.halfU * 2f:0.00} x {r.footprint.halfV * 2f:0.00} m ({r.footprint.area:0.00} m²)\n" +
+                      $"Crush depth          {r.footprint.travel * 100f:0} cm  (area factor ×{r.footprint.areaFactor:0.00})\n"
+                    : "") +
                 $"Mesh deformation     {(r.applied ? $"{r.deformMilliseconds:0.0} ms" : "-")}";
         }
 

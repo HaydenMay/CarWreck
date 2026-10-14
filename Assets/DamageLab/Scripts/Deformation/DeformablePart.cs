@@ -16,6 +16,8 @@ namespace DamageLab.Deformation
         public readonly float crumple;
         public Mesh RuntimeMesh { get; private set; }
         public int VertexCount => baseVerts.Length;
+        /// <summary>Original vertex positions in vehicle space (read only).</summary>
+        public Vector3[] VehiclePositions => vehiclePos;
         public int TriangleCount => triangles.Length / 3;
 
         readonly Vector3[] baseVerts;     // mesh space, original

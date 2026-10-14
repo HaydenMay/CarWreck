@@ -114,6 +114,9 @@ namespace DamageLab.EditorTools
                 case "collision-verify":
                     Debug.Log(CollisionLabValidation.Run());
                     break;
+                case "collision-geometry":
+                    Debug.Log(CollisionGeometryValidation.Run());
+                    break;
                 case "collision-webgl":
                     DamageLabWebBuild.BuildCollision();
                     break;

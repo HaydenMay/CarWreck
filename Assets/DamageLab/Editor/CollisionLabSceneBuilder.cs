@@ -129,6 +129,11 @@ namespace DamageLab.EditorTools
             var receiver = car.AddComponent<CollisionDamageReceiver>();
             receiver.model = damage;
             receiver.body = rb;
+            var footprintDebug = car.AddComponent<ImpactFootprintDebug>();
+            footprintDebug.model = damage;
+            footprintDebug.outlineMaterial = UnlitMaterial("FootprintOutline", new Color(0.1f, 0.95f, 1f));
+            footprintDebug.arrowMaterial = UnlitMaterial("FootprintArrow", new Color(1f, 0.85f, 0.1f));
+            footprintDebug.show = true;
 
             // ---------------------------------------------------------------- test sled
             var sledGO = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -181,6 +186,7 @@ namespace DamageLab.EditorTools
             lab.receiver = receiver;
             lab.sled = sled;
             lab.cameraController = camController;
+            lab.footprintDebug = footprintDebug;
             BuildUI(cam, lab, camController);
             new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));
 
@@ -207,6 +213,18 @@ namespace DamageLab.EditorTools
             m.bounciness = 0f;
             m.frictionCombine = combine;
             m.bounceCombine = PhysicsMaterialCombine.Minimum;
+            EditorUtility.SetDirty(m);
+            return m;
+        }
+
+        static Material UnlitMaterial(string name, Color color)
+        {
+            string path = $"{DamageLabAssets.MaterialFolder}/{name}.mat";
+            var shader = Shader.Find("Universal Render Pipeline/Unlit");
+            var m = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (m == null) { m = new Material(shader) { name = name }; AssetDatabase.CreateAsset(m, path); }
+            m.shader = shader;
+            m.SetColor("_BaseColor", color);
             EditorUtility.SetDirty(m);
             return m;
         }
@@ -314,6 +332,28 @@ namespace DamageLab.EditorTools
                 Stretch(l.rectTransform, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
                 lab.directionButtons[i] = b;
             }
+            var ih = Label("ImpactorHeading", dirCard.transform, "Impactor", 17, TextDim, FontStyle.Bold, TextAnchor.MiddleLeft);
+            Layout(ih.gameObject, 30);
+            var igrid = new GameObject("ImpactorButtons", typeof(RectTransform)).GetComponent<RectTransform>();
+            igrid.SetParent(dirCard.transform, false);
+            var igl = igrid.gameObject.AddComponent<GridLayoutGroup>();
+            igl.cellSize = new Vector2(196, 44); igl.spacing = new Vector2(8, 8);
+            igl.constraint = GridLayoutGroup.Constraint.FixedColumnCount; igl.constraintCount = 2;
+            Layout(igrid.gameObject, 44);
+            string[] inames = { "Wide Sled 1.9 m", "Narrow Block 0.5 m" };
+            lab.impactorButtons = new Button[inames.Length];
+            for (int i = 0; i < inames.Length; i++)
+            {
+                var bg = Img(i == 0 ? "Wide" : "Narrow", igrid, Hex("33373C"), DamageLabAssets.GetSprite("RoundedRectSmall"), sliced: true);
+                var b = bg.gameObject.AddComponent<Button>();
+                b.targetGraphic = bg;
+                b.colors = ButtonColors();
+                var l = Label("Label", bg.transform, inames[i], 16, TextMain, FontStyle.Bold, TextAnchor.MiddleCenter);
+                Stretch(l.rectTransform, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+                lab.impactorButtons[i] = b;
+            }
+            lab.footprintToggle = CheckToggle(Row(dirCard.transform, "FootprintRow", 42), "Show Contact Footprint");
+            lab.footprintToggle.isOn = true;
 
             // Launch / Reset
             lab.launchButton = BigButton(content, "LaunchButton", "LAUNCH", Accent, Color.white, 58, "ArrowRight");
@@ -327,7 +367,7 @@ namespace DamageLab.EditorTools
             Layout(dgh.gameObject, 28);
             lab.diagnosticsText = Label("Text", diag.transform, "No collision yet.", 15, TextMain, FontStyle.Normal, TextAnchor.UpperLeft);
             lab.diagnosticsText.supportRichText = false;
-            Layout(lab.diagnosticsText.gameObject, 150);
+            Layout(lab.diagnosticsText.gameObject, 196);
 
             // Controls hint (top-left)
             var hint = Img("ControlsHint", root, new Color(0.11f, 0.12f, 0.13f, 0.86f), DamageLabAssets.RoundedRectSprite, sliced: true);

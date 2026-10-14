@@ -162,7 +162,7 @@ namespace DamageLab.EditorTools
 
         static Vector3 SledHome(CollisionLabController lab) => lab.sled.position;
 
-        static void Shot(CollisionLabController lab, InspectionCameraController cam, string name, float yaw, float pitch, float dist, Vector3 pivot)
+        internal static void Shot(CollisionLabController lab, InspectionCameraController cam, string name, float yaw, float pitch, float dist, Vector3 pivot)
         {
             string path = Path.Combine(DamageLabCapture.OutputFolder, name + ".png");
             Directory.CreateDirectory(DamageLabCapture.OutputFolder);
@@ -202,14 +202,14 @@ namespace DamageLab.EditorTools
             }
         }
 
-        static List<Vector3[]> Snapshot(MeshFilter[] filters)
+        internal static List<Vector3[]> Snapshot(MeshFilter[] filters)
         {
             var l = new List<Vector3[]>();
             foreach (var f in filters) l.Add(f.sharedMesh.vertices);
             return l;
         }
 
-        static float MaxDiff(List<Vector3[]> a, List<Vector3[]> b)
+        internal static float MaxDiff(List<Vector3[]> a, List<Vector3[]> b)
         {
             float m = 0f;
             for (int i = 0; i < a.Count; i++)
@@ -218,7 +218,7 @@ namespace DamageLab.EditorTools
             return m;
         }
 
-        static void Compare(MeshFilter[] filters, List<Vector3[]> verts, List<Vector3[]> normals, out float maxPos, out float maxNrm)
+        internal static void Compare(MeshFilter[] filters, List<Vector3[]> verts, List<Vector3[]> normals, out float maxPos, out float maxNrm)
         {
             maxPos = 0f; maxNrm = 0f;
             for (int i = 0; i < filters.Length; i++)

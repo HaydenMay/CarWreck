@@ -326,7 +326,7 @@ namespace DamageLab.EditorTools
             return sb.ToString();
         }
 
-        static void CheckSanity(MeshFilter[] filters, List<Vector3[]> baseVerts, out int nan, out int flipped, out int tris)
+        internal static void CheckSanity(MeshFilter[] filters, List<Vector3[]> baseVerts, out int nan, out int flipped, out int tris)
         {
             nan = flipped = tris = 0;
             for (int i = 0; i < filters.Length; i++)

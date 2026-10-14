@@ -43,12 +43,16 @@ namespace DamageLab.CollisionTest
         [Tooltip("Half-width (m) of the lane used to find the real body surface behind the contact point.")]
         public float surfaceLane = 0.12f;
         public bool logImpacts = true;
+        [Tooltip("Use the impacting BoxCollider's shape for the dent footprint (off = Phase 1 point impacts).")]
+        public bool geometryAwareFootprint = true;
 
         public struct Report
         {
             public string other;
             public float relativeSpeed;   // |v| (m/s)
-            public float closingSpeed;    // vn (m/s)
+            public float closingSpeed;    // vn (m/s), 0 when separating
+            public float rawClosing;      // relative velocity along the inward normal before clamping (< 0 = separating)
+            public bool separating;
             public float impulse;         // collision impulse magnitude (N·s), summed over contacts
             public float reducedMass;     // kg
             public float energy;          // J
@@ -59,6 +63,7 @@ namespace DamageLab.CollisionTest
             public Vector3 localDirection;
             public string region;
             public float deformMilliseconds;
+            public ImpactFootprint footprint; // contact patch (geometry-aware impacts)
         }
 
         public bool HasReport { get; private set; }
@@ -71,6 +76,7 @@ namespace DamageLab.CollisionTest
             public Vector3 pointSum, normalSum, relativeVelocity;
             public float impulse;
             public int contacts;
+            public BoxImpactor box;   // world space, pose at the first reported contact
         }
 
         readonly Dictionary<Rigidbody, Pending> pending = new Dictionary<Rigidbody, Pending>();
@@ -119,6 +125,18 @@ namespace DamageLab.CollisionTest
             }
             p.impulse += c.impulse.magnitude;
             if (c.relativeVelocity.sqrMagnitude > p.relativeVelocity.sqrMagnitude) p.relativeVelocity = c.relativeVelocity;
+            if (!p.box.valid && c.collider is BoxCollider bc && geometryAwareFootprint)
+            {
+                // The impactor's real shape: its box collider at the contact pose (world space).
+                var bt = bc.transform;
+                p.box = new BoxImpactor
+                {
+                    valid = true,
+                    center = bt.TransformPoint(bc.center),
+                    rotation = bt.rotation,
+                    halfExtents = Vector3.Scale(bc.size, bt.lossyScale) * 0.5f,
+                };
+            }
         }
 
         /// <summary>Advance the event clock and turn the contacts gathered since the last call into impacts.</summary>
@@ -136,27 +154,47 @@ namespace DamageLab.CollisionTest
             EventCount++;
             Vector3 n = p.normalSum.sqrMagnitude > 1e-8f ? p.normalSum.normalized : (body.worldCenterOfMass - p.pointSum / p.contacts).normalized;
             Vector3 point = p.pointSum / p.contacts;
+            // Collision.relativeVelocity is the other body's velocity relative to this one (verified by the
+            // validation: every approaching hit has vn > 0). A contact whose bodies are already separating
+            // along the normal is not an impact, so it is never flipped into one.
             Vector3 v = p.relativeVelocity;
-            if (Vector3.Dot(v, n) < 0f) v = -v;                       // the other body moves INTO the car
-            float vn = Vector3.Dot(v, n);
-            Vector3 vt = v - n * vn;
+            float vn = ClosingSpeed(v, n, out bool separating);
+            Vector3 vt = v - n * Vector3.Dot(v, n);
 
             float mOther = other.isKinematic ? float.PositiveInfinity : other.mass;
             float mu = float.IsInfinity(mOther) ? body.mass : body.mass * mOther / (body.mass + mOther);
             float energy = 0.5f * mu * vn * vn;
             float strength = energy <= energyThreshold ? 0f : 1f - Mathf.Exp(-(energy - energyThreshold) / Mathf.Max(1f, energyScale));
 
-            Vector3 dir = (n * vn + vt * tangentialDirectionWeight).normalized;
+            Vector3 dir = separating ? n : (n * vn + vt * tangentialDirectionWeight).normalized;
             var root = model.transform;
             Vector3 localDir = root.InverseTransformDirection(dir);
             Vector3 localContact = root.InverseTransformPoint(point);
             model.SurfacePointAlong(localContact, localDir, out Vector3 localPoint, surfaceLane);
+
+            var impact = new LocalImpact
+            {
+                point = localPoint,
+                direction = localDir,
+                normal = -root.InverseTransformDirection(n),
+                strength = strength,
+            };
+            if (p.box.valid)
+                impact.impactor = new BoxImpactor
+                {
+                    valid = true,
+                    center = root.InverseTransformPoint(p.box.center),
+                    rotation = Quaternion.Inverse(root.rotation) * p.box.rotation,
+                    halfExtents = p.box.halfExtents,
+                };
 
             var report = new Report
             {
                 other = other.name,
                 relativeSpeed = v.magnitude,
                 closingSpeed = vn,
+                rawClosing = Vector3.Dot(v, n),
+                separating = separating,
                 impulse = p.impulse,
                 reducedMass = mu,
                 energy = energy,
@@ -169,15 +207,14 @@ namespace DamageLab.CollisionTest
             if (strength > 0f)
             {
                 stopwatch.Restart();
-                report.applied = model.AddImpact(new LocalImpact
-                {
-                    point = localPoint,
-                    direction = localDir,
-                    normal = -root.InverseTransformDirection(n),
-                    strength = strength,
-                });
+                report.applied = model.AddImpact(impact);
                 stopwatch.Stop();
                 report.deformMilliseconds = (float)stopwatch.Elapsed.TotalMilliseconds;
+                if (report.applied)
+                {
+                    report.footprint = model.Impacts[model.ImpactCount - 1].footprint;
+                    if (report.footprint.valid) { report.localPoint = report.footprint.center; report.region = Region(report.footprint.center); }
+                }
             }
             Last = report;
             HasReport = true;
@@ -185,8 +222,18 @@ namespace DamageLab.CollisionTest
                 UnityEngine.Debug.Log($"[CollisionLab] {report.other} -> car: |v| {report.relativeSpeed:0.00} m/s, closing {report.closingSpeed:0.00} m/s, " +
                                       $"impulse {report.impulse:0} N·s, μ {report.reducedMass:0} kg, E {report.energy / 1000f:0.0} kJ, strength {report.strength * 100f:0.0}, " +
                                       $"{report.contacts} contacts, at {report.localPoint.ToString("F2")} ({report.region}) dir {report.localDirection.ToString("F2")}, " +
-                                      $"{(report.applied ? $"deform {report.deformMilliseconds:0.0} ms" : "no damage")}");
+                                      $"{(report.footprint.valid ? $"footprint {report.footprint.kind} {report.footprint.halfU * 2f:0.00} x {report.footprint.halfV * 2f:0.00} m ({report.footprint.area:0.00} m², crush {report.footprint.travel:0.000} m), " : "")}" +
+                                      $"{(report.separating ? "separating, " : "")}{(report.applied ? $"deform {report.deformMilliseconds:0.0} ms" : "no damage")}");
             ImpactRegistered?.Invoke(report);
+        }
+
+        /// <summary>Approach speed along the inward normal n for the other body's velocity relative to the car;
+        /// 0 (and <paramref name="separating"/>) when the bodies are moving apart.</summary>
+        public static float ClosingSpeed(Vector3 relativeVelocity, Vector3 inwardNormal, out bool separating)
+        {
+            float vn = Vector3.Dot(relativeVelocity, inwardNormal);
+            separating = vn <= 0f;
+            return separating ? 0f : vn;
         }
 
         string Region(Vector3 p)

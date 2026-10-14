@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using DamageLab.Deformation;
 using UnityEngine;
 
@@ -197,6 +198,12 @@ namespace DamageLab.Vehicle
         public bool AddImpact(LocalImpact impact)
         {
             if (ImpactLimitReached || impact.strength <= 0f) return false;
+            if (impact.impactor.valid && !impact.footprint.valid)
+            {
+                // Geometry-aware impact: find the contact patch on the original bodywork once, store it with the impact.
+                if (!IsInitialized) Initialize();
+                impactField.ResolveFootprint(ref impact, parts.Select(p => p.VehiclePositions));
+            }
             impacts.Add(impact);
             if (IsInitialized) AccumulateImpact(impact);
             OnImpactsChanged();

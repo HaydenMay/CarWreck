@@ -133,8 +133,68 @@ Collision Lab limitations:
 
 * **The colliders don't deform.** The car collides as two fixed boxes. A crushed corner still collides where the undamaged box corner was, the sled stops at the box surface rather than inside the dent, and box edges don't match the rounded bodywork.
 * **No suspension or wheels in the physics.** The car slides on its body box with tyre-like friction. Hard hits shove it many metres, because there's no rolling resistance model, no tyre grip direction and no structure absorbing energy.
-* **One impact per event.** A long push, such as the sled continuing to shove the car, adds no further damage after the first contact. A second strike needs a separate contact more than 0.5 s later.
+* **One impact per event.** (See phase 2 for the impact shape.) A long push, such as the sled continuing to shove the car, adds no further damage after the first contact. A second strike needs a separate contact more than 0.5 s later.
 * **The severity mapping is tuned by eye** for a 1400 kg car (the energy threshold and scale). It isn't crash-test calibrated.
+
+## Collision Lab phase 2: geometry-aware impact footprints
+
+**The problem.** Phase 1 averaged the contact points into a single point and fed it to the round localized dent. A 1.9 m flat sled hitting the nose squarely left a narrow central V. The impactor's size and shape never reached the deformation.
+
+**Footprint** (`ImpactField.ResolveFootprint`, `Deformation/ImpactFootprint.cs`):
+
+* The receiver records the other body's `BoxCollider` at its contact pose: centre, rotation, and size × scale. It passes this as `LocalImpact.impactor`, in vehicle space. Contact points are still used only for the normal, severity and direction. They're solver data and don't describe the patch.
+* `BoxProjection` views the box along the impact direction. It gives:
+  * a lateral frame;
+  * the box's silhouette, a convex hull of the projected corners;
+  * its *leading surface*: for each lateral position, how far along the direction the box reaches, from a slab ray test. A face-on box leads with a flat face, an angled one with an edge or corner.
+* The footprint is resolved against the *original* car vertices:
+  1. **First contact** is the vertex with the smallest gap to the leading surface.
+  2. **The patch** is every vertex within the crush depth of that first contact. In other words, it's the overlap the impactor would sweep through.
+  3. **The patch area** is the convex hull of the patch. The crush depth is scaled by `(0.5 m² / area)^0.35`, clamped to 0.6–1.6. The same energy over a small area crushes deeper, and over a large area shallower. Total energy and strength are not changed by area.
+  4. **The stored result** is the area, a PCA-oriented rectangle (centre, axes, width × height), the outline, the crush depth, and the kind: face, edge or corner, by how many box corners lie within the crush depth.
+* **Determinism.** The footprint is resolved once, when the impact is added. It's stored with the impact, so rebuilds and reset stay deterministic.
+
+**Deformation** (`ImpactField.OneBox`). This is a second contribution type beside the radial dent, summed into the same per-vertex cache and saturated by the same structural limits:
+
+* **Crush.** The leading surface advances past first contact by the crush depth. Bodywork it passes through is pushed back to that surface, keeping 15 % of its spacing as bunched metal. A face gives a broad flat crush, an edge a crease, a corner a pocket.
+* **Uneven face.** Soft waves and vertical pleats, about 0.24 m apart, so the crushed wall isn't perfectly flat.
+* **Accordion folds** on panels running along the crush direction.
+* **Tenting.** The hood, fenders and door skin bow outward just behind the crushed zone.
+* **Edges.** Ridged creases along the patch boundary. Metal just outside the impactor's silhouette is dragged along with a short falloff and pulled in toward the patch.
+* **No folding through.** The noise that varies the crush depth uses lateral coordinates only, and out-of-plane offsets follow a smooth field away from the crush axis rather than each vertex's normal. Metal therefore never swaps order along the crush, and thin double-skinned parts (grille slats) don't fold through themselves.
+
+**Other changes:**
+
+* **Closing-speed sign.** `Collision.relativeVelocity` is used as the other body's velocity relative to the car. The phase 1 code flipped it whenever it pointed away. A separating contact is now `vn = 0` and no impact (`CollisionDamageReceiver.ClosingSpeed`). The validation confirms that every real approach had `v·n > 0`.
+* **Click-to-damage** impacts carry no impactor, so they use the unchanged radial dent.
+* **Debug view.** `ImpactFootprintDebug` draws runtime lines and editor gizmos: the patch outline on the crushed surface (cyan), the patch axes, and the incoming direction (yellow). Toggle it with *Show Contact Footprint*.
+* **UI.** The *Impactor* buttons switch between the 1.9 m sled and a 0.5 m block of the same length, height and mass.
+
+**Validation** (`collision-geometry`: real PhysX contacts, `Physics.Simulate`; screenshots in `Screenshots/4x_…`):
+
+* **Wide vs narrow:** same location, 1500 kg at 12 m/s, both strength 57.
+
+  | | Wide sled | Narrow block |
+  |---|---|---|
+  | Footprint | 1.88 × 0.49 m, 0.85 m² | 0.55 × 0.52 m, 0.26 m² |
+  | Crush depth | 0.18 m | 0.28 m |
+  | Damaged region (moved > 3 cm) | 1.86 m wide | 0.74 m wide |
+
+* **No more central V.** On the wide hit, the crush 0.45–0.75 m either side of centre is 1.04 × the centre crush; the phase 1 point impact gave 0.11 ×.
+* **Corner:** 0.87 × 0.53 m (0.40 m²), asymmetric.
+* **Glancing scrape at 15 m/s:** closing 3.9 m/s, 2 cm, versus 15 cm for a direct door hit at 12 m/s.
+* **Speed and mass still matter:** speed 6 / 12 / 20 m/s gives a crush of 5 / 18 / 30 cm. Mass 500 / 1500 / 3000 kg gives 11 / 18 / 22 cm.
+* **Accumulation and saturation:** two hits accumulate. Four heavy hits saturate (0.28 → 0.40 → 0.47 → 0.49 m).
+* **Reset and repeatability:** reset is exact, and the same launch repeated matches within 3 µm.
+* **Folded triangles:** about 0.1–0.4 % of triangles for single hits (narrow block highest, mostly grille slats at the pocket edge), 1.7 % after four stacked heavy hits.
+
+Phase 2 limitations:
+
+* **Box impactors only.** Other collider types fall back to the phase 1 radial dent.
+* **Pose at first contact.** The impactor pose is taken when the contact is reported. The sled's motion after that, and any rotation during the crush, are ignored.
+* **Simplified car colliders.** The car still collides as two boxes. First contact is measured against the real mesh, but the physical stop happens at the box. For a rounded nose, the visual patch can differ by a few centimetres from where the bodies would really meet. A second hit on crushed metal measures the gap from the *original* surface, so it starts at the old contact plane rather than the dented one.
+* **No energy accounting.** Crush depth comes from collision energy through the impact strength, scaled by contact area. It isn't an energy-absorbing structural model, and the car body doesn't get physically shorter.
+* **Glancing scrapes** produce small, shallow damage, because only the normal closing speed counts. There's no scraping or smearing model along the surface.
 
 ## Limitations / next steps
 

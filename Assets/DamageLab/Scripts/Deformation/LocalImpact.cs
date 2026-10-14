@@ -12,6 +12,10 @@ namespace DamageLab.Deformation
         public Vector3 direction; // incoming ray direction (unit), the way the metal is pushed
         public Vector3 normal;    // outward surface normal at the hit point
         public float strength;    // 0..1
+        // Optional: the impacting object's shape. When set (physical collisions), the dent takes the shape of the
+        // contact patch instead of the round localized profile; the footprint is resolved when the impact is added.
+        public BoxImpactor impactor;
+        public ImpactFootprint footprint;
     }
 
     /// <summary>Tuning for localized impacts (all lengths in metres).</summary>
@@ -55,6 +59,30 @@ namespace DamageLab.Deformation
         public float maxSpread = 1.5f;
         [Tooltip("Work hardening: depth of a new hit is divided by (1 + hardening · earlier damage at that spot).")]
         public float hardening = 0.6f;
+        [Header("Geometry-aware impacts (box impactor)")]
+        [Tooltip("Contact area (m²) at which the crush depth is unchanged; smaller patches crush deeper, larger ones shallower.")]
+        public float referenceArea = 0.5f;
+        public float areaExponent = 0.35f;
+        public float areaFactorMin = 0.6f;
+        public float areaFactorMax = 1.6f;
+        [Tooltip("Fraction of the overlap that is crushed flat; the rest stays as bunched-up metal.")]
+        [Range(0.5f, 1f)] public float crushCompression = 0.85f;
+        [Tooltip("Variation of the crush depth across the contact face, so the crushed wall is not perfectly flat.")]
+        public float faceUnevenness = 0.15f;
+        [Tooltip("Length (m) of the accordion folds along the crush direction, and their height relative to the crush.")]
+        public float foldWavelength = 0.14f;
+        public float foldStrength = 0.35f;
+        [Tooltip("Width (m) over which metal just outside the impactor's outline is dragged along (+ per metre of crush).")]
+        public float edgeFalloff = 0.08f;
+        public float edgeFalloffPerDepth = 0.3f;
+        [Tooltip("Softening (m) of the crease where crushed metal meets undamaged metal.")]
+        public float edgeSoftness = 0.03f;
+        [Tooltip("Vertical pleats across the crushed face: spacing (m) and depth (fraction of the crush).")]
+        public float pleatWavelength = 0.24f;
+        public float pleatDepth = 0.12f;
+        [Tooltip("Panels behind the crushed metal tent outward: length (× crush depth, + 0.1 m) and height (× crush depth).")]
+        public float tentLength = 2.5f;
+        public float tentHeight = 0.22f;
     }
 
     /// <summary>
@@ -76,6 +104,10 @@ namespace DamageLab.Deformation
         {
             public Vector3 p, d, e1, e2, noiseOffset;
             public float depth, radius, invRadius, zone, reach2, phase, lipScale;
+            // Geometry-aware (box impactor) impacts
+            public BoxProjection box;
+            public float gapMin, travel, rho;
+            public Vector3 pleatAxis, centreLat;
         }
 
         readonly ImpactSettings cfg;
@@ -119,22 +151,27 @@ namespace DamageLab.Deformation
             var st = new State();
             st.p = im.point;
             st.d = im.direction.normalized;
-            float facing = Mathf.Clamp01(Vector3.Dot(-st.d, im.normal));
             float s = Mathf.Clamp01(im.strength);
-            st.depth = cfg.maxDepth * Mathf.Pow(s, cfg.depthExponent) * Mathf.Lerp(cfg.grazingDepth, 1f, facing);
-            // Earlier damage at this spot (sum of earlier footprints, weighted by their strength): the
-            // centre is already near its limit, so the new hit spreads into the surrounding panels.
-            float prior = 0f;
-            foreach (var o in states)
-            {
-                Vector3 r0 = im.point - o.p;
-                Vector3 lat0 = r0 - o.d * Vector3.Dot(r0, o.d);
-                prior += o.depth / Mathf.Max(1e-3f, cfg.maxDepth) * Mathf.Exp(-lat0.sqrMagnitude * o.invRadius * o.invRadius);
-            }
+            float prior = Prior(im.point);
             // Work hardening: crushed metal absorbs less of a new hit, so repeats give diminishing depth.
-            st.depth /= 1f + cfg.hardening * prior;
+            st.depth = BaseDepth(im) / (1f + cfg.hardening * prior);
             st.lipScale = 1f / (1f + prior);
-            st.radius = Mathf.Lerp(cfg.radiusMin, cfg.radiusMax, s) * (1f + cfg.spreadPerHit * Mathf.Min(prior, cfg.maxSpread));
+            if (im.impactor.valid && im.footprint.valid)
+            {
+                // Geometry-aware: the depth was resolved with the footprint (incl. hardening and contact area).
+                st.box = new BoxProjection(im.impactor, st.d);
+                st.gapMin = im.footprint.firstContact;
+                st.travel = im.footprint.travel;
+                st.depth = st.travel;
+                st.radius = Mathf.Max(0.1f, Mathf.Sqrt(im.footprint.halfU * im.footprint.halfV));
+                st.rho = cfg.edgeFalloff + cfg.edgeFalloffPerDepth * st.travel;
+                Vector3 h = Vector3.Cross(Vector3.up, st.d);
+                st.pleatAxis = h.sqrMagnitude > 1e-4f ? h.normalized : st.box.e1;
+                Vector3 rc = im.footprint.center - st.box.c;
+                st.centreLat = rc - st.box.d * Vector3.Dot(rc, st.box.d);
+            }
+            else
+                st.radius = Mathf.Lerp(cfg.radiusMin, cfg.radiusMax, s) * (1f + cfg.spreadPerHit * Mathf.Min(prior, cfg.maxSpread));
             st.invRadius = 1f / st.radius;
             st.zone = 1.5f * st.depth + 0.12f;
             float r = 1.8f * st.radius;
@@ -144,10 +181,135 @@ namespace DamageLab.Deformation
             st.e2 = Vector3.Cross(st.d, st.e1);
             // Noise offset and buckle phase come from the hit position, so the same click always
             // produces the same dent pattern (its spread still depends on the damage already there).
-            st.noiseOffset = new Vector3(Hash(im.point.x * 13.1f + im.point.z * 3.7f), Hash(im.point.y * 17.3f + im.point.x * 5.1f), Hash(im.point.z * 11.7f + im.point.y * 7.9f)) * 40f;
-            st.phase = Hash(im.point.x * 7.3f + im.point.y * 3.1f + im.point.z * 5.9f);
+            // Physics contacts jitter by fractions of a millimetre between otherwise identical runs; seed the pattern
+            // from the patch centre on a 2 cm grid so the same collision always gives the same wrinkles.
+            Vector3 seed = st.box != null ? new Vector3(Mathf.Round(im.point.x * 50f), Mathf.Round(im.point.y * 50f), Mathf.Round(im.point.z * 50f)) * 0.02f : im.point;
+            st.noiseOffset = new Vector3(Hash(seed.x * 13.1f + seed.z * 3.7f), Hash(seed.y * 17.3f + seed.x * 5.1f), Hash(seed.z * 11.7f + seed.y * 7.9f)) * 40f;
+            st.phase = Hash(seed.x * 7.3f + seed.y * 3.1f + seed.z * 5.9f);
             states.Add(st);
             return states.Count - 1;
+        }
+
+        /// <summary>Crush depth of a fresh hit from its strength and how square-on it is (before hardening / area).</summary>
+        float BaseDepth(in LocalImpact im)
+        {
+            float facing = Mathf.Clamp01(Vector3.Dot(-im.direction.normalized, im.normal));
+            return cfg.maxDepth * Mathf.Pow(Mathf.Clamp01(im.strength), cfg.depthExponent) * Mathf.Lerp(cfg.grazingDepth, 1f, facing);
+        }
+
+        /// <summary>Earlier damage at a spot (sum of earlier footprints, weighted by their depth): the metal there is
+        /// already near its limit, so a new hit spreads into the surrounding panels.</summary>
+        float Prior(Vector3 point)
+        {
+            float prior = 0f;
+            foreach (var o in states)
+            {
+                Vector3 r0 = point - o.p;
+                Vector3 lat0 = r0 - o.d * Vector3.Dot(r0, o.d);
+                prior += o.depth / Mathf.Max(1e-3f, cfg.maxDepth) * Mathf.Exp(-lat0.sqrMagnitude * o.invRadius * o.invRadius);
+            }
+            return prior;
+        }
+
+        /// <summary>
+        /// Contact patch of a box impactor against the ORIGINAL bodywork (vehicle-space vertex positions):
+        ///   1. first contact: the vertex whose gap to the box's leading surface (measured along the impact
+        ///      direction, inside the box's silhouette) is smallest;
+        ///   2. patch: every vertex the leading surface would sweep through over the crush depth, i.e. the
+        ///      overlap of the impactor with the car (face-on = broad, edge = a strip, corner = a small patch);
+        ///   3. contact area: the same energy over a smaller patch crushes deeper, over a larger one shallower.
+        /// Fills <see cref="LocalImpact.footprint"/> and moves the impact point to the patch centre; returns false
+        /// (and leaves the impact as an ordinary localized one) if the box does not overlap the car at all.
+        /// </summary>
+        public bool ResolveFootprint(ref LocalImpact im, IEnumerable<Vector3[]> vertexSets)
+        {
+            if (!im.impactor.valid) return false;
+            var pj = new BoxProjection(im.impactor, im.direction);
+            var inside = new List<Vector3>(4096);      // (u, v, gap) of vertices within the silhouette
+            float gapMin = float.MaxValue;
+            Vector3 first = im.point;
+            foreach (var verts in vertexSets)
+                foreach (var x in verts)
+                {
+                    Vector3 r = x - pj.c;
+                    float u = Vector3.Dot(r, pj.e1), v = Vector3.Dot(r, pj.e2);
+                    if (pj.SignedDistance(u, v, out _, out _) > 0f) continue;
+                    float lead = pj.Lead(u, v);
+                    if (float.IsNaN(lead)) continue;
+                    float gap = Vector3.Dot(r, pj.d) - lead;
+                    inside.Add(new Vector3(u, v, gap));
+                    if (gap < gapMin) { gapMin = gap; first = x; }
+                }
+            if (inside.Count == 0) return false;
+
+            float t0 = BaseDepth(im) / (1f + cfg.hardening * Prior(first));
+            var hull0 = BoxProjection.ConvexHull(PatchPoints(inside, gapMin, t0));
+            float area0 = BoxProjection.PolygonArea(hull0);
+            float factor = Mathf.Clamp(Mathf.Pow(cfg.referenceArea / Mathf.Max(0.01f, area0), cfg.areaExponent), cfg.areaFactorMin, cfg.areaFactorMax);
+            float travel = t0 * factor;
+
+            var pts = PatchPoints(inside, gapMin, travel);
+            Vector2 mean = Vector2.zero;
+            foreach (var p in pts) mean += p;
+            mean /= Mathf.Max(1, pts.Count);
+            float cxx = 0f, cyy = 0f, cxy = 0f;
+            foreach (var p in pts) { Vector2 q = p - mean; cxx += q.x * q.x; cyy += q.y * q.y; cxy += q.x * q.y; }
+            float ang = 0.5f * Mathf.Atan2(2f * cxy, cxx - cyy);
+            Vector2 du = new Vector2(Mathf.Cos(ang), Mathf.Sin(ang)), dv = new Vector2(-du.y, du.x);
+            float minU = float.MaxValue, maxU = float.MinValue, minV = float.MaxValue, maxV = float.MinValue;
+            foreach (var p in pts)
+            {
+                float a = Vector2.Dot(p - mean, du), b = Vector2.Dot(p - mean, dv);
+                minU = Mathf.Min(minU, a); maxU = Mathf.Max(maxU, a); minV = Mathf.Min(minV, b); maxV = Mathf.Max(maxV, b);
+            }
+            Vector2 mid = mean + du * (0.5f * (minU + maxU)) + dv * (0.5f * (minV + maxV));
+            var hull = BoxProjection.ConvexHull(pts);
+
+            var fp = new ImpactFootprint
+            {
+                valid = true,
+                axisU = pj.e1 * du.x + pj.e2 * du.y,
+                axisV = pj.e1 * dv.x + pj.e2 * dv.y,
+                halfU = Mathf.Max(0.01f, 0.5f * (maxU - minU)),
+                halfV = Mathf.Max(0.01f, 0.5f * (maxV - minV)),
+                area = BoxProjection.PolygonArea(hull),
+                firstContact = gapMin,
+                travel = travel,
+                areaFactor = factor,
+            };
+            if (fp.halfV > fp.halfU) { (fp.axisU, fp.axisV) = (fp.axisV, -fp.axisU); (fp.halfU, fp.halfV) = (fp.halfV, fp.halfU); }
+            int corners = pj.CornersWithin(travel);
+            fp.kind = corners >= 4 ? ContactKind.Face : corners >= 2 ? ContactKind.Edge : ContactKind.Corner;
+            fp.center = SurfaceAt(pj, mid, gapMin, first);
+            // Outline on the crushed surface (slightly in front of it so it stays visible).
+            fp.outline = new Vector3[hull.Count];
+            float crushed = gapMin + travel * cfg.crushCompression - 0.02f;
+            for (int i = 0; i < hull.Count; i++) fp.outline[i] = SurfaceAt(pj, hull[i] + (mid - hull[i]).normalized * 0.002f, crushed, first);
+
+            im.footprint = fp;
+            im.point = fp.center;
+            return true;
+        }
+
+        /// <summary>Lateral positions (2 cm grid, de-duplicated) of the vertices within <paramref name="depth"/> of the first contact.</summary>
+        static List<Vector2> PatchPoints(List<Vector3> inside, float gapMin, float depth)
+        {
+            var seen = new HashSet<long>();
+            var pts = new List<Vector2>();
+            foreach (var g in inside)
+            {
+                if (g.z - gapMin > depth) continue;
+                long key = ((long)Mathf.RoundToInt(g.x * 50f) << 32) ^ (uint)Mathf.RoundToInt(g.y * 50f);
+                if (seen.Add(key)) pts.Add(new Vector2(g.x, g.y));
+            }
+            return pts;
+        }
+
+        static Vector3 SurfaceAt(BoxProjection pj, Vector2 uv, float offset, Vector3 fallback)
+        {
+            float lead = pj.Lead(uv.x, uv.y);
+            if (float.IsNaN(lead)) lead = Vector3.Dot(fallback - pj.c, pj.d) - offset;
+            return pj.c + pj.e1 * uv.x + pj.e2 * uv.y + pj.d * (lead + offset);
         }
 
         static float Hash(float x)
@@ -158,7 +320,11 @@ namespace DamageLab.Deformation
 
         /// <summary>Raw displacement (vehicle space) from impact <paramref name="index"/> of a vertex at original
         /// position x with smoothed normal n. Parts cache the sum of these, so a new click costs one impact.</summary>
-        public Vector3 Contribution(int index, Vector3 x, Vector3 n, float crumple) => One(states[index], x, n, crumple);
+        public Vector3 Contribution(int index, Vector3 x, Vector3 n, float crumple)
+        {
+            var st = states[index];
+            return st.box != null ? OneBox(st, x, n, crumple) : One(st, x, n, crumple);
+        }
 
         /// <summary>Saturate the summed contributions of all impacts against the vertex's crush capacity:
         /// linear up to knee·capacity, then easing toward the capacity (diminishing returns, no hard stop).</summary>
@@ -176,6 +342,82 @@ namespace DamageLab.Deformation
         {
             float e = Mathf.Exp(-2f * x);
             return (1f - e) / (1f + e);
+        }
+
+        /// <summary>
+        /// Geometry-aware crush: the impactor's leading surface advances <c>travel</c> past the first contact and
+        /// the bodywork it passes through is pushed back to (nearly) that surface - a face gives a broad flat crush,
+        /// an edge a crease, a corner a concentrated pocket.
+        ///   gap      distance along d from the leading surface to the original vertex, minus the first-contact gap
+        ///   crush    travel - gap (softened at 0 so the boundary is a crease, not a tear); only a fraction
+        ///            (crushCompression) is applied so the compressed metal keeps some spacing; the crush plane is
+        ///            made uneven (waves + vertical pleats) using noise in lateral coordinates only
+        ///   tent     behind the crush, panels running along d bow outward (hood / fender buckling)
+        ///   folds    panels running along d (fender sides, hood) bunch up: an accordion triangle wave along
+        ///            the original depth, displacing the panel out of its plane (away from the crush axis)
+        ///   edge     metal just outside the impactor's silhouette is dragged along with a short falloff and
+        ///            pulled in toward the crushed area; ridged creases mark the boundary of the patch
+        /// The result is summed with the other impacts and saturated per vertex like every localized impact.
+        /// </summary>
+        Vector3 OneBox(in State st, Vector3 x, Vector3 n, float crumple)
+        {
+            var pj = st.box;
+            Vector3 r = x - pj.c;
+            float a = Vector3.Dot(r, pj.d);
+            float soft = cfg.edgeSoftness;
+            float tentLen = cfg.tentLength * st.travel + 0.1f;
+            float deepest = st.travel * (1f + cfg.faceUnevenness + cfg.pleatDepth);
+            if (a - pj.frontA - st.gapMin > deepest + tentLen) return Vector3.zero;   // behind the affected zone
+            float u = Vector3.Dot(r, pj.e1), v = Vector3.Dot(r, pj.e2);
+            float sd = pj.SignedDistance(u, v, out float qu, out float qv);
+            if (sd > 3f * st.rho) return Vector3.zero;
+            float lead = pj.Lead(qu, qv);
+            if (float.IsNaN(lead)) return Vector3.zero;
+            float gap = a - lead - st.gapMin;
+            float lat = sd > 0f ? Mathf.Exp(-(sd / st.rho) * (sd / st.rho)) : 1f;
+
+            // Noise in lateral coordinates only (constant along d), so crushing never reorders metal along d.
+            Vector3 latPos = pj.e1 * u + pj.e2 * v;
+            Vector3 ql = latPos + st.noiseOffset;
+            // Crush plane = the impactor face, made uneven: soft waves plus vertical pleats (sheet metal gathering).
+            float tp = Vector3.Dot(latPos, st.pleatAxis) / cfg.pleatWavelength + st.phase + 0.5f * noise.Fbm(ql * 1.3f, 2);
+            float pleat = 1f - 4f * Mathf.Abs(tp - Mathf.Floor(tp) - 0.5f);
+            float plane = st.travel * (1f + cfg.faceUnevenness * noise.Fbm(ql * 2.4f, 2) + cfg.pleatDepth * pleat);
+            float over = Mathf.Min(plane - gap, plane);
+            Vector3 nl = n - pj.d * Vector3.Dot(n, pj.d);
+
+            // Behind the crushed metal, panels running along d (hood, fenders, door skin) tent outward.
+            float behind = -over;
+            float tent = behind > 0f && behind < tentLen
+                ? cfg.tentHeight * st.travel * Mathf.Sin(Mathf.PI * behind / tentLen) * lat * crumple * (0.6f + 0.4f * noise.Perlin(ql * 2.1f))
+                : 0f;
+            // Out-of-plane offsets (tent, folds, creases) follow a smooth field pointing away from the crush axis,
+            // scaled by how well the panel faces it: both skins of a thin part (grille slats) move the same way
+            // instead of along their opposite normals, so they never pass through each other.
+            Vector3 radial = latPos - st.centreLat;
+            float rl = radial.magnitude;
+            Vector3 outward = radial / (rl + 0.15f);
+            float align = rl > 1e-5f ? Mathf.Abs(Vector3.Dot(nl, radial)) / rl : 0f;
+            if (over <= -soft) return outward * (tent * align);
+
+            float c = over >= soft ? over : (over + soft) * (over + soft) / (4f * soft);
+            float push = c * cfg.crushCompression * lat;
+
+            // Accordion folds on panels that run along the crush direction.
+            Vector3 q = x + st.noiseOffset;
+            float tf = gap / cfg.foldWavelength + st.phase + 0.45f * noise.Fbm(q * 1.7f, 2);
+            float tri = 1f - 4f * Mathf.Abs(tf - Mathf.Floor(tf) - 0.5f);
+            float fold = cfg.foldStrength * Mathf.Min(c, cfg.foldWavelength) * lat * tri * crumple * (0.6f + 0.4f * noise.Perlin(q * 3.1f));
+
+            // Creases along the boundary of the crushed patch (depth edge and silhouette edge).
+            float bw = 0.25f * st.travel + 0.02f;
+            float band = Mathf.Max(Mathf.Exp(-(over / bw) * (over / bw)), 4f * lat * (1f - lat));
+            float crease = cfg.rimCrease * st.travel * crumple * band * noise.Ridged(q * 3.4f);
+
+            Vector3 disp = pj.d * push + outward * ((fold + crease + tent) * align);
+            if (sd > 1e-4f)   // pulled in toward the crushed area
+                disp += (pj.e1 * (qu - u) + pj.e2 * (qv - v)) * (cfg.drawIn * push / sd);
+            return disp;
         }
 
         Vector3 One(in State st, Vector3 x, Vector3 n, float crumple)
