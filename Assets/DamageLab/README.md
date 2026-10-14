@@ -363,6 +363,41 @@ Phase 4 limitations:
 * **Physics repeatability is at the millimetre level.** Identical launches can differ by a few mm of contact (up to about 1 cm of mesh after 33 hits) because PhysX keeps internal contact history across resets. The deformation itself is exact for a given impact sequence.
 * **Many hits fold triangles.** After 84 heavy hits, 5 % of triangles are folded, from the visual system under extreme saturation, not the hitbox.
 
+## Reusable vehicle engine (vehicle definitions)
+
+A vehicle is now **data**. No destruction code is specific to a vehicle.
+
+* **`VehicleDefinition` asset** (`Settings/Vehicles/*.asset`): model (FBX prefab), mass, damage profile, explicit **component rules**, physics-shell proportions and Collision Lab impact height. Geometric values left at 0 are automatic:
+  * nose/tail sections are 14 % of the body length, side shell 22 % of the width;
+  * impact height is the body's centre height (at least 0.6 m);
+  * the cabin box comes from the Cabin parts.
+* **Component rules** (`VehiclePartRule`):
+  * Each rule has a **role**: Body, Bumper, Cabin, Wheel, Panel, Fascia, Light, Trim, Underbody or Ignore.
+  * Matching is by **name token**. `Body` matches `Body` and `Body.001` but not `Underbody` (the old substring match did). Legacy `Contains` matching stays available per rule.
+  * Body and Bumper roles define the outer impact faces, Cabin the cabin box, Wheel the rigid wheels and wheel-mount zones.
+  * Unmatched names, ambiguous names, unreadable meshes, missing roles, and a profile cabin line more than 12 cm from the measured beltline all produce **validation warnings** (`VehicleDamageModel.Warnings`, Collision Lab panel). An unknown part still deforms with the body (`unknownComponentCrumple`), never silently.
+* **`VehicleRig`** (runtime, works in WebGL) builds a destructible physics vehicle from a definition:
+  * measures body, cabin and wheels from the roles, and puts the car on its tyres;
+  * builds the 14-box shell (core, cabin, 12 adaptive regions);
+  * adds the Rigidbody, damage model, collision receiver, adaptive hitbox and debug views.
+  * The Collision Lab scene builder uses it too, so the editor and runtime cars are identical.
+* **Collision Lab:**
+  * aim points come from the selected vehicle's measured body bounds: end and side centres, corners 8 % of the width and 5 % of the length inside the body corner;
+  * the impactor height comes from the definition;
+  * the **vehicle selector** rebuilds the car from its definition;
+  * the panel shows the vehicle, its part/vertex/collider counts, validation warnings, a per-impact cost breakdown (resolve, accumulate, rebuild, parts touched) and the hitbox refit time.
+* **Setup:** *Damage Lab ▸ Create or Refresh Vehicle Definitions* (bridge `vehicles-setup`) writes the muscle car and hatchback definitions.
+  * The **muscle car** keeps its exact phase 1–4 values: 0.7 m nose/tail, 0.45 m sides, 0.7 m impact height, its profile, and its classification (now explicit: HoodScoop, Spoiler, Mirrors and Trim at the same crumple 1.0 they had by default).
+  * The **hatchback** uses automatic sizes, 950 kg, a copy of the muscle damage profile with its cabin line measured from its own geometry (0.93–1.35 m), and every one of its 76 components classified at the resistance of its muscle-car counterpart.
+* **Rebuild optimisation:**
+  * an impact only evaluates and rebuilds parts inside its influence bounds (conservative, exact: the replayed mesh is bit-identical);
+  * a slider-free rebuild skips parts whose damage didn't change;
+  * contributions are evaluated per vertex range;
+  * footprint resolution pre-filters vertices by the impactor's silhouette.
+* **Validation:** `vehicle-muscle`, `vehicle-hatch`, `vehicle-hatch-legacy` and `collision-phase4-hatch`. The legacy run replays the hatchback with the old substring rules and muscle profile, to show what configuration fixes.
+
+Remaining per-vehicle work: write the component rules (one line per part family), set mass, and check the warnings. Profiles start as a copy of an existing one plus the measured cabin line.
+
 ## Limitations / next steps
 
 * **Performance.** About 20 ms per rebuild is fine for a lab with eased sliders, but not for gameplay. Next steps: port `Displacement` and the normal pass to Burst + Jobs (`MeshData` API), or move them to a compute/vertex shader using the precomputed per-vertex data.

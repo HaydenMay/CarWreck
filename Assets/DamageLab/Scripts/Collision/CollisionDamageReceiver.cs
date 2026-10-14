@@ -70,6 +70,7 @@ namespace DamageLab.CollisionTest
             public string region;
             public float deformMilliseconds;
             public ImpactFootprint footprint; // contact patch (geometry-aware impacts)
+            public string carCollider;        // which car collider was struck (e.g. "FrontLeftBox")
         }
 
         public bool HasReport { get; private set; }
@@ -84,6 +85,7 @@ namespace DamageLab.CollisionTest
             public int contacts;
             public float minSeparation;   // most negative ContactPoint.separation (= penetration when the contact was reported)
             public BoxImpactor box;   // world space, pose at the first reported contact
+            public string carCollider; // the car collider of the deepest contact
         }
 
         readonly Dictionary<Rigidbody, Pending> pending = new Dictionary<Rigidbody, Pending>();
@@ -146,6 +148,7 @@ namespace DamageLab.CollisionTest
                 p.pointSum += pt;
                 p.normalSum += n;
                 p.contacts++;
+                if (cp.separation <= p.minSeparation || p.carCollider == null) p.carCollider = cp.thisCollider != null ? cp.thisCollider.name : null;
                 p.minSeparation = Mathf.Min(p.minSeparation, cp.separation);
             }
             p.impulse += c.impulse.magnitude;
@@ -237,6 +240,7 @@ namespace DamageLab.CollisionTest
                 localDirection = localDir,
                 contactPoint = localContact,
                 penetration = penetration,
+                carCollider = p.carCollider,
                 region = Region(localPoint),
             };
             report.suppressed = strength > 0f && oneImpactPerLaunch && spent.Contains(other);

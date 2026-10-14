@@ -98,7 +98,7 @@ namespace DamageLab.Deformation
                 }
             }
 
-            work = new Vector3[n];
+            work = (Vector3[])baseVerts.Clone();   // valid before the first rebuild (wireframe overlays read it)
             workNormals = new Vector3[n];
             accum = new Vector3[n];
             baseCalcNormals = new Vector3[n];
@@ -123,10 +123,17 @@ namespace DamageLab.Deformation
         /// <summary>Vehicle-space bounds of the original mesh.</summary>
         public Bounds VehicleBounds()
         {
+            if (boundsCached) return cachedBounds;
             var b = new Bounds(vehiclePos[0], Vector3.zero);
             for (int i = 1; i < vehiclePos.Length; i++) b.Encapsulate(vehiclePos[i]);
+            cachedBounds = b; boundsCached = true;
             return b;
         }
+        Bounds cachedBounds; bool boundsCached;
+
+        /// <summary>True when the cached impact sum changed since the mesh was last rebuilt.</summary>
+        public bool ImpactDirty { get; private set; }
+        bool appliedOnce;
 
         /// <summary>Precompute all direction-dependent per-vertex constants (runs once; parallelised).</summary>
         public void Precompute(CrushField[] fields)
@@ -151,16 +158,20 @@ namespace DamageLab.Deformation
             }
         }
 
-        /// <summary>Rebuild the deformed mesh from the original data for the given direction states.</summary>
-        public void Apply(CrushField[] fields, RegionState[] states, float roofStart, float roofEnd, ImpactField impacts = null)
+        /// <summary>Rebuild the deformed mesh. With <paramref name="onlyIfImpactsChanged"/> a part whose impact sum did not
+        /// change since its last rebuild is skipped (the directional slider state must be unchanged too); returns whether it rebuilt.</summary>
+        public bool Apply(CrushField[] fields, RegionState[] states, float roofStart, float roofEnd, ImpactField impacts = null, bool onlyIfImpactsChanged = false)
         {
+            if (onlyIfImpactsChanged && appliedOnce && !ImpactDirty) return false;
+            appliedOnce = true;
+            ImpactDirty = false;
             bool any = impacts != null && hasImpacts;
             for (int d = 0; d < states.Length; d++) any |= states[d].active;
             int n = baseVerts.Length;
 
             if (!any)
             {
-                if (!deformed) return;
+                if (!deformed) return false;
                 // Exact restore: copy the original arrays back.
                 System.Array.Copy(baseVerts, work, n);
                 RuntimeMesh.SetVertices(baseVerts);
@@ -168,7 +179,7 @@ namespace DamageLab.Deformation
                 RuntimeMesh.bounds = sourceMesh.bounds;
                 if (wireMesh != null) { wireMesh.SetVertices(baseVerts); wireMesh.bounds = sourceMesh.bounds; }
                 deformed = false;
-                return;
+                return true;
             }
 
             // Displacement is a pure function of per-vertex constants, so vertex chunks run in parallel.
@@ -192,6 +203,7 @@ namespace DamageLab.Deformation
             RuntimeMesh.RecalculateBounds();
             if (wireMesh != null) { wireMesh.SetVertices(work); wireMesh.RecalculateBounds(); }
             deformed = true;
+            return true;
         }
 
         const int ChunkSize = 2048;
@@ -242,30 +254,25 @@ namespace DamageLab.Deformation
                 for (int i = 0; i < n; i++) impactCap[i] = field.Capacity(vehiclePos[i], crumple);
             }
             hasImpacts = true;
+            ImpactDirty = true;
             if (MultiThreaded && n >= 4096)
             {
                 Parallel.For(0, (n + ChunkSize - 1) / ChunkSize, chunk =>
                 {
                     int end = Mathf.Min(n, (chunk + 1) * ChunkSize);
-                    for (int i = chunk * ChunkSize; i < end; i++) impactSum[i] += field.Contribution(index, vehiclePos[i], vehicleNormal[i], crumple, impactSum[i], impactCap[i]);
+                    field.AccumulateRange(index, vehiclePos, vehicleNormal, crumple, impactSum, impactCap, chunk * ChunkSize, end);
                 });
             }
             else
             {
-                for (int i = 0; i < n; i++) impactSum[i] += field.Contribution(index, vehiclePos[i], vehicleNormal[i], crumple, impactSum[i], impactCap[i]);
+                field.AccumulateRange(index, vehiclePos, vehicleNormal, crumple, impactSum, impactCap, 0, n);
             }
         }
 
 
-        /// <summary>Vehicle-space positions of the bodywork as damaged by localized impacts so far (original +
-        /// saturated impact sum). Used to find where a new physical impact meets the CURRENT surface.</summary>
-        public Vector3[] ImpactedVehiclePositions(ImpactField field)
-        {
-            if (impactSum == null || !hasImpacts) return vehiclePos;
-            var p = new Vector3[vehiclePos.Length];
-            for (int i = 0; i < p.Length; i++) p[i] = vehiclePos[i] + field.Limit(impactSum[i], impactCap[i]);
-            return p;
-        }
+        /// <summary>Vertex i as damaged by localized impacts so far (original + saturated impact sum), vehicle space.</summary>
+        public Vector3 ImpactedVehiclePosition(int i, ImpactField field) =>
+            impactSum == null || !hasImpacts ? vehiclePos[i] : vehiclePos[i] + field.Limit(impactSum[i], impactCap[i]);
 
         /// <summary>Current rendered position of vertex i in vehicle space (original when undeformed).</summary>
         public Vector3 DeformedVehiclePosition(int i) => deformed ? meshToVehicle.MultiplyPoint3x4(work[i]) : vehiclePos[i];
@@ -298,9 +305,11 @@ namespace DamageLab.Deformation
                 for (int i = 0; i < sum.Length; i++) impactCap[i] = field.Capacity(vehiclePos[i], crumple);
             }
             hasImpacts = true;
+            ImpactDirty = true;
         }
         public void ClearImpacts()
         {
+            if (hasImpacts) ImpactDirty = true;
             if (impactSum != null) System.Array.Clear(impactSum, 0, impactSum.Length);
             hasImpacts = false;
         }

@@ -48,6 +48,7 @@ namespace DamageLab.EditorTools
                 var seq = Sequence();
                 var recorded = new List<DamageLab.Deformation.LocalImpact>();
                 var launchImpactsA = new List<int>(); var contactA = new List<float>();
+                var fpA = new List<ImpactFootprintSnap>();
                 int lastTotal = 0;
                 System.Action rec = () => { if (model.TotalImpactCount > lastTotal && model.ImpactCount > 0) recorded.Add(model.Impacts[model.ImpactCount - 1]); lastTotal = model.TotalImpactCount; };
                 model.ImpactsChanged += rec;
@@ -65,7 +66,7 @@ namespace DamageLab.EditorTools
                     receiver.logImpacts = false;
                     int t0 = model.TotalImpactCount;
                     var r = Hit(s.d, 30f, 4000f, s.narrow, s.offset, out _);
-                    launchImpactsA.Add(model.TotalImpactCount - t0); contactA.Add(r.contactPoint.z);
+                    launchImpactsA.Add(model.TotalImpactCount - t0); contactA.Add(r.contactPoint.z); fpA.Add(new ImpactFootprintSnap(r));
                     receiver.logImpacts = false;
                     float moved = CollisionLabValidation.MaxDiff(before, CollisionLabValidation.Snapshot(filters));
                     lab.RefreshDiagnostics();
@@ -119,7 +120,7 @@ namespace DamageLab.EditorTools
                 // Physics repeat: the same 33 launches again. PhysX contacts are not bit-identical across different solver
                 // histories, so this measures how far physics variation carries, and where the launches first differ.
                 lab.ResetAll();
-                int firstDiff = -1, extraB = 0; string diffNote = "";
+                int firstDiff = -1, extraB = 0; string diffNote = ""; float worstDev = 0f; string worstNote = "";
                 for (int i = 0; i < seq.Count; i++)
                 {
                     int t0 = model.TotalImpactCount;
@@ -128,6 +129,9 @@ namespace DamageLab.EditorTools
                     receiver.logImpacts = false;
                     int dImp = model.TotalImpactCount - t0;
                     if (dImp > 1) extraB++;
+                    var snap = new ImpactFootprintSnap(r);
+                    float dev = snap.Deviation(fpA[i]);
+                    if (dev > worstDev) { worstDev = dev; worstNote = $"launch {i + 1} ({seq[i].name}): centre {fpA[i].centre.ToString("F4")} vs {snap.centre.ToString("F4")}, crush {fpA[i].travel:0.0000} vs {snap.travel:0.0000}, area {fpA[i].area:0.0000} vs {snap.area:0.0000}, contact {fpA[i].contact.ToString("F4")} vs {snap.contact.ToString("F4")}, strength {fpA[i].strength:0.0000} vs {snap.strength:0.0000}"; }
                     if (firstDiff < 0 && (dImp != launchImpactsA[i] || Mathf.Abs(r.contactPoint.z - contactA[i]) > 1e-3f))
                     {
                         firstDiff = i + 1;
@@ -137,6 +141,7 @@ namespace DamageLab.EditorTools
                 float rep = CollisionLabValidation.MaxDiff(finalA, CollisionLabValidation.Snapshot(filters));
                 sb.AppendLine($"  Same 33 launches again (physics re-run): mesh difference {rep:E1} m {(rep < 1e-3f ? "PASS" : "CHECK")}; " +
                               $"{(firstDiff < 0 ? "all launches matched" : "first difference at " + diffNote)}; launches with a 2nd damaging contact: run 1 {launchImpactsA.FindAll(x => x > 1).Count}, run 2 {extraB} (of {seq.Count} each); second contacts with impact strength suppressed by one-impact-per-launch over both runs: {suppressedCount}");
+                sb.AppendLine($"    largest per-launch input difference between the two runs: {(worstNote.Length > 0 ? worstNote : "none")}");
 
                 // Repair Car / Reset All after overflow.
                 lab.RepairCar();
@@ -157,5 +162,18 @@ namespace DamageLab.EditorTools
             }
             return sb.ToString();
         }
+    }
+}
+
+namespace DamageLab.EditorTools
+{
+    /// <summary>The inputs a collision hands to the deformation, for comparing two physics runs.</summary>
+    struct ImpactFootprintSnap
+    {
+        public Vector3 centre, contact; public float travel, area, strength;
+        public ImpactFootprintSnap(DamageLab.CollisionTest.CollisionDamageReceiver.Report r)
+        { centre = r.footprint.center; contact = r.contactPoint; travel = r.footprint.travel; area = r.footprint.area; strength = r.strength; }
+        public float Deviation(ImpactFootprintSnap o) =>
+            (centre - o.centre).magnitude + Mathf.Abs(travel - o.travel) + Mathf.Abs(area - o.area) + (contact - o.contact).magnitude + Mathf.Abs(strength - o.strength);
     }
 }

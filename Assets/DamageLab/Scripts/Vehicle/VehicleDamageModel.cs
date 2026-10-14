@@ -20,6 +20,8 @@ namespace DamageLab.Vehicle
 
         [Tooltip("How each imported child object takes damage, matched by name.")]
         public List<VehiclePartRule> partRules = new List<VehiclePartRule>(VehiclePartRule.Defaults());
+        [Tooltip("Optional vehicle definition: when set, its profile, component rules and impact-record limit are used.")]
+        public VehicleDefinition definition;
 
         [Header("Damage (0-100)")]
         [Range(0f, 100f)] public float front;
@@ -62,6 +64,8 @@ namespace DamageLab.Vehicle
         readonly List<RigidPart> rigidParts = new List<RigidPart>();
         readonly List<GameObject> rigidWireframes = new List<GameObject>();
         readonly float[] applied = new float[DamageDirections.Count];
+        readonly float[] lastApplied = new float[DamageDirections.Count];
+        bool forceFullRebuild = true;
         readonly RegionState[] states = new RegionState[DamageDirections.Count];
         CrushField[] fields;
         readonly List<LocalImpact> impacts = new List<LocalImpact>();
@@ -211,18 +215,39 @@ namespace DamageLab.Vehicle
             if (ImpactLimitReached || impact.strength <= 0f) return false;
             if (!IsInitialized) Initialize();
             while (impacts.Count >= Mathf.Max(1, maxImpacts)) MergeOldestImpact();
+            impactWatch.Restart();
             if (impact.impactor.valid && !impact.footprint.valid)
             {
                 // Geometry-aware impact: find the contact patch on the CURRENT (already damaged) bodywork once and store
-                // it with the impact; the mesh itself is still rebuilt from the original vertices.
+                // it with the impact; the mesh itself is still rebuilt from the original vertices. Only parts the impactor
+                // could reach (its box swept 3 m along the impact direction) can hold the first contact.
                 if (!IsInitialized) Initialize();
-                if (impactField.ResolveFootprint(ref impact, parts.Select(p => p.ImpactedVehiclePositions(impactField)), TotalImpactCount > 0))
+                Bounds sweep = ImpactorSweep(impact);
+                if (impactField.ResolveFootprint(ref impact, parts.Where(p => p.VehicleBounds().Intersects(sweep)).ToList(), TotalImpactCount > 0))
                     impact.footprint.seed = TotalImpactCount + 1;
             }
+            LastResolveMilliseconds = (float)impactWatch.Elapsed.TotalMilliseconds;
             impacts.Add(impact);
+            impactWatch.Restart();
             if (IsInitialized) AccumulateImpact(impact);
+            LastAccumulateMilliseconds = (float)impactWatch.Elapsed.TotalMilliseconds;
             OnImpactsChanged();
             return true;
+        }
+
+        readonly Stopwatch impactWatch = new Stopwatch();
+
+        static Bounds ImpactorSweep(in LocalImpact im)
+        {
+            var bx = im.impactor;
+            var b = new Bounds(bx.center, Vector3.zero);
+            for (int i = 0; i < 8; i++)
+                b.Encapsulate(bx.center + bx.rotation * Vector3.Scale(bx.halfExtents, new Vector3((i & 1) == 0 ? -1 : 1, (i & 2) == 0 ? -1 : 1, (i & 4) == 0 ? -1 : 1)));
+            var swept = b;
+            swept.center += im.direction.normalized * 3f;
+            b.Encapsulate(swept);
+            b.Expand(0.4f);
+            return b;
         }
 
         /// <summary>
@@ -256,8 +281,27 @@ namespace DamageLab.Vehicle
         void AccumulateImpact(LocalImpact impact)
         {
             int index = impactField.Add(impact);
-            foreach (var p in parts) p.AccumulateImpact(impactField, index);
+            // Only parts that intersect the impact's influence bounds can receive a contribution (or need a rebuild).
+            Bounds influence = impactField.InfluenceBounds(index);
+            int touched = 0;
+            foreach (var p in parts)
+            {
+                if (CullImpactsByBounds && !p.VehicleBounds().Intersects(influence)) continue;
+                p.AccumulateImpact(impactField, index);
+                touched++;
+            }
+            LastImpactPartsEvaluated = touched;
         }
+
+        /// <summary>Skip parts outside an impact's influence bounds (exact: their contribution is zero). Off = evaluate all (for validation).</summary>
+        public static bool CullImpactsByBounds = true;
+        /// <summary>Rebuild only parts whose impact damage changed when the directional sliders did not move (for validation: off = rebuild all).</summary>
+        public static bool SkipUnchangedParts = true;
+        public int LastImpactPartsEvaluated { get; private set; }
+        public int LastRebuiltParts { get; private set; }
+        /// <summary>Time split of the last AddImpact: footprint resolve, contribution accumulation, mesh rebuild (ms).</summary>
+        public float LastResolveMilliseconds { get; private set; }
+        public float LastAccumulateMilliseconds { get; private set; }
 
         void OnImpactsChanged()
         {
@@ -280,6 +324,7 @@ namespace DamageLab.Vehicle
         public void SetWireframe(bool on)
         {
             wireframe = on;
+            forceFullRebuild = true;   // wireframe meshes are refreshed by full rebuilds
             if (!IsInitialized) return;
             foreach (var p in parts) p.SetWireframe(on, wireframeMaterial);
             if (on && rigidWireframes.Count == 0)
@@ -301,6 +346,12 @@ namespace DamageLab.Vehicle
         public void Initialize()
         {
             if (IsInitialized) return;
+            warnings.Clear();
+            if (definition != null)
+            {
+                if (definition.profile != null) profile = definition.profile;
+                if (definition.maxImpactRecords > 0) maxImpacts = definition.maxImpactRecords;
+            }
             if (profile == null)
             {
                 profile = ScriptableObject.CreateInstance<VehicleDamageProfile>();
@@ -316,7 +367,7 @@ namespace DamageLab.Vehicle
             foreach (var mf in GetComponentsInChildren<MeshFilter>(true))
             {
                 if (mf.sharedMesh == null) continue;
-                var rule = FindRule(mf.name);
+                var rule = FindRule(mf.name, true);
                 if (rule != null && rule.mode == PartMode.Ignore) continue;
                 TotalTriangles += (int)(mf.sharedMesh.GetIndexCount(0) / 3);
                 for (int s = 1; s < mf.sharedMesh.subMeshCount; s++) TotalTriangles += (int)(mf.sharedMesh.GetIndexCount(s) / 3);
@@ -328,19 +379,22 @@ namespace DamageLab.Vehicle
                 }
                 if (!mf.sharedMesh.isReadable)
                 {
+                    warnings.Add($"Mesh '{mf.sharedMesh.name}' is not readable; enable Read/Write on the model importer.");
                     UnityEngine.Debug.LogWarning($"[DamageLab] Mesh '{mf.sharedMesh.name}' is not readable; enable Read/Write on the model importer.", this);
                     continue;
                 }
-                var part = new DeformablePart(mf, transform, rule != null ? rule.crumple : 1f);
+                var part = new DeformablePart(mf, transform, rule != null ? rule.crumple : UnknownCrumple);
                 parts.Add(part);
                 DeformableVertices += part.VertexCount;
-                if (rule != null && rule.definesImpactFaces)
+                if (rule != null && rule.DefinesImpactFaces)
                 {
                     var b = part.VehicleBounds();
                     if (!hasFaceBounds) { faceBounds = b; hasFaceBounds = true; }
                     else faceBounds.Encapsulate(b);
                 }
             }
+            if (!hasFaceBounds) warnings.Add("No component defines the outer impact faces (role Body or Bumper): using the bounds of all parts.");
+            if (pendingRigid.Count == 0) warnings.Add("No rigid wheel components (role Wheel): wheel-mount resistance zones are missing.");
             if (!hasFaceBounds)
             {
                 foreach (var p in parts)
@@ -391,6 +445,7 @@ namespace DamageLab.Vehicle
             }
 
             IsInitialized = true;
+            forceFullRebuild = true;
             if (wireframe) SetWireframe(true);
             for (int d = 0; d < DamageDirections.Count; d++) applied[d] = 0f;
             dirty = IsDamaged;
@@ -441,13 +496,24 @@ namespace DamageLab.Vehicle
             pickColliders.Add(mc);
         }
 
-        VehiclePartRule FindRule(string objectName)
+        /// <summary>Component rules in effect: the vehicle definition's when one is assigned, else <see cref="partRules"/>.</summary>
+        public IList<VehiclePartRule> Rules => definition != null && definition.components != null && definition.components.Count > 0 ? (IList<VehiclePartRule>)definition.components : partRules;
+
+        VehiclePartRule FindRule(string objectName, bool warn)
         {
-            foreach (var r in partRules)
-                if (!string.IsNullOrEmpty(r.nameContains) && objectName.IndexOf(r.nameContains, StringComparison.OrdinalIgnoreCase) >= 0)
-                    return r;
-            return null;
+            var rule = VehiclePartRule.Find(Rules, objectName, out int matches);
+            if (warn && objectName != "Wireframe")
+            {
+                if (rule == null) warnings.Add($"Unclassified component '{objectName}': deforms as generic sheet (crumple {UnknownCrumple:0.00}). Add a component rule.");
+                else if (matches > 1) warnings.Add($"Ambiguous component '{objectName}': {matches} rules match; using '{rule.nameContains}' ({rule.role}).");
+            }
+            return rule;
         }
+
+        float UnknownCrumple => definition != null ? definition.unknownComponentCrumple : 1f;
+        readonly List<string> warnings = new List<string>();
+        /// <summary>Setup warnings from the last Initialize (unclassified/ambiguous components, unreadable meshes, missing roles).</summary>
+        public IReadOnlyList<string> Warnings => warnings;
 
         // ------------------------------------------------------------------ deformation
 
@@ -458,7 +524,13 @@ namespace DamageLab.Vehicle
             stopwatch.Restart();
             for (int d = 0; d < DamageDirections.Count; d++) states[d] = fields[d].Evaluate(applied[d] / 100f);
             float roofStart = profile.roofLineStart, roofEnd = profile.roofLineEnd;
-            foreach (var p in parts) p.Apply(fields, states, roofStart, roofEnd, impactField);
+            // Directional slider state unchanged since the last rebuild: only parts whose impact damage changed need a new mesh.
+            bool slidersChanged = forceFullRebuild;
+            for (int d = 0; d < DamageDirections.Count; d++) if (applied[d] != lastApplied[d]) { slidersChanged = true; lastApplied[d] = applied[d]; }
+            forceFullRebuild = false;
+            int rebuilt = 0;
+            foreach (var p in parts) if (p.Apply(fields, states, roofStart, roofEnd, impactField, SkipUnchangedParts && !slidersChanged)) rebuilt++;
+            LastRebuiltParts = rebuilt;
             foreach (var rp in rigidParts) rp.Apply(fields, states, roofStart, roofEnd);
             stopwatch.Stop();
             LastDeformMilliseconds = (float)stopwatch.Elapsed.TotalMilliseconds;

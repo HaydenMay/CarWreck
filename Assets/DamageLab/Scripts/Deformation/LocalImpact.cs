@@ -120,6 +120,33 @@ namespace DamageLab.Deformation
 
         public int Count => states.Count;
 
+        /// <summary>
+        /// Conservative vehicle-space bounds outside which impact <paramref name="index"/> contributes nothing, so parts
+        /// entirely outside need not be evaluated (or rebuilt). Radial: the footprint reach and depth zone. Box: the
+        /// impactor swept forward past its crush plane and tent zone, widened by the edge falloff, plus 0.6 m for metal
+        /// that earlier impacts already moved (box impacts measure gaps from the current surface).
+        /// </summary>
+        public Bounds InfluenceBounds(int index)
+        {
+            var st = states[index];
+            if (st.box == null)
+            {
+                float along = Mathf.Max(st.zone, 1.2f * st.radius);
+                float r = Mathf.Sqrt(st.reach2 + along * along) + 0.05f;
+                return new Bounds(st.p, Vector3.one * (2f * r));
+            }
+            var pj = st.box;
+            float tentLen = cfg.tentLength * st.travel + 0.1f;
+            float deepest = st.travel * (1f + cfg.faceUnevenness + cfg.pleatDepth);
+            float reach = Mathf.Max(0f, st.gapMin) + deepest + tentLen + cfg.edgeSoftness;
+            var b = pj.BoxBounds();
+            var swept = b;
+            swept.center += pj.d * reach;
+            b.Encapsulate(swept);
+            b.Expand(2f * (3f * st.rho + 0.6f));
+            return b;
+        }
+
         public void Clear() => states.Clear();
 
         /// <summary>Forget the oldest impact record (its displacement stays in the parts' cached sums).</summary>
@@ -226,16 +253,25 @@ namespace DamageLab.Deformation
         /// Fills <see cref="LocalImpact.footprint"/> and moves the impact point to the patch centre; returns false
         /// (and leaves the impact as an ordinary localized one) if the box does not overlap the car at all.
         /// </summary>
-        public bool ResolveFootprint(ref LocalImpact im, IEnumerable<Vector3[]> vertexSets, bool damagedSurface = false)
+        public bool ResolveFootprint(ref LocalImpact im, IReadOnlyList<DeformablePart> parts, bool damagedSurface = false)
         {
             if (!im.impactor.valid) return false;
             var pj = new BoxProjection(im.impactor, im.direction);
             var inside = new List<Vector3>(4096);      // (u, v, gap) of vertices within the silhouette
             float gapMin = float.MaxValue;
             Vector3 first = im.point;
-            foreach (var verts in vertexSets)
-                foreach (var x in verts)
+            // Earlier impacts can have moved a vertex by at most its capacity (< 0.75 m), so an ORIGINAL position further
+            // than that outside the silhouette's extent cannot be inside it now: skip it before computing its current position.
+            const float margin = 0.75f;
+            foreach (var part in parts)
+            {
+                var orig = part.VehiclePositions;
+                for (int i = 0; i < orig.Length; i++)
                 {
+                    Vector3 r0 = orig[i] - pj.c;
+                    float u0 = Vector3.Dot(r0, pj.e1), v0 = Vector3.Dot(r0, pj.e2);
+                    if (u0 < pj.hullMin.x - margin || u0 > pj.hullMax.x + margin || v0 < pj.hullMin.y - margin || v0 > pj.hullMax.y + margin) continue;
+                    Vector3 x = part.ImpactedVehiclePosition(i, this);
                     Vector3 r = x - pj.c;
                     float u = Vector3.Dot(r, pj.e1), v = Vector3.Dot(r, pj.e2);
                     if (pj.SignedDistance(u, v, out _, out _) > 0f) continue;
@@ -245,6 +281,7 @@ namespace DamageLab.Deformation
                     inside.Add(new Vector3(u, v, gap));
                     if (gap < gapMin) { gapMin = gap; first = x; }
                 }
+            }
             if (inside.Count == 0) return false;
             // On already-damaged bodywork the impactor stops at the (retracted) physical hitbox, which can sit behind
             // metal that still sticks out. That metal is crushed from the impactor face, not from its own tip.
@@ -330,6 +367,25 @@ namespace DamageLab.Deformation
         /// position x with smoothed normal n. Parts cache the sum of these, so a new click costs one impact.</summary>
         public Vector3 Contribution(int index, Vector3 x, Vector3 n, float crumple) => Contribution(index, x, n, crumple, Vector3.zero, 1f);
 
+        /// <summary>Add impact <paramref name="index"/>'s contribution to vertices [start, end) of one part's cached sum
+        /// (the state is fetched once per range rather than per vertex). Equivalent to calling <see cref="Contribution"/>
+        /// for each vertex with its sum before the addition.</summary>
+        public void AccumulateRange(int index, Vector3[] x, Vector3[] n, float crumple, Vector3[] sum, float[] cap, int start, int end)
+        {
+            var st = states[index];
+            if (st.box == null)
+            {
+                for (int i = start; i < end; i++) sum[i] += One(st, x[i], n[i], crumple);
+                return;
+            }
+            Vector3 d = st.box.d;
+            for (int i = start; i < end; i++)
+            {
+                Vector3 s = sum[i];
+                float priorAlong = s.sqrMagnitude > 0f ? Vector3.Dot(Limit(s, cap[i]), d) : 0f;
+                sum[i] = s + OneBox(st, x[i], n[i], crumple, priorAlong);
+            }
+        }
         /// <summary>As above, given the vertex's summed raw displacement from the EARLIER impacts and its capacity.
         /// Geometry-aware impacts crush the CURRENT surface: the vertex's present position (original + saturated
         /// earlier damage) decides how far the impactor's face is from it. The result is still a pure function of

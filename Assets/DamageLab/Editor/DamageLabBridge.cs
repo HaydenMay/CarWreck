@@ -129,6 +129,24 @@ namespace DamageLab.EditorTools
                 case "collision-phase4":
                     Debug.Log(CollisionPersistenceValidation.RunWholeVehicle());
                     break;
+                case "vehicles-setup":
+                    VehicleDefinitionSetup.Build();
+                    break;
+                case "collision-phase4-hatch":
+                    Debug.Log(CollisionPersistenceValidation.RunWholeVehicle(1));
+                    break;
+                case "vehicle-muscle":
+                    Debug.Log(CollisionPersistenceValidation.RunVehicle(0));
+                    break;
+                case "vehicle-hatch":
+                    Debug.Log(CollisionPersistenceValidation.RunVehicle(1));
+                    break;
+                case "vehicle-hatch-legacy":
+                    Debug.Log(CollisionPersistenceValidation.RunVehicle(1, true));
+                    break;
+                case "probe-hatch-corner":
+                    Debug.Log(CollisionPersistenceValidation.RunCornerProbe(1));
+                    break;
                 case "collision-webgl":
                     DamageLabWebBuild.BuildCollision();
                     break;

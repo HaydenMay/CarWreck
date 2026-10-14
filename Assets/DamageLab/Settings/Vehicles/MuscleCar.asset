@@ -1,0 +1,117 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3cbd3e93ddb31f547aaeb5bb9afb5bb6, type: 3}
+  m_Name: MuscleCar
+  m_EditorClassIdentifier: Assembly-CSharp::DamageLab.Vehicle.VehicleDefinition
+  displayName: Muscle Car
+  model: {fileID: 919132149155446097, guid: e6743d07e84ea764897771a8559dfe58, type: 3}
+  mass: 1400
+  profile: {fileID: 11400000, guid: 2ad7c1ff3b6ea0140aa59983d005ee4a, type: 2}
+  components:
+  - nameContains: Wheel
+    match: 0
+    role: 4
+    mode: 1
+    crumple: 0
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Body
+    match: 0
+    role: 1
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 1
+  - nameContains: Bumper
+    match: 0
+    role: 2
+    mode: 0
+    crumple: 0.25
+    rigidFollow: 0.75
+    definesImpactFaces: 1
+  - nameContains: Cabin
+    match: 0
+    role: 3
+    mode: 0
+    crumple: 0.85
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Grille
+    match: 0
+    role: 6
+    mode: 0
+    crumple: 0.55
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Headlights
+    match: 0
+    role: 7
+    mode: 0
+    crumple: 0.45
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Taillights
+    match: 0
+    role: 7
+    mode: 0
+    crumple: 0.45
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: SidePipes
+    match: 0
+    role: 8
+    mode: 0
+    crumple: 0.4
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: HoodScoop
+    match: 0
+    role: 5
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Spoiler
+    match: 0
+    role: 5
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Mirrors
+    match: 0
+    role: 8
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Trim
+    match: 0
+    role: 8
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Wireframe
+    match: 2
+    role: 10
+    mode: 2
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  unknownComponentCrumple: 1
+  frontSectionDepth: 0.7
+  rearSectionDepth: 0.7
+  sideSectionDepth: 0.45
+  cabinBoxScale: {x: 0.92, y: 0.85}
+  impactHeight: 0.7
+  maxImpactRecords: 24

@@ -292,7 +292,7 @@ namespace DamageLab.EditorTools
         // Look at the struck end of the car rather than its middle.
         static void Aim(ImpactDirection d, CollisionLabController lab, ref Vector3 pivot)
         {
-            CollisionLabController.Aim(d, out Vector3 target, out _);
+            lab.Aim(d, out Vector3 target, out _);
             Vector3 world = lab.car.transform.TransformPoint(new Vector3(target.x * 0.6f, 0f, target.z * 0.6f));
             pivot = new Vector3(world.x, lab.car.position.y + 0.6f, world.z);
         }
