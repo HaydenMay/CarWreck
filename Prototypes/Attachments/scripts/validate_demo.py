@@ -56,6 +56,29 @@ for name, model in report["models"].items():
     error = max(abs(bounds[j][i]-model["bounds"][j][i]) for j in range(2) for i in range(3))
     check(name+" FBX metre-scale bounds", error<1e-5)
     check(name+" standalone .blend exists", (BASE/"models"/(name+".blend")).is_file())
+# Validate the actual saved scene geometry, rather than trusting only the build's JSON.
+metadata=json.loads((BASE/"metadata.json").read_text())
+bpy.ops.wm.open_mainfile(filepath=str(BASE/"demonstration.blend"))
+for case,record in cases.items():
+    scene=bpy.data.scenes.get(case)
+    check(case+" saved scene exists", scene is not None)
+    bpy.context.window.scene=scene
+    bpy.context.view_layer.update()
+    for key,mount in record["mounts"].items():
+        roots=[o for o in scene.objects if o.get("attachment_id")==report["models"][key]["id"]]
+        check(case+" "+key+" unique accessory instance", len(roots)==1)
+        feet={o.get("mount_id"):o.matrix_world.translation for o in roots[0].children_recursive if o.get("mount_id")}
+        check(case+" "+key+" saved feet match evaluated pose", all(
+            (feet[ident]-Vector(point)).length<1e-6 for ident,point in zip(mount["mount_ids"],mount["feet_current"])))
+        adapter=next(a for a in metadata["adapters"] if a["vehicle"]==record["vehicle"] and a["attachment"]==key)
+        panel=next(o for o in scene.objects if o.get("source_role")==adapter["mesh_role"])
+        points=[]
+        for ident in mount["mount_ids"]:
+            binding=adapter["sockets"][ident]
+            points.append(sum(((panel.matrix_world@panel.data.vertices[i].co)*w for i,w in
+                              zip(binding["vertex_indices"],binding["weights"])),Vector((0,0,0))))
+        check(case+" "+key+" anchors match saved deformed mesh", all(
+            (p-Vector(want)).length<1e-5 for p,want in zip(points,mount["surface_points"])))
 if "--renders" in sys.argv:
     from struct import unpack
     for relative in report["expected_renders"]:

@@ -33,30 +33,30 @@ Files: scripts/mount_math.py, scripts/test_mount_math.py.
 Interfaces: bind_anchors(vertices, triangles, seeds) -> binding list; mesh_revision(...) -> hash;
 sample_anchor(vertices, binding, revision) -> point, normal;
 fit_rigid(local, targets) -> 4x4 matrix; assess(...) -> diagnostic dict.
-- [ ] Write tests for a known triangle's barycentric motion, rigid rotation/translation,
+- [x] Write tests for a known triangle's barycentric motion, rigid rotation/translation,
   warped-foot residuals, stale cache, invalid index/degeneracy and unsupported adapter.
-- [ ] Run the new tests; verify the missing implementation fails.
-- [ ] Implement the minimum functions, rerun tests, commit the tested math.
+- [x] Run the new tests; verify the missing implementation fails.
+- [x] Implement the minimum functions, rerun tests, commit the tested math.
 
 ## Task 2: Models and repeatable Blender demonstration
 
 Files: scripts/models.py, scripts/build_demo.py, scripts/scene_views.py.
 Consumes Task 1 functions and the verified production sources.
 Produces models/, demonstration.blend, metadata.json, evidence/results.json and raw renders.
-- [ ] Write end-to-end acceptance checks before the build exists.
-- [ ] Create black four-foot/two-crossbar rack, cyan shallow scoop, steel tube push bar with
+- [x] Write end-to-end acceptance checks before the build exists.
+- [x] Create black four-foot/two-crossbar rack, cyan shallow scoop, steel tube push bar with
   two bracket assemblies and a rest-up constraint.
-- [ ] Bind real source surfaces, generate rest/moderate/severe/repair cases from originals.
-- [ ] Save multi-scene demonstration with readable markers, diagnostic connectors and cameras.
-- [ ] Record numeric checks including rack reuse, source hashes, invalid cases, repair,
+- [x] Bind real source surfaces, generate rest/moderate/severe/repair cases from originals.
+- [x] Save multi-scene demonstration with readable markers, diagnostic connectors and cameras.
+- [x] Record numeric checks including rack reuse, source hashes, invalid cases, repair,
   attachment exports and deterministic geometry/bindings across two builds.
-- [ ] Render modest technical views and inspect them visually.
+- [x] Render modest technical views and inspect them visually.
 
 ## Task 3: Results, review and handoff
 
 Files: validation-report.md, integration-notes.md, README.md, preview boards, execution notes.
-- [ ] Assemble labelled matched-view boards without altering render content.
-- [ ] Report measured results, physical limits, untested Unity/runtime work and seven answers.
-- [ ] Rerun tests and end-to-end checks; verify only prototype paths are staged.
+- [x] Assemble labelled matched-view boards without altering render content.
+- [x] Report measured results, physical limits, untested Unity/runtime work and seven answers.
+- [x] Rerun tests and end-to-end checks; verify only prototype paths are staged.
 - [ ] Obtain one fresh whole-branch code/evidence review; address material findings.
 - [ ] Commit and push final artifacts to feature/attachment-prototype, no merge.

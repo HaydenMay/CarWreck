@@ -3,9 +3,9 @@
 Date: 2026-10-14. Baseline: verified main `2a9ca8bebb296557ed75513c9ad892c8f5153d92`.
 Branch: `feature/attachment-prototype`.
 
-**Status: design proposal for review.** Source inspection and a Blender FBX round trip
-have been performed. The three accessories, deformation demonstrations, final metadata,
-and renders have not been built. Proposed behavior below is not a measured result.
+**Status: approved design, now implemented as a Blender proof of concept.** See [validation-report.md](validation-report.md) for measured results. At the original design review, source inspection and a Blender FBX round trip
+had been performed. The three accessories, deformation demonstrations, final metadata,
+and renders were not yet built. This document preserves the design-stage proposal; the linked validation report records what was actually demonstrated.
 
 ## Purpose and boundaries
 
@@ -257,7 +257,7 @@ procedural vehicle dimensions, constrained surface bindings, synthetic deformati
 diagnostic renders and validation files. A new vehicle's structural intent, acceptable
 clearances and real failure strength still require authoring/review.
 
-## Provisional answers to the seven mission questions
+## Design-stage hypotheses for the seven mission questions
 
 1. Surface anchors should follow crumpling translation/orientation; convincing moderate
    damage and severe-warp limits still require the requested prototype measurements.
@@ -270,10 +270,12 @@ clearances and real failure strength still require authoring/review.
 7. The smallest proposed system is semantic sockets + accessory feet + small vehicle
    adapters + a few cached surface anchors; no broader customization framework.
 
-## Evidence status
+## Evidence status at the original design review
 
 Confirmed now: verified source identity, saved hierarchy/origins/units, hood ray samples,
 and the limited existing-FBX Blender round trip.
 Historical only: Unity's committed import report.
 Not tested: accessory mounting/deformation, cross-vehicle fit, failure behavior, runtime
 performance, Unity anchor mapping, player builds, collisions or multiplayer.
+
+The user approved this design and proof-of-concept plan on 2026-10-14. Roof separation must be treated as a limitation requiring future mounting response or detachment, and metadata/validation must remain small. The completed prototype follows those clarifications; see validation-report.md and integration-notes.md.
