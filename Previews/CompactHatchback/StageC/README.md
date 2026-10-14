@@ -4,9 +4,10 @@ Refines the approved Stage B asset at `f870cf26e6f52d8d5b7f4b6716d1f05dda562a20`
 on `feature/compact-hatchback`. The existing loft, arch station grid, cabin,
 wheel geometry, pivots and boxy three-door silhouette are retained.
 
-The front silhouette has been corrected after the initial Stage C at `c301057`.
-The nose no longer widens or rises to accommodate the grille. See the
-[matched front-correction evidence](FrontCorrection/README.md).
+The final approved geometry is documented in [FinalOutline](FinalOutline/README.md).
+It adds only a small horizontal shoulder support to remove the inward pocket
+left by the previous correction at `81adc9b`. The thin recessed fascia, nose
+endpoint, hood profile, bumper and Stage C arch shaping are retained.
 
 ## Geometry changes
 
@@ -21,6 +22,9 @@ The nose no longer widens or rises to accommodate the grille. See the
 - The original nose taper and descending hood line are retained. A thinner,
   smaller grille and lamp assembly fits under the hood and inside the corners;
   the former 10 cm per-side widening and 3 cm hood-edge lift are removed.
+- A final straight support ahead of the arch fills the local inward outline
+  pocket by at most 3.78 cm per side. The base loft heights and nose endpoint
+  are retained. No vertices or faces are added.
 - Front and rear end-cap patches are fitted around component sockets. The
   main shell remains connected and closed, including socket backs and walls.
   Each socket has an explicit 3 mm chamfer rather than a microscopic global bevel.
@@ -39,7 +43,10 @@ The nose no longer widens or rises to accommodate the grille. See the
 - The underside material follows the inner-well loft band. Exterior fenders
   remain painted even where their new curvature faces downward.
 
-## Comparisons
+## Archived Stage B/C comparisons
+
+These images record the geometry at `81adc9b`, before the final outline-only
+correction. The three current before/after views are in [FinalOutline](FinalOutline/README.md).
 
 All pairs are actual geometry renders at 1400 × 900, Cycles 48 samples, denoising,
 the same seed, AgX look, cameras, lights, paint colours and material parameters.
@@ -72,7 +79,7 @@ are retained. `unity_*.png` are separate import/paint tests, not comparison evid
 | Body vertices | 29,616 | **30,586** |
 | Cabin vertices | 13,750 | 13,750 |
 | Body median edge | 3.24 cm | 3.31 cm |
-| Body 90th percentile edge | 3.59 cm | 3.64 cm |
+| Body 90th percentile edge | 3.59 cm | 3.65 cm |
 | Longest body edge | 7.67 cm | 5.50 cm |
 | Body quads | 99.53% | 92.27% |
 | Body boundary / nonmanifold / zero-area counts | 0 / 0 / 0 | 0 / 0 / 0 |
@@ -104,9 +111,10 @@ axle movement, cabin rebuilding or proportion redesign was performed.
 checks unchanged axle pivots, zero body/tire and body/fascia surface crossings,
 and confirms all 76 FBX meshes match source vertex counts. Stripe UV1 still equals
 the car-space X/Y projection (maximum numerical error below 0.000001).
-Front-correction checks compare nose samples and component geometry against
-`c301057`: the nose narrows and descends, both arch widths match, and 39 unrelated
-component meshes and transforms are identical.
+Final-outline checks compare the actual projected footprint against `81adc9b`.
+The inward pocket decreases from 38.28 mm to 2.47 mm at existing bevel/grid scale.
+Body vertex/face counts and arch widths match; 69 fixed component geometry/transform
+hashes are identical, including the front bumper, grille and lamps.
 
 `unity_import_report.json` records the actual Unity 6000.6.0f1 import and paint
 render tests. Imported counts include vertices split by material/normal/UV seams.

@@ -12,7 +12,8 @@ from PIL import Image, ImageDraw, ImageFont
 
 LABELS={'front34':'Front three-quarter','side':'Full side','rear34':'Rear three-quarter',
         'front_fender':'Front fender','rear_fender':'Rear fender','fascia':'Front fascia',
-        'wireframe':'Body and cabin wireframe','front':'Full front','nose_top':'Near top-down nose'}
+        'wireframe':'Body and cabin wireframe','front':'Full front','nose_top':'Near top-down nose',
+        'nose_plan':'True orthographic hood / nose'}
 
 def font(size):
     for path in ('C:/Windows/Fonts/segoeuib.ttf','/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'):
@@ -41,7 +42,8 @@ def main():
     overviews=[]
     for filename,views in (('comparison_overview.png',('front34','side','rear34')),
                            ('detail_overview.png',('front_fender','rear_fender','fascia')),
-                           ('nose_overview.png',('nose_top','front','front34'))):
+                           ('nose_overview.png',('nose_top','front','front34')),
+                           ('final_outline_overview.png',('nose_plan','front34','front'))):
         if not all(view in pairs for view in views): continue
         width=1800; row_height=650
         canvas=Image.new('RGB',(width,row_height*3),(24,29,34))

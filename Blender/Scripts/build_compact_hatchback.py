@@ -462,7 +462,7 @@ def arch_z(y):
     return z
 
 
-def body_half(y):
+def body_half_base(y):
     top, width = body_params(y)
     end=max(smooth(1.66,FRONT_FACE,y),smooth(1.65,-REAR_FACE,-y))
     radius=mix(.065,.030,end)
@@ -494,6 +494,38 @@ def body_half(y):
     points.extend([(mix(points[-1][0],.575,k/8),lower+.008*math.sin(math.pi*k/8)) for k in range(1,9)])
     points.extend([(.575,mix(lower,BOTTOM,k/14)) for k in range(1,15)])
     points.extend([(.575*(1-k/17),BOTTOM) for k in range(1,18)])
+    return points
+
+
+_NOSE_SUPPORT=None
+
+
+def nose_outline_support():
+    """Smallest straight support from the arch shoulder to the existing nose.
+
+    The tangent sits on the original plan outline. Only the inward hollow
+    ahead of it is filled; the front width and every section height are fixed.
+    """
+    global _NOSE_SUPPORT
+    if _NOSE_SUPPORT is None:
+        front=max(x for x,z in body_half_base(FRONT_FACE))
+        candidates=[(1.46+k*.001,max(x for x,z in body_half_base(1.46+k*.001))) for k in range(341)]
+        y,x=min(candidates,key=lambda p:(front-p[1])/(FRONT_FACE-p[0]))
+        _NOSE_SUPPORT=(y,(front-x)/(FRONT_FACE-y),front)
+    return _NOSE_SUPPORT
+
+
+def body_half(y):
+    points=body_half_base(y)
+    start,slope,front=nose_outline_support()
+    if y<=start: return points
+    target=front+slope*(y-FRONT_FACE)
+    shift=max(0,target-max(x for x,z in points))
+    # Existing loft rows are retained. Distribute the X correction over the
+    # hood, shoulder and side, fading into the well; never alter vertex Z.
+    for i,(x,z) in enumerate(points):
+        weight=i/20 if i<=20 else 1 if i<=43 else max(0,(51-i)/8)
+        points[i]=(x+shift*weight,z)
     return points
 
 
@@ -784,6 +816,7 @@ def render_view(view,camera,out,root):
            'rear_fender':((-2.9,-2.7,1.02),(-.72,-1.16,.60),1.50),
            'fascia':((-.42,4,1.05),(0,1.89,.59),2.05),
            'nose_top':((0,4.6,7.5),(0,1.42,.55),2.35),
+           'nose_plan':((0,1.38,7),(0,1.38,0),2.50),
            'comparison':((-7.4,8.7,4.1),(0,0,.74),8.05)}
     loc,target,scale=views[view]
     reference=None
@@ -793,6 +826,7 @@ def render_view(view,camera,out,root):
     camera.data.lens=100
     camera.location=loc; camera.data.ortho_scale=scale; aim(camera,target)
     if view=='top': camera.rotation_euler.rotate_axis('Z',math.pi/2)
+    if view=='nose_plan': camera.rotation_euler.rotate_axis('Z',math.pi)
     paint=MATS['Paint']; color=next(n for n in paint.node_tree.nodes if n.type=='MIX_RGB')
     original=[tuple(color.inputs[i].default_value) for i in (1,2)]
     if view in ('color_blue','color_ivory'):
@@ -957,7 +991,7 @@ def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('root',nargs='?',default=str(Path(__file__).resolve().parents[2]))
     parser.add_argument('--render',action='store_true')
-    parser.add_argument('--view',choices=['front34','side','rear34','front','rear','top','wireframe','comparison','color_blue','color_ivory','front_fender','rear_fender','fascia','nose_top'])
+    parser.add_argument('--view',choices=['front34','side','rear34','front','rear','top','wireframe','comparison','color_blue','color_ivory','front_fender','rear_fender','fascia','nose_top','nose_plan'])
     parser.add_argument('--samples',type=int,default=48)
     parser.add_argument('--primary',type=float,nargs=3)
     parser.add_argument('--secondary',type=float,nargs=3)

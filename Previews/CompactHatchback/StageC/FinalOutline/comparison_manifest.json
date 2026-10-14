@@ -1,0 +1,930 @@
+{
+  "baseline_commit": "81adc9bf6da9aaac8dd180c37250b281719d20d2",
+  "source_sha256": {
+    "stage_b": "bf92ac9ffc39456fbd91aa4987173326196c0b05b29bb470d24911942ece942a",
+    "stage_c": "6385a079f750a8762910308c6ea66b4ec0024e13cf7f069199d2d63b318ffef5"
+  },
+  "labels": {
+    "stage_b": "Before final correction",
+    "stage_c": "Final Stage C"
+  },
+  "blender_version": "5.2.0 LTS",
+  "conditions": {
+    "stage_b": {
+      "engine": "CYCLES",
+      "samples": 48,
+      "seed": 0,
+      "denoising": true,
+      "resolution": [
+        1400,
+        900,
+        100
+      ],
+      "view_transform": "AgX",
+      "look": "AgX - Medium High Contrast",
+      "exposure": 0.0,
+      "gamma": 1.0,
+      "world": {
+        "color": [
+          0.24,
+          0.26,
+          0.29,
+          1.0
+        ],
+        "strength": 0.35
+      },
+      "lights": {
+        "Key": {
+          "matrix": [
+            -0.8,
+            0.4402565,
+            -0.4076448,
+            -3.0,
+            -0.6000001,
+            -0.5870085,
+            0.5435264,
+            4.0,
+            1e-07,
+            0.679408,
+            0.7337607,
+            6.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "type": "AREA",
+          "shape": "DISK",
+          "size": 5.0,
+          "energy": 750.0,
+          "color": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        "Fill": {
+          "matrix": [
+            -0.4472135,
+            -0.4866396,
+            0.7504545,
+            4.0,
+            0.8944272,
+            -0.2433196,
+            0.3752273,
+            2.0,
+            -2e-07,
+            0.8390337,
+            0.5440795,
+            3.5,
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "type": "AREA",
+          "shape": "DISK",
+          "size": 4.0,
+          "energy": 550.0,
+          "color": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        "Rim": {
+          "matrix": [
+            0.9701425,
+            -0.1769768,
+            0.1658395,
+            1.0,
+            0.2425356,
+            0.7079071,
+            -0.6633581,
+            -4.0,
+            -0.0,
+            0.6837739,
+            0.7296939,
+            5.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "type": "AREA",
+          "shape": "DISK",
+          "size": 3.0,
+          "energy": 850.0,
+          "color": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "materials": {
+        "Hatch_Glass": {
+          "Base Color": [
+            0.0116454,
+            0.0196066,
+            0.0272118,
+            1.0
+          ],
+          "Metallic": 0.28,
+          "Roughness": 0.16,
+          "Coat Weight": 0.65,
+          "Emission Color": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "Emission Strength": 0.0
+        },
+        "Hatch_Headlight": {
+          "Base Color": [
+            0.9331068,
+            0.8073459,
+            0.5070785,
+            1.0
+          ],
+          "Metallic": 0.05,
+          "Roughness": 0.21,
+          "Coat Weight": 0.25,
+          "Emission Color": [
+            0.9331068,
+            0.8073459,
+            0.5070785,
+            1.0
+          ],
+          "Emission Strength": 0.6
+        },
+        "Hatch_Indicator": {
+          "Base Color": [
+            0.9551046,
+            0.1004815,
+            0.001161,
+            1.0
+          ],
+          "Metallic": 0.05,
+          "Roughness": 0.26,
+          "Coat Weight": 0.25,
+          "Emission Color": [
+            0.9551046,
+            0.1004815,
+            0.001161,
+            1.0
+          ],
+          "Emission Strength": 0.35
+        },
+        "Hatch_Paint": {
+          "Base Color": [
+            0.7105665,
+            0.0054229,
+            0.002709,
+            1.0
+          ],
+          "Metallic": 0.18,
+          "Roughness": 0.28,
+          "Coat Weight": 0.55,
+          "Emission Color": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "Emission Strength": 0.0,
+          "colors": [
+            [
+              0.7105665,
+              0.0054229,
+              0.002709,
+              1.0
+            ],
+            [
+              0.8688994,
+              0.8480883,
+              0.7484141,
+              1.0
+            ]
+          ]
+        },
+        "Hatch_Reverse": {
+          "Base Color": [
+            0.6738595,
+            0.7293471,
+            0.7293471,
+            1.0
+          ],
+          "Metallic": 0.05,
+          "Roughness": 0.3,
+          "Coat Weight": 0.0,
+          "Emission Color": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "Emission Strength": 0.0
+        },
+        "Hatch_Rim": {
+          "Base Color": [
+            0.0134117,
+            0.0184785,
+            0.024515,
+            1.0
+          ],
+          "Metallic": 0.8,
+          "Roughness": 0.29,
+          "Coat Weight": 0.0,
+          "Emission Color": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "Emission Strength": 0.0
+        },
+        "Hatch_Rubber": {
+          "Base Color": [
+            0.0065714,
+            0.0075841,
+            0.0091168,
+            1.0
+          ],
+          "Metallic": 0.0,
+          "Roughness": 0.75,
+          "Coat Weight": 0.0,
+          "Emission Color": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "Emission Strength": 0.0
+        },
+        "Hatch_Silver": {
+          "Base Color": [
+            0.4769998,
+            0.5225216,
+            0.5542217,
+            1.0
+          ],
+          "Metallic": 0.85,
+          "Roughness": 0.24,
+          "Coat Weight": 0.0,
+          "Emission Color": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "Emission Strength": 0.0
+        },
+        "Hatch_StudioFloor": {
+          "Base Color": [
+            0.0782883,
+            0.0889815,
+            0.1004815,
+            1.0
+          ],
+          "Metallic": 0.0,
+          "Roughness": 0.55,
+          "Coat Weight": 0.0,
+          "Emission Color": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "Emission Strength": 0.0
+        },
+        "Hatch_Taillight": {
+          "Base Color": [
+            0.4338795,
+            0.002709,
+            0.0014706,
+            1.0
+          ],
+          "Metallic": 0.1,
+          "Roughness": 0.23,
+          "Coat Weight": 0.35,
+          "Emission Color": [
+            0.4338795,
+            0.002709,
+            0.0014706,
+            1.0
+          ],
+          "Emission Strength": 0.25
+        },
+        "Hatch_Trim": {
+          "Base Color": [
+            0.0054229,
+            0.0064507,
+            0.0077167,
+            1.0
+          ],
+          "Metallic": 0.12,
+          "Roughness": 0.36,
+          "Coat Weight": 0.0,
+          "Emission Color": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "Emission Strength": 0.0
+        },
+        "Hatch_Underbody": {
+          "Base Color": [
+            0.0100228,
+            0.0116454,
+            0.0134117,
+            1.0
+          ],
+          "Metallic": 0.3,
+          "Roughness": 0.65,
+          "Coat Weight": 0.0,
+          "Emission Color": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "Emission Strength": 0.0
+        }
+      }
+    },
+    "stage_c": {
+      "engine": "CYCLES",
+      "samples": 48,
+      "seed": 0,
+      "denoising": true,
+      "resolution": [
+        1400,
+        900,
+        100
+      ],
+      "view_transform": "AgX",
+      "look": "AgX - Medium High Contrast",
+      "exposure": 0.0,
+      "gamma": 1.0,
+      "world": {
+        "color": [
+          0.24,
+          0.26,
+          0.29,
+          1.0
+        ],
+        "strength": 0.35
+      },
+      "lights": {
+        "Key": {
+          "matrix": [
+            -0.8,
+            0.4402565,
+            -0.4076448,
+            -3.0,
+            -0.6000001,
+            -0.5870085,
+            0.5435264,
+            4.0,
+            1e-07,
+            0.679408,
+            0.7337607,
+            6.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "type": "AREA",
+          "shape": "DISK",
+          "size": 5.0,
+          "energy": 750.0,
+          "color": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        "Fill": {
+          "matrix": [
+            -0.4472135,
+            -0.4866396,
+            0.7504545,
+            4.0,
+            0.8944272,
+            -0.2433196,
+            0.3752273,
+            2.0,
+            -2e-07,
+            0.8390337,
+            0.5440795,
+            3.5,
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "type": "AREA",
+          "shape": "DISK",
+          "size": 4.0,
+          "energy": 550.0,
+          "color": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        "Rim": {
+          "matrix": [
+            0.9701425,
+            -0.1769768,
+            0.1658395,
+            1.0,
+            0.2425356,
+            0.7079071,
+            -0.6633581,
+            -4.0,
+            -0.0,
+            0.6837739,
+            0.7296939,
+            5.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "type": "AREA",
+          "shape": "DISK",
+          "size": 3.0,
+          "energy": 850.0,
+          "color": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "materials": {
+        "Hatch_Glass": {
+          "Base Color": [
+            0.0116454,
+            0.0196066,
+            0.0272118,
+            1.0
+          ],
+          "Metallic": 0.28,
+          "Roughness": 0.16,
+          "Coat Weight": 0.65,
+          "Emission Color": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "Emission Strength": 0.0
+        },
+        "Hatch_Headlight": {
+          "Base Color": [
+            0.9331068,
+            0.8073459,
+            0.5070785,
+            1.0
+          ],
+          "Metallic": 0.05,
+          "Roughness": 0.21,
+          "Coat Weight": 0.25,
+          "Emission Color": [
+            0.9331068,
+            0.8073459,
+            0.5070785,
+            1.0
+          ],
+          "Emission Strength": 0.6
+        },
+        "Hatch_Indicator": {
+          "Base Color": [
+            0.9551046,
+            0.1004815,
+            0.001161,
+            1.0
+          ],
+          "Metallic": 0.05,
+          "Roughness": 0.26,
+          "Coat Weight": 0.25,
+          "Emission Color": [
+            0.9551046,
+            0.1004815,
+            0.001161,
+            1.0
+          ],
+          "Emission Strength": 0.35
+        },
+        "Hatch_Paint": {
+          "Base Color": [
+            0.7105665,
+            0.0054229,
+            0.002709,
+            1.0
+          ],
+          "Metallic": 0.18,
+          "Roughness": 0.28,
+          "Coat Weight": 0.55,
+          "Emission Color": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "Emission Strength": 0.0,
+          "colors": [
+            [
+              0.7105665,
+              0.0054229,
+              0.002709,
+              1.0
+            ],
+            [
+              0.8688994,
+              0.8480883,
+              0.7484141,
+              1.0
+            ]
+          ]
+        },
+        "Hatch_Reverse": {
+          "Base Color": [
+            0.6738595,
+            0.7293471,
+            0.7293471,
+            1.0
+          ],
+          "Metallic": 0.05,
+          "Roughness": 0.3,
+          "Coat Weight": 0.0,
+          "Emission Color": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "Emission Strength": 0.0
+        },
+        "Hatch_Rim": {
+          "Base Color": [
+            0.0134117,
+            0.0184785,
+            0.024515,
+            1.0
+          ],
+          "Metallic": 0.8,
+          "Roughness": 0.29,
+          "Coat Weight": 0.0,
+          "Emission Color": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "Emission Strength": 0.0
+        },
+        "Hatch_Rubber": {
+          "Base Color": [
+            0.0065714,
+            0.0075841,
+            0.0091168,
+            1.0
+          ],
+          "Metallic": 0.0,
+          "Roughness": 0.75,
+          "Coat Weight": 0.0,
+          "Emission Color": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "Emission Strength": 0.0
+        },
+        "Hatch_Silver": {
+          "Base Color": [
+            0.4769998,
+            0.5225216,
+            0.5542217,
+            1.0
+          ],
+          "Metallic": 0.85,
+          "Roughness": 0.24,
+          "Coat Weight": 0.0,
+          "Emission Color": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "Emission Strength": 0.0
+        },
+        "Hatch_StudioFloor": {
+          "Base Color": [
+            0.0782883,
+            0.0889815,
+            0.1004815,
+            1.0
+          ],
+          "Metallic": 0.0,
+          "Roughness": 0.55,
+          "Coat Weight": 0.0,
+          "Emission Color": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "Emission Strength": 0.0
+        },
+        "Hatch_Taillight": {
+          "Base Color": [
+            0.4338795,
+            0.002709,
+            0.0014706,
+            1.0
+          ],
+          "Metallic": 0.1,
+          "Roughness": 0.23,
+          "Coat Weight": 0.35,
+          "Emission Color": [
+            0.4338795,
+            0.002709,
+            0.0014706,
+            1.0
+          ],
+          "Emission Strength": 0.25
+        },
+        "Hatch_Trim": {
+          "Base Color": [
+            0.0054229,
+            0.0064507,
+            0.0077167,
+            1.0
+          ],
+          "Metallic": 0.12,
+          "Roughness": 0.36,
+          "Coat Weight": 0.0,
+          "Emission Color": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "Emission Strength": 0.0
+        },
+        "Hatch_Underbody": {
+          "Base Color": [
+            0.0100228,
+            0.0116454,
+            0.0134117,
+            1.0
+          ],
+          "Metallic": 0.3,
+          "Roughness": 0.65,
+          "Coat Weight": 0.0,
+          "Emission Color": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "Emission Strength": 0.0
+        }
+      }
+    }
+  },
+  "cameras": {
+    "stage_b": {
+      "nose_plan": {
+        "matrix_world": [
+          [
+            -1.0,
+            2e-07,
+            0.0,
+            0.0
+          ],
+          [
+            -2e-07,
+            -1.0,
+            0.0,
+            1.38
+          ],
+          [
+            0.0,
+            0.0,
+            1.0,
+            7.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "type": "ORTHO",
+        "lens": 100.0,
+        "ortho_scale": 2.5,
+        "clip_start": 0.1,
+        "clip_end": 250.0
+      },
+      "front34": {
+        "matrix_world": [
+          [
+            -0.8000001,
+            0.1730672,
+            -0.5744977,
+            -4.8000002
+          ],
+          [
+            -0.5999999,
+            -0.2307564,
+            0.7659972,
+            6.4000001
+          ],
+          [
+            -0.0,
+            0.9574963,
+            0.2884454,
+            3.0999999
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "type": "ORTHO",
+        "lens": 100.0,
+        "ortho_scale": 5.3499999,
+        "clip_start": 0.1,
+        "clip_end": 250.0
+      },
+      "front": {
+        "matrix_world": [
+          [
+            -1.0,
+            -1e-07,
+            -1e-07,
+            0.0
+          ],
+          [
+            -1e-07,
+            -0.0536725,
+            0.9985586,
+            8.0
+          ],
+          [
+            -1e-07,
+            0.9985586,
+            0.0536725,
+            1.15
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "type": "ORTHO",
+        "lens": 100.0,
+        "ortho_scale": 2.6500001,
+        "clip_start": 0.1,
+        "clip_end": 250.0
+      }
+    },
+    "stage_c": {
+      "nose_plan": {
+        "matrix_world": [
+          [
+            -1.0,
+            2e-07,
+            0.0,
+            0.0
+          ],
+          [
+            -2e-07,
+            -1.0,
+            0.0,
+            1.38
+          ],
+          [
+            0.0,
+            0.0,
+            1.0,
+            7.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "type": "ORTHO",
+        "lens": 100.0,
+        "ortho_scale": 2.5,
+        "clip_start": 0.1,
+        "clip_end": 250.0
+      },
+      "front34": {
+        "matrix_world": [
+          [
+            -0.8000001,
+            0.1730672,
+            -0.5744977,
+            -4.8000002
+          ],
+          [
+            -0.5999999,
+            -0.2307564,
+            0.7659972,
+            6.4000001
+          ],
+          [
+            -0.0,
+            0.9574963,
+            0.2884454,
+            3.0999999
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "type": "ORTHO",
+        "lens": 100.0,
+        "ortho_scale": 5.3499999,
+        "clip_start": 0.1,
+        "clip_end": 250.0
+      },
+      "front": {
+        "matrix_world": [
+          [
+            -1.0,
+            -1e-07,
+            -1e-07,
+            0.0
+          ],
+          [
+            -1e-07,
+            -0.0536725,
+            0.9985586,
+            8.0
+          ],
+          [
+            -1e-07,
+            0.9985586,
+            0.0536725,
+            1.15
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "type": "ORTHO",
+        "lens": 100.0,
+        "ortho_scale": 2.6500001,
+        "clip_start": 0.1,
+        "clip_end": 250.0
+      }
+    }
+  },
+  "outputs": {
+    "stage_b": {
+      "nose_plan": "stage_b_nose_plan.png",
+      "front34": "stage_b_front34.png",
+      "front": "stage_b_front.png"
+    },
+    "stage_c": {
+      "nose_plan": "stage_c_nose_plan.png",
+      "front34": "stage_c_front34.png",
+      "front": "stage_c_front.png"
+    }
+  },
+  "identical_conditions": true,
+  "identical_cameras": true,
+  "comparison_boards": {
+    "front34": "comparison_front34.png",
+    "front": "comparison_front.png",
+    "nose_plan": "comparison_nose_plan.png"
+  },
+  "overview_boards": [
+    "final_outline_overview.png"
+  ]
+}

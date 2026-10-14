@@ -1,5 +1,9 @@
 # Stage C — straight nose and recessed fascia correction
 
+Archived evidence at `81adc9b`. The current source also includes the small
+[final outline correction](../FinalOutline/README.md); these comparisons retain
+their original source hashes and images.
+
 Corrects the initial Stage C at `c3010572702a251b993c8d9c681287ee176715ce`.
 The prior generator widened the nose by 10 cm on each side and raised its
 leading hood edge by 3 cm to fit the old grille/lamp dimensions. Those offsets

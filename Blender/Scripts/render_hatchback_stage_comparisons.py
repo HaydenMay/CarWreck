@@ -60,7 +60,7 @@ def main():
     parser.add_argument('--baseline',type=Path); parser.add_argument('--samples',type=int,default=48)
     parser.add_argument('--baseline-commit',default='f870cf26e6f52d8d5b7f4b6716d1f05dda562a20')
     parser.add_argument('--output',type=Path,help='Preview directory, relative to project root or absolute')
-    parser.add_argument('--views',nargs='+',choices=VIEWS+('front','nose_top'),default=VIEWS)
+    parser.add_argument('--views',nargs='+',choices=VIEWS+('front','nose_top','nose_plan'),default=VIEWS)
     parser.add_argument('--before-label',default='Stage B'); parser.add_argument('--after-label',default='Stage C')
     parser.add_argument('--stage',choices=('both','stage_c'),default='both',help='Resume C using an existing matched B manifest')
     args=parser.parse_args(argv); root=args.root.resolve()

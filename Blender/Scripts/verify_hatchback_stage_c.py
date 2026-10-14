@@ -17,6 +17,33 @@ def tree(obj):
     return BVHTree.FromPolygons([obj.matrix_world@v.co for v in obj.data.vertices],
                                [list(p.vertices) for p in obj.data.polygons])
 
+def plan_outline(obj):
+    """Measure the mesh's actual orthographic footprint, not one height slice."""
+    vertices=obj.data.vertices
+    edges=[(vertices[e.vertices[0]].co.copy(),vertices[e.vertices[1]].co.copy()) for e in obj.data.edges]
+    samples=[]
+    front=min(1.9249,max(v.co.y for v in vertices)-.0001)
+    for k in range(51):
+        y=1.50+(front-1.50)*k/50; xs=[]
+        for a,b in edges:
+            if min(a.y,b.y)<=y<=max(a.y,b.y) and abs(b.y-a.y)>1e-9:
+                xs.append(a.x+(b.x-a.x)*(y-a.y)/(b.y-a.y))
+        assert xs,'Missing outline section'
+        samples.append((y,max(xs)))
+    hull=[]
+    for p in samples:
+        while len(hull)>1:
+            a,b=hull[-2:]
+            if (b[1]-a[1])/(b[0]-a[0])>(p[1]-b[1])/(p[0]-b[0]): break
+            hull.pop()
+        hull.append(p)
+    deficits=[]
+    for y,x in samples:
+        a,b=next((a,b) for a,b in zip(hull,hull[1:]) if a[0]-1e-9<=y<=b[0]+1e-9)
+        envelope=a[1]+(b[1]-a[1])*(y-a[0])/(b[0]-a[0])
+        deficits.append(max(0,envelope-x))
+    return {'samples_y_half_width_m':samples,'max_inward_deficit_m':max(deficits)}
+
 def measure():
     body=bpy.data.objects['Body']; surface=tree(body)
     points=[v.co for v in body.data.vertices]
@@ -49,12 +76,9 @@ def measure():
         side=surface.ray_cast(Vector((2,y,.640)),Vector((-1,0,0)))[0]
         assert top is not None and side is not None,'Missing nose shell'
         nose_samples.append({'y_m':y,'hood_center_z_m':top.z,'half_width_at_z_640_m':side.x})
-    unchanged_prefixes=('Cabin','RoofGutter','Spoiler','Wheel_','Bumper_Rear','RearValance',
-                        'Taillight','RearIndicator','ReverseLight','Mirror','FrontWiper',
-                        'RearWiper','LicenseRecess','BlankPlate','HatchLock','Exhaust','Underbody','Sill','DoorHandle')
     hashes={o.name:hashlib.sha256(json.dumps({'vertices':[list(v.co) for v in o.data.vertices],
                                             'matrix':[list(row) for row in o.matrix_world]},separators=(',',':')).encode()).hexdigest()
-            for o in meshes if o.name.startswith(unchanged_prefixes)}
+            for o in meshes if o.name!='Body' and not o.name.startswith('SideMoulding')}
     for obj in meshes:
         uv=obj.data.uv_layers['StripeProjection']
         for loop in obj.data.loops:
@@ -65,7 +89,8 @@ def measure():
     return {'body_vertices':len(points),'body_max_width_m':2*max(p.x for p in points),
             'arch_max_widths_m':arch_widths,'triangle_aspect_metrics':triangle_stats,
             'body_wheel_triangle_intersections':wheels,'max_stripe_projection_error':stripe_error,
-            'nose_samples':nose_samples,'unchanged_component_geometry_sha256':hashes,
+            'nose_samples':nose_samples,'plan_outline':plan_outline(body),
+            'body_faces':len(body.data.polygons),'unchanged_component_geometry_sha256':hashes,
             'source_mesh_vertices':{o.name:len(o.data.vertices) for o in meshes},
             'wheel_pivots':{o.name:list(o.location) for o in meshes if o.name.startswith('Wheel_')}}
 
@@ -84,20 +109,27 @@ def main():
     assert all(n==0 for n in sockets.values()),('Housing intersects shell',sockets)
     report['stage_c']['body_fascia_triangle_intersections']=sockets
     source=report['stage_c']['source_mesh_vertices']
-    before=root/'Previews/CompactHatchback/StageC/FrontCorrection/.baseline/Before.blend'
+    before=root/'Previews/CompactHatchback/StageC/FinalOutline/.baseline/Before.blend'
     if before.exists():
         bpy.ops.wm.open_mainfile(filepath=str(before)); previous=measure()
         current=report['stage_c']
         assert previous['unchanged_component_geometry_sha256']==current['unchanged_component_geometry_sha256'],'Unrelated component geometry changed'
         assert all(abs(previous['arch_max_widths_m'][name]-current['arch_max_widths_m'][name])<1e-6 for name in ('front','rear')),'Stage C arch shaping changed'
-        for key in ('hood_center_z_m','half_width_at_z_640_m'):
-            values=[sample[key] for sample in current['nose_samples']]
-            assert all(b<=a+.00001 for a,b in zip(values,values[1:])),('Nose swells or rises toward front',key,values)
-        report['front_correction']={'baseline_commit':'c3010572702a251b993c8d9c681287ee176715ce',
-                                   'previous_nose_samples':previous['nose_samples'],
-                                   'corrected_nose_samples':current['nose_samples'],
-                                   'nose_tapers_without_upturn':True,'arch_widths_unchanged':True,
-                                   'unrelated_components_identical':list(current['unchanged_component_geometry_sha256'])}
+        assert previous['body_vertices']==current['body_vertices'] and previous['body_faces']==current['body_faces'],'Body topology counts changed'
+        assert all(abs(a['hood_center_z_m']-b['hood_center_z_m'])<1e-6 for a,b in zip(previous['nose_samples'],current['nose_samples'])),'Hood vertical curvature changed'
+        assert previous['plan_outline']['max_inward_deficit_m']>.025,'Before outline does not reproduce the pinch'
+        # Existing grid interpolation and rounded bevels are millimetre-scale.
+        # Require removal of the centimetre-scale pocket without adding density.
+        before_deficit=previous['plan_outline']['max_inward_deficit_m']
+        after_deficit=current['plan_outline']['max_inward_deficit_m']
+        assert after_deficit<.003 and after_deficit<before_deficit*.10,('Pronounced plan concavity remains',before_deficit,after_deficit)
+        report['final_outline']={'baseline_commit':'81adc9bf6da9aaac8dd180c37250b281719d20d2',
+                                'previous_plan_outline':previous['plan_outline'],
+                                'corrected_plan_outline':current['plan_outline'],
+                                'outline_tolerance_m':.003,'pocket_reduction_fraction':1-after_deficit/before_deficit,
+                                'max_local_half_width_addition_m':max(b[1]-a[1] for a,b in zip(previous['plan_outline']['samples_y_half_width_m'],current['plan_outline']['samples_y_half_width_m'])),
+                                'hood_height_unchanged':True,'arch_widths_unchanged':True,'body_topology_counts_unchanged':True,
+                                'fixed_components_identical':list(current['unchanged_component_geometry_sha256'])}
     bpy.ops.wm.read_factory_settings(use_empty=True)
     bpy.ops.import_scene.fbx(filepath=str(root/'Assets/Vehicles/CompactHatchback/Models/CompactHatchback.fbx'))
     imported={o.name:len(o.data.vertices) for o in bpy.context.scene.objects if o.type=='MESH'}
