@@ -94,7 +94,7 @@ def transform(pose, points):
     return np.asarray(points) @ pose[:3,:3].T + pose[:3,3]
 
 
-def assess(local, targets, pose, rest_targets, limits):
+def assess(local, targets, pose, rest_targets, limits, *, rest_normals=None, normals=None, rest_pose=None):
     targets,rest = np.asarray(targets),np.asarray(rest_targets)
     residuals = np.linalg.norm(transform(pose,local)-targets,axis=1)
     ratios = []
@@ -106,9 +106,24 @@ def assess(local, targets, pose, rest_targets, limits):
             ratios.append(abs(np.linalg.norm(targets[i]-targets[j])/baseline-1))
     maximum = float(residuals.max())
     spacing = float(max(ratios))
-    status = ("invalid_support" if maximum>limits["invalid_m"] or spacing>limits["spacing_fraction"]
+    normal_error=0.
+    if rest_normals is not None:
+        if normals is None or rest_pose is None:
+            raise ValueError("normal validation requires both frames and normal sets")
+        rest_n,current_n=np.asarray(rest_normals),np.asarray(normals)
+        if rest_n.shape!=targets.shape or current_n.shape!=targets.shape or not np.isfinite(rest_n).all() or not np.isfinite(current_n).all():
+            raise ValueError("nonfinite or mismatched surface normals")
+        transport=pose[:3,:3]@np.asarray(rest_pose)[:3,:3].T
+        expected=rest_n@transport.T
+        lengths=np.linalg.norm(expected,axis=1)*np.linalg.norm(current_n,axis=1)
+        if np.any(lengths<1e-12):
+            raise ValueError("collapsed surface normal")
+        dots=np.sum(expected*current_n,axis=1)/lengths
+        normal_error=float(np.degrees(np.arccos(np.clip(dots,-1,1))).max())
+    status = ("invalid_support" if maximum>limits["invalid_m"] or spacing>limits["spacing_fraction"] or normal_error>limits.get("normal_deg",55)
               else "strained" if maximum>limits["strained_m"] or spacing>.1 else "valid")
     return {"status":status,"residuals_m":residuals.tolist(),
+            "normal_error_deg":normal_error,
             "max_residual_m":maximum,"rms_residual_m":float(np.sqrt(np.mean(residuals**2))),
             "max_pairwise_spacing_change_fraction":spacing}
 

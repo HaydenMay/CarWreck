@@ -26,11 +26,11 @@ strength measurements.
 | Muscle-car rack, undamaged | 0.580 mm | 0.580 mm | Same geometry hash and unit scale |
 | Scoop, undamaged | 1.808 mm | 1.808 mm | Hood curvature already prevents mathematically perfect seating |
 | Scoop, moderate deformation | 12.840 mm | 12.840 mm | Follows 88.424 mm translation and 9.348 degrees rotation |
-| Scoop, severe fold | 121.652 mm | 389.874 mm | Invalid; retained moderate pose shows the lost connection |
+| Scoop, severe fold | 121.652 mm | 389.869 mm | Invalid; retained moderate pose shows the lost connection |
 | Scoop, repaired | 1.808 mm | 1.808 mm | Original vertices restored exactly; rest pose restored |
-| Rack after roof dent | 3.658 mm if allowed to refit | 160.248 mm with chassis pose held fixed | Invalid roof contact; no final gameplay approval implied |
+| Rack after roof dent | 3.664 mm | 160.248 mm | Invalid roof contact; no final gameplay approval implied |
 | Push bar, undamaged | 1.037 mm | 1.037 mm | Two bracket assemblies, four mounting points |
-| Push bar, asymmetric crush | 103.931 mm | 561.032 mm | Invalid supports; retained undamaged pose exposes bracket disagreement |
+| Push bar, asymmetric crush | 103.928 mm | 561.032 mm | Invalid supports; retained undamaged pose exposes bracket disagreement |
 
 A root-parented scoop left at its initial pose would have a **143.508 mm** maximum error
 in the moderate case, versus 12.840 mm using the anchors. The white wire rectangle shows
@@ -45,14 +45,15 @@ best new rigid pose would still leave 121.652 mm of error.
 The hood experiment deliberately keeps the scoop rigid. It does not establish that
 13 mm is production-quality seating: smaller distortion can still produce foot
 interpenetration or visible gaps. A 25 mm soft error threshold, 60 mm hard error threshold,
-25% pairwise spacing-change limit and 55-degree normal-spread limit are diagnostic
+25% pairwise spacing-change limit and 55-degree normal-spread/orientation-error limit are diagnostic
 authoring choices, not calibrated material limits.
 
 ## What was actually tested
 
-- Seven numerical tests cover known barycentric motion, proper rigid rotation/translation
+- Nine numerical tests cover known barycentric motion, proper rigid rotation/translation
   without scale, warped supports, stale revisions, invalid indices, collapsed triangles,
-  collinear supports, nonfinite data, missing surfaces, unsupported pairs and missing sockets.
+  collinear supports, nonfinite data, missing surfaces, unsupported pairs, missing sockets,
+  jointly inverted support triangles and a coherent rotation beyond 90 degrees.
 - 94 acceptance checks cover reported behavior, exact source hashes, independent FBX
   reimports, the actual reopened demonstration scenes, stored accessory-foot positions,
   anchors reconstructed independently from saved deformed meshes, and all 13 PNG outputs.
@@ -62,7 +63,7 @@ authoring choices, not calibrated material limits.
   within 0.00001 m. This tests Blender reimport, not Unity indexing.
 - Anchor rest reconstruction error was at most **0.000000137 m**.
 - Two consecutive final builds produced the same geometry/binding/pose metadata signature:
-  `6ac46f6e0efa7d7d29562b8f2df0980d6226419835f5cf792461dcf043959dd1`.
+  `9e417cb6f407e863897aa30d26aaa74c14304822ebcfdeb75e3e64711a6514d8`.
   This checks deterministic semantic inputs/results, not binary .blend bytes or render pixels.
 - SHA256 checks preserved both source .blend files, both production FBXs, both vehicle
   generators and both lab scenes. Git scope checks exclude C# and production assets.

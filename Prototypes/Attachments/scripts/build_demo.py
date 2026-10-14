@@ -19,7 +19,7 @@ import scene_views as views
 
 BASE=Path(__file__).resolve().parents[1]
 ROOT=BASE.parents[1]
-LIMITS={"strained_m":.025,"invalid_m":.06,"spacing_fraction":.25}
+LIMITS={"strained_m":.025,"invalid_m":.06,"spacing_fraction":.25,"normal_deg":55}
 SOURCES={"hatch":("CompactHatchback","6385a079f750a8762910308c6ea66b4ec0024e13cf7f069199d2d63b318ffef5"),
          "muscle":("MuscleCar","8836620ad6d85cd3d6aae2bd861efd7f060621f9cbb5953a236a88ace51871ad")}
 
@@ -166,16 +166,17 @@ def mount_record(objects, asset, fit, key, case, previous):
     targets=surface+.003*normals
     rest=fit["rest_pose"]
     candidate=mm.fit_rigid(asset["feet"],targets)
-    quality=mm.assess(asset["feet"],targets,candidate,fit["rest_targets"],LIMITS)
+    orientation={"rest_normals":[b["rest_normal"] for b in fit["bindings"]],"normals":normals,"rest_pose":rest}
+    quality=mm.assess(asset["feet"],targets,candidate,fit["rest_targets"],LIMITS,**orientation)
     spread=max(math.degrees(math.acos(np.clip(a@b,-1,1))) for a in normals for b in normals)
     quality["normal_spread_deg"]=spread
-    if spread>55:
+    if spread>LIMITS["normal_deg"]:
         quality["status"]="invalid_support"
     frozen=None
     if key=="rack":
         applied=rest.copy()
-        actual=mm.assess(asset["feet"],targets,applied,fit["rest_targets"],LIMITS)
-        status=actual["status"]
+        actual=mm.assess(asset["feet"],targets,applied,fit["rest_targets"],LIMITS,**orientation)
+        status="invalid_support" if quality["status"]=="invalid_support" else actual["status"]
         if status=="invalid_support":
             frozen="chassis_reference_fixed"
     elif quality["status"]=="invalid_support":
@@ -186,7 +187,7 @@ def mount_record(objects, asset, fit, key, case, previous):
         applied=candidate.copy()
         status=quality["status"]
     previous[key]=(applied,case)
-    actual=mm.assess(asset["feet"],targets,applied,fit["rest_targets"],LIMITS)
+    actual=mm.assess(asset["feet"],targets,applied,fit["rest_targets"],LIMITS,**orientation)
     translation,rotation=pose_change(applied,rest)
     root_gap=float(np.linalg.norm(mm.transform(rest,asset["feet"])-targets,axis=1).max())
     return {"mount_ids":asset["mount_ids"],"contact_axis":1 if key=="pushbar" else 2,

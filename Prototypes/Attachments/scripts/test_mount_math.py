@@ -66,6 +66,40 @@ class MountTests(unittest.TestCase):
                 [{"id":"miss","origin":[2,2,1],"direction":[0,0,-1],
                   "max_distance":2,"bounds":[[-1,-1,-1],[3,3,3]]}])
 
+    def test_inverted_support_triangles_are_not_a_valid_mount(self):
+        local=np.array([[-.21,-.25,0],[.21,-.25,0],[-.21,.25,0],[.21,.25,0.]])
+        vertices=np.array([p+offset for p in local for offset in
+                          ([-.01,-.01,0],[.01,-.01,0],[0,.02,0])])
+        triangles=[[3*i,3*i+1,3*i+2] for i in range(4)]
+        seeds=[{"id":str(i),"origin":(p+[0,0,1]).tolist(),"direction":[0,0,-1],
+                "max_distance":2,"bounds":[[-1,-1,-1],[1,1,1]]} for i,p in enumerate(local)]
+        bindings=mm.bind_anchors(vertices,triangles,seeds)
+        rest=[mm.sample_anchor(vertices,b,b["revision"]) for b in bindings]
+        reflected=vertices.copy()
+        for i,p in enumerate(local):
+            reflected[3*i:3*i+3,0]=2*p[0]-reflected[3*i:3*i+3,0]
+        current=[mm.sample_anchor(reflected,b,b["revision"]) for b in bindings]
+        rest_points=np.array([p for p,n in rest])
+        points=np.array([p for p,n in current])
+        pose=mm.fit_rigid(local,points)
+        result=mm.assess(local,points,pose,rest_points,LIMITS,
+            rest_normals=[n for p,n in rest],normals=[n for p,n in current],
+            rest_pose=mm.fit_rigid(local,rest_points))
+        self.assertLess(result["max_residual_m"],1e-6)
+        self.assertEqual(result["status"],"invalid_support")
+        self.assertGreater(result["normal_error_deg"],170)
+
+    def test_coherent_rotation_past_world_up_remains_valid(self):
+        local=np.array([[-1,-1,0],[1,-1,0],[-1,1,0],[1,1,0.]])
+        a=np.pi/2+.2
+        rotation=np.array([[1,0,0],[0,np.cos(a),-np.sin(a)],[0,np.sin(a),np.cos(a)]])
+        current=local@rotation.T+[.1,.2,-.3]
+        normals=np.tile([0.,0,1],(4,1))
+        result=mm.assess(local,current,mm.fit_rigid(local,current),local,LIMITS,
+            rest_normals=normals,normals=normals@rotation.T,rest_pose=np.eye(4))
+        self.assertEqual(result["status"],"valid")
+        self.assertLess(result["normal_error_deg"],1e-5)
+
     def test_unknown_pair_and_missing_socket_are_rejected(self):
         adapters = [{"vehicle":"hatch","attachment":"scoop","sockets":{"a":[0,0,0]}}]
         with self.assertRaisesRegex(ValueError,"unsupported"):

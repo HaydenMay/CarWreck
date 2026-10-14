@@ -67,7 +67,7 @@ does not assume Claude's unfinished design retains their names or ownership.
 
 The proof of concept deliberately leaves force_limit_N and torque_limit_Nm null. Millimetre
 residuals are not forces and should never be used as calibrated strengths. The diagnostic
-25/60 mm, 25% spacing and 55-degree normal limits are initial authoring thresholds only.
+25/60 mm, 25% spacing and 55-degree normal-spread/orientation limits are initial authoring thresholds only.
 
 ## Future /addacar asset requirements
 

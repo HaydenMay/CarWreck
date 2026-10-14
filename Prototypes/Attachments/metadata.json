@@ -1156,6 +1156,7 @@
   "format": "carwreck.attachment-poc.v1",
   "limits": {
     "invalid_m": 0.06,
+    "normal_deg": 55,
     "spacing_fraction": 0.25,
     "strained_m": 0.025
   },

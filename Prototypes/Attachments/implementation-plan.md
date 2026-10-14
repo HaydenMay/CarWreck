@@ -58,5 +58,5 @@ Files: validation-report.md, integration-notes.md, README.md, preview boards, ex
 - [x] Assemble labelled matched-view boards without altering render content.
 - [x] Report measured results, physical limits, untested Unity/runtime work and seven answers.
 - [x] Rerun tests and end-to-end checks; verify only prototype paths are staged.
-- [ ] Obtain one fresh whole-branch code/evidence review; address material findings.
-- [ ] Commit and push final artifacts to feature/attachment-prototype, no merge.
+- [x] Obtain one fresh whole-branch code/evidence review; address material findings.
+- [x] Commit and push final artifacts to feature/attachment-prototype, no merge.
