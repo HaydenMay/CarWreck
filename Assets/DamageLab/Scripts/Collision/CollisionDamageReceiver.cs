@@ -255,7 +255,7 @@ namespace DamageLab.CollisionTest
             }
             // A harmless (below-threshold) re-touch shortly after a damaging hit, or a suppressed second contact of the same launch,
             // must not replace the hit in the diagnostics; it is still counted and logged.
-            bool keepLast = !report.applied && HasReport && Last.applied && (report.suppressed || (report.strength <= 0f && clock - lastAppliedClock < 3f));
+            bool keepLast = !report.applied && HasReport && Last.applied && (report.suppressed || spent.Contains(other) || (report.strength <= 0f && clock - lastAppliedClock < 3f));
             if (report.applied) lastAppliedClock = clock;
             if (!keepLast) Last = report;
             HasReport = true;

@@ -11,7 +11,7 @@ namespace DamageLab.CollisionTest
     public class PhysicsHitboxDebug : MonoBehaviour
     {
         public Transform car;
-        public FrontHitbox hitbox;
+        public VehicleHitbox hitbox;
         public Material lineMaterial;
         public bool show;
         public float lineWidth = 0.018f;

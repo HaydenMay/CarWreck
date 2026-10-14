@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using DamageLab.CollisionTest;
 using DamageLab.Deformation;
@@ -25,7 +26,9 @@ namespace DamageLab.EditorTools
     {
         public const string ScenePath = DamageLabAssets.Root + "/Scenes/VehicleCollisionLab.unity";
         const float CarMass = 1400f;
-        const float FrontSectionDepth = 0.7f;   // deformable front hitbox depth (m)
+        const float FrontSectionDepth = 0.7f;   // deformable nose hitbox depth (m)
+        const float RearSectionDepth = 0.7f;    // deformable tail hitbox depth (m)
+        const float SideSectionDepth = 0.45f;   // deformable side shell depth (m)
 
         [MenuItem("Damage Lab/Build Collision Lab Scene", priority = 3)]
         public static void Build()
@@ -103,27 +106,46 @@ namespace DamageLab.EditorTools
             var shapes = new GameObject("PhysicsShape").transform;
             shapes.SetParent(car.transform, false);
             var tyreMat = PhysicsMat("CarTyres", 0.55f, 0.7f, PhysicsMaterialCombine.Average);
-            // Body: a structural core from the rear to just ahead of the front axle, and three front sections
-            // (left / centre / right) whose front faces follow the damaged bodywork (FrontHitbox). All boxes sit
-            // on the car root's origin, so collider-local coordinates are car space.
-            float coreFront = body.max.z - FrontSectionDepth;
+            // Body shell (phase 4, whole vehicle): a structural core inside, three nose sections and three tail sections
+            // (full-width thirds; the corner ones also adapt their side face), and three side sections per side between
+            // them. Their outer faces follow the damaged bodywork (VehicleHitbox). The pieces tile the body exactly:
+            // shared faces, no overlaps, no gaps. All boxes sit on the car root's origin: collider-local = car space.
+            float coreFront = body.max.z - FrontSectionDepth, coreRear = body.min.z + RearSectionDepth;
             float boxY = (wheels.min.y + body.max.y) * 0.5f, boxH = body.max.y - wheels.min.y;
-            var lower = new GameObject("BodyCoreBox").AddComponent<BoxCollider>();
-            lower.transform.SetParent(shapes, false);
-            lower.center = new Vector3(body.center.x, boxY, (body.min.z + coreFront) * 0.5f);
-            lower.size = new Vector3(body.size.x, boxH, coreFront - body.min.z);
-            lower.sharedMaterial = tyreMat;
-            var frontSections = new BoxCollider[3];
-            string[] sectionNames = { "FrontLeftBox", "FrontCentreBox", "FrontRightBox" };
-            float third = body.size.x / 3f;
-            for (int s = 0; s < 3; s++)
+            float yMin = boxY - boxH * 0.5f, yMax = boxY + boxH * 0.5f;
+            var regions = new List<VehicleHitbox.Region>();
+            BoxCollider Box(string name, Vector3 min, Vector3 max)
             {
-                var sec = new GameObject(sectionNames[s]).AddComponent<BoxCollider>();
-                sec.transform.SetParent(shapes, false);
-                sec.center = new Vector3(body.min.x + third * (s + 0.5f), boxY, (coreFront + body.max.z) * 0.5f);
-                sec.size = new Vector3(third, boxH, body.max.z - coreFront);
-                sec.sharedMaterial = tyreMat;
-                frontSections[s] = sec;
+                var bc = new GameObject(name).AddComponent<BoxCollider>();
+                bc.transform.SetParent(shapes, false);
+                bc.center = (min + max) * 0.5f;
+                bc.size = max - min;
+                bc.sharedMaterial = tyreMat;
+                return bc;
+            }
+            void RegionBox(string name, Vector3 min, Vector3 max, bool posZ, bool negZ, bool negX, bool posX)
+            {
+                var bc = Box(name + "Box", min, max);
+                regions.Add(new VehicleHitbox.Region { name = name, box = bc, posZ = posZ, negZ = negZ, negX = negX, posX = posX, outer = new Bounds(bc.center, bc.size) });
+            }
+            float x0 = body.min.x, x3 = body.max.x, third = body.size.x / 3f, x1 = x0 + third, x2 = x0 + 2f * third;
+            float sxL = x0 + SideSectionDepth, sxR = x3 - SideSectionDepth;
+            var lower = Box("BodyCoreBox", new Vector3(sxL, yMin, coreRear), new Vector3(sxR, yMax, coreFront));
+            // nose and tail: end face adapts; corners also adapt their outer side face
+            RegionBox("FrontLeft", new Vector3(x0, yMin, coreFront), new Vector3(x1, yMax, body.max.z), true, false, true, false);
+            RegionBox("FrontCentre", new Vector3(x1, yMin, coreFront), new Vector3(x2, yMax, body.max.z), true, false, false, false);
+            RegionBox("FrontRight", new Vector3(x2, yMin, coreFront), new Vector3(x3, yMax, body.max.z), true, false, false, true);
+            RegionBox("RearLeft", new Vector3(x0, yMin, body.min.z), new Vector3(x1, yMax, coreRear), false, true, true, false);
+            RegionBox("RearCentre", new Vector3(x1, yMin, body.min.z), new Vector3(x2, yMax, coreRear), false, true, false, false);
+            RegionBox("RearRight", new Vector3(x2, yMin, body.min.z), new Vector3(x3, yMax, coreRear), false, true, false, true);
+            // sides between nose and tail: three along the length, outer side face adapts
+            float sideLen = (coreFront - coreRear) / 3f;
+            string[] along = { "Rear", "Mid", "Front" };
+            for (int i = 0; i < 3; i++)
+            {
+                float za = coreRear + sideLen * i, zb = coreRear + sideLen * (i + 1);
+                RegionBox("Left" + along[i], new Vector3(x0, yMin, za), new Vector3(sxL, yMax, zb), false, false, true, false);
+                RegionBox("Right" + along[i], new Vector3(sxR, yMin, za), new Vector3(x3, yMax, zb), false, false, false, true);
             }
             var upper = new GameObject("CabinBox").AddComponent<BoxCollider>();
             upper.transform.SetParent(shapes, false);
@@ -154,10 +176,11 @@ namespace DamageLab.EditorTools
             footprintDebug.show = true;
             damage.maxImpacts = 24;                  // records kept individually; older ones merge into the damage sum
             damage.impactOverflow = ImpactOverflow.MergeOldest;
-            var hitbox = car.AddComponent<FrontHitbox>();
+            var hitbox = car.AddComponent<VehicleHitbox>();
             hitbox.model = damage;
             hitbox.core = lower;
-            hitbox.sections = frontSections;
+            hitbox.cabin = upper;
+            hitbox.regions = regions.ToArray();
             var colliderDebug = car.AddComponent<PhysicsHitboxDebug>();
             colliderDebug.car = car.transform;
             colliderDebug.hitbox = hitbox;
@@ -231,7 +254,7 @@ namespace DamageLab.EditorTools
             var scenes = EditorBuildSettings.scenes.ToList();
             if (!scenes.Any(s => s.path == ScenePath)) scenes.Add(new EditorBuildSettingsScene(ScenePath, true));
             EditorBuildSettings.scenes = scenes.ToArray();
-            Debug.Log($"[CollisionLab] Built {ScenePath}: core box {lower.size}, front sections {frontSections[0].size} x3, cabin box {upper.size}, car lifted {groundLift:0.000} m");
+            Debug.Log($"[CollisionLab] Built {ScenePath}: core box {lower.size}, {regions.Count} adaptive regions, cabin box {upper.size}, car lifted {groundLift:0.000} m");
         }
 
         static PhysicsMaterial PhysicsMat(string name, float dynamicFriction, float staticFriction, PhysicsMaterialCombine combine)
@@ -342,10 +365,10 @@ namespace DamageLab.EditorTools
             foreach (var t in speedRow.GetComponentsInChildren<Text>()) if (t.name == "Max") t.text = "30";
             var offsetRow = Row(sliders.transform, "OffsetRow", 80);
             SliderWidgets(offsetRow, "Aim Offset (m)", out lab.offsetSlider, out lab.offsetField);
-            lab.offsetSlider.wholeNumbers = false; lab.offsetSlider.minValue = -0.8f; lab.offsetSlider.maxValue = 0.8f; lab.offsetSlider.value = 0f;
+            lab.offsetSlider.wholeNumbers = false; lab.offsetSlider.minValue = -1.5f; lab.offsetSlider.maxValue = 1.5f; lab.offsetSlider.value = 0f;
             lab.offsetField.contentType = InputField.ContentType.DecimalNumber; lab.offsetField.characterLimit = 5;
             lab.offsetField.text = "0.00";
-            foreach (var t in offsetRow.GetComponentsInChildren<Text>()) if (t.name == "Max") t.text = "+0.8"; else if (t.name == "Min") t.text = "-0.8";
+            foreach (var t in offsetRow.GetComponentsInChildren<Text>()) if (t.name == "Max") t.text = "+1.5"; else if (t.name == "Min") t.text = "-1.5";
             var offsetHint = Label("OffsetHint", sliders.transform, "Front / rear / corner: + towards car's right  ·  Sides: + towards front", 14, TextDim, FontStyle.Normal, TextAnchor.MiddleLeft);
             Layout(offsetHint.gameObject, 22);
 
@@ -359,7 +382,7 @@ namespace DamageLab.EditorTools
             gl.cellSize = new Vector2(196, 44); gl.spacing = new Vector2(8, 8);
             gl.constraint = GridLayoutGroup.Constraint.FixedColumnCount; gl.constraintCount = 2;
             Layout(grid.gameObject, 44 * 3 + 16);
-            string[] names = { "Front", "Rear", "Left Side", "Right Side", "Front Corner (Angled)" };
+            string[] names = { "Front", "Rear", "Left Side", "Right Side", "Front Corner (Angled)", "Rear Corner (Angled)" };
             lab.directionButtons = new Button[names.Length];
             for (int i = 0; i < names.Length; i++)
             {
@@ -418,7 +441,7 @@ namespace DamageLab.EditorTools
             Layout(dgh.gameObject, 28);
             lab.diagnosticsText = Label("Text", diag.transform, "No collision yet.", 15, TextMain, FontStyle.Normal, TextAnchor.UpperLeft);
             lab.diagnosticsText.supportRichText = false;
-            Layout(lab.diagnosticsText.gameObject, 216);
+            Layout(lab.diagnosticsText.gameObject, 252);
 
             // Controls hint (top-left)
             var hint = Img("ControlsHint", root, new Color(0.11f, 0.12f, 0.13f, 0.86f), DamageLabAssets.RoundedRectSprite, sliced: true);

@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 namespace DamageLab.CollisionTest
 {
-    public enum ImpactDirection { Front, Rear, LeftSide, RightSide, FrontCornerAngled }
+    public enum ImpactDirection { Front, Rear, LeftSide, RightSide, FrontCornerAngled, RearCornerAngled }
 
     /// <summary>
     /// Collision Lab: places the test sled for the chosen direction, launches it with a real Rigidbody velocity
@@ -35,10 +35,10 @@ namespace DamageLab.CollisionTest
         public float narrowWidth = 0.5f;
         public ImpactFootprintDebug footprintDebug;
         [Tooltip("Sideways shift (m) of the aim point: towards the car's right for front/rear/corner hits, towards the front for side hits.")]
-        [Range(-0.8f, 0.8f)] public float aimOffset;
+        [Range(-1.5f, 1.5f)] public float aimOffset;
         [Tooltip("Freeze the car in place (it still collides and still takes damage). Off = free physics.")]
         public bool anchored = true;
-        public FrontHitbox hitbox;
+        public VehicleHitbox hitbox;
         public PhysicsHitboxDebug colliderDebug;
 
         [Header("UI")]
@@ -102,6 +102,7 @@ namespace DamageLab.CollisionTest
             SetAnchored(anchored);
             ResetAll();
             if (receiver != null) receiver.ImpactRegistered += _ => RefreshDiagnostics();
+            if (hitbox != null) hitbox.Changed += RefreshDiagnostics;
         }
 
         // ------------------------------------------------------------------ test control
@@ -250,6 +251,7 @@ namespace DamageLab.CollisionTest
                 case ImpactDirection.LeftSide: target = new Vector3(-1.0f, 0f, -0.15f); dir = Vector3.right; break;
                 case ImpactDirection.RightSide: target = new Vector3(1.0f, 0f, -0.15f); dir = Vector3.left; break;
                 case ImpactDirection.FrontCornerAngled: target = new Vector3(-0.85f, 0f, 2.25f); dir = new Vector3(0.55f, 0f, -0.835f).normalized; break;
+                case ImpactDirection.RearCornerAngled: target = new Vector3(0.85f, 0f, -2.25f); dir = new Vector3(-0.55f, 0f, 0.835f).normalized; break;
                 default: target = new Vector3(0f, 0f, 2.45f); dir = Vector3.back; break;
             }
         }
@@ -262,6 +264,7 @@ namespace DamageLab.CollisionTest
                 case ImpactDirection.LeftSide: return "Left side";
                 case ImpactDirection.RightSide: return "Right side";
                 case ImpactDirection.FrontCornerAngled: return "Front-left corner (angled)";
+                case ImpactDirection.RearCornerAngled: return "Rear-right corner (angled)";
                 default: return "Front";
             }
         }
@@ -336,12 +339,12 @@ namespace DamageLab.CollisionTest
             }
             if (offsetSlider != null)
             {
-                offsetSlider.minValue = -0.8f; offsetSlider.maxValue = 0.8f; offsetSlider.wholeNumbers = false;
+                offsetSlider.minValue = -1.5f; offsetSlider.maxValue = 1.5f; offsetSlider.wholeNumbers = false;
                 offsetSlider.SetValueWithoutNotify(aimOffset);
                 offsetSlider.onValueChanged.AddListener(v => { aimOffset = Mathf.Round(v * 20f) / 20f; if (!launched) PlaceSled(); RefreshValues(); });
             }
             if (offsetField != null)
-                offsetField.onEndEdit.AddListener(t => { if (float.TryParse(t, out float v)) aimOffset = Mathf.Clamp(Mathf.Round(v * 20f) / 20f, -0.8f, 0.8f); if (!launched) PlaceSled(); RefreshValues(); });
+                offsetField.onEndEdit.AddListener(t => { if (float.TryParse(t, out float v)) aimOffset = Mathf.Clamp(Mathf.Round(v * 20f) / 20f, -1.5f, 1.5f); if (!launched) PlaceSled(); RefreshValues(); });
             RefreshValues();
             RefreshDirectionButtons();
         }
@@ -392,7 +395,8 @@ namespace DamageLab.CollisionTest
                       $"Crush depth          {r.footprint.travel * 100f:0} cm  (area factor ×{r.footprint.areaFactor:0.00})\n"
                     : "") +
                 $"Mesh deformation     {(r.applied ? $"{r.deformMilliseconds:0.0} ms" : "-")}\n" +
-                $"Impacts on car       {model.TotalImpactCount} ({model.ImpactCount} stored, {model.MergedImpactCount} merged into damage)";
+                $"Impacts on car       {model.TotalImpactCount} ({model.ImpactCount} stored, {model.MergedImpactCount} merged into damage)" +
+                (hitbox != null && !string.IsNullOrEmpty(hitbox.LastChangeSummary) ? $"\nHitbox update        {hitbox.LastChangeSummary}" : "");
         }
 
         void SetStatus(string s)

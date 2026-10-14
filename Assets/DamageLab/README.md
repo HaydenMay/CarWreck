@@ -289,6 +289,80 @@ Phase 3 limitations:
 * **Anchored severity.** Anchored mode uses the impactor's mass as the reduced mass, so its severities aren't comparable to free mode.
 * **Cost for 8–12 vehicles.** The hitbox and physics cost is negligible. The visual deformation cost (single-threaded in WebGL) is what needs Burst/Jobs or GPU work before many cars crash at once.
 
+## Collision Lab phase 4: whole-vehicle damage-aware hitbox
+
+`VehicleHitbox` replaces phase 3's `FrontHitbox`. It uses the same mesh-derived method, applied to the whole body.
+
+* **Layout.** 14 boxes that tile the body exactly, with shared faces, no overlaps and no gaps:
+  * a structural core and the cabin (fixed);
+  * **nose** FrontLeft / FrontCentre / FrontRight and **tail** RearLeft / RearCentre / RearRight: full-width thirds, 0.7 m deep. Their end faces adapt, and the four corner sections also adapt their outer side face;
+  * **sides** LeftFront / LeftMid / LeftRear and the same on the right: the 0.45 m outer shell between nose and tail, in thirds along the length. Their outer side faces adapt.
+
+  That's 12 adaptive regions with 16 adaptive faces.
+* **Why this layout, not separate corner boxes.** Full-width nose and tail thirds mean the corners are part of the end sections, with two adaptive faces each. That gives a front hit, a side hit or an angled corner hit on the same corner one coherent box, with fewer colliders and no extra seams. The side shell between the axles carries side crush, and the core never moves, so a crushed region bottoms out on real structure.
+* **Face fitting** is unchanged from phase 3:
+  * each face's area is split into a 6 × 4 grid of cells, and the outermost *current deformed* vertex of each cell is found (about 72 k vertex samples in total);
+  * the face goes to the median of the cells;
+  * it is never moved outward of the undamaged fit, never moved outward again once retracted, and never closer than 6 cm to the region's inner face.
+
+  Builder-time outer bounds are stored per region, so re-setup and fixed faces never drift.
+* **Updates** happen at the same safe point as phase 3: when the block has stopped pressing, and before every launch.
+  * Only faces within 1.2 m plus the footprint size of the new impacts are re-fitted (about 9 of 16 on average). A repair re-fits all of them.
+  * Repair restores the exact original boxes and re-inserts them in a fixed order. PhysX re-creates a resized shape at the end of the body's shape list, so this keeps a repaired car's physics layout identical each time.
+* **Debug.**
+  * The green wireframe shows all current boxes; cyan footprints and yellow arrows are unchanged.
+  * The diagnostics panel gains a *Hitbox update* line listing the regions that moved and by how much (for example "FrontLeft +Z -24 cm").
+  * New direction: **Rear Corner (Angled)**. Aim Offset now ranges ±1.5 m, so sides can be aimed at their front, mid or rear third.
+
+**Validation** (`collision-phase4`, real PhysX, anchored):
+
+* **Coverage.** All 14 targets, two identical narrow hits at 15 m/s from a repaired car: front L/C/R, rear L/C/R, left and right front/mid/rear, front-left and rear-right angled corners.
+  * In every case the second hit lands 9–31 cm deeper.
+  * For straight hits, it lands at the retracted face (within 6 cm).
+  * The struck region retracts 15–44 cm.
+* **Locality.**
+  * Front centre ×25 at 30 m/s and 4000 kg saturates locally: the last hits move the mesh 1.5–1.9 cm and the face stops moving.
+  * After that, front-left, front-right, left mid, right mid and rear centre still deform 0.21–0.46 m, and their regions retract 18–39 cm.
+  * Left mid ×10, then rear left and right mid: still deform. Rear centre ×10, then front and left front: still deform.
+* **Long run.** 84 mixed hits (14 targets × 6 rounds, narrow and wide alternating, 30 and 15 m/s, 4000 kg):
+  * every hit applied and every diagnostic correct;
+  * 24 stored and 60 merged impacts, no NaN, car drift 0.7 mm;
+  * faces only ever moved inward;
+  * deformation stayed about 73–84 ms per hit throughout.
+* **Reset and repair.** After 84 hits, Reset Block leaves the mesh bit-identical. Repair Car restores the mesh and all 12 boxes exactly, and the next hit is impact #1. Reset All is exact.
+* **Costs** (editor):
+
+  | Cost | Time |
+  |---|---|
+  | Hitbox refit | 1.3 ms average, 2.6 ms max, per impact only |
+  | Visual deformation | about 73 ms per hit |
+  | Physics step | 0.048 ms, against 0.04 ms with phase 3's 5 boxes |
+
+**Scaling** (estimate, not measured with several cars):
+
+* **Physics** is negligible: 14 boxes per car is about 170 boxes for 12 cars. The cost that matters is the visual deformation.
+* **Editor deformation per impact:**
+
+  | Cars hit at once | Cost |
+  |---|---|
+  | 2 | about 140 ms |
+  | 4 | about 290 ms |
+  | 8 | about 0.6 s |
+
+  That's a frame hitch on every crash unless the work is spread over frames or moved to Burst/Jobs or the GPU.
+* **WebGL** is single-threaded, so its about 15–20 ms per impact is for one car with a light hit; heavy hits in the editor run 2–4× that.
+* **Verdict.** The hitbox design scales fine. The visual rebuild is the bottleneck, and needs its planned Burst/Jobs work before 8+ cars crash simultaneously.
+
+Phase 4 limitations:
+
+* **Coarse sections.** Each region has one flat face at the median of its metal. A section only partly struck retracts only if most of its metal moved, and unstruck metal can visually overlap the block. A block straddling two sections, or within PhysX's 1 cm contact offset of a less-crushed neighbour, catches that neighbour's edge. That's why the tests aim the narrow block at ±0.65 m, not ±0.6.
+* **Corners** adapt their end face and side face independently, so a diagonal crush is a stepped box, not a bevel.
+* **Height.** The cabin box doesn't adapt, and section height doesn't change, so a crushed hood or roof still collides at its original height.
+* **Thin side shell.** Sides are only 0.45 m deep, so a very deep door crush bottoms out on the core. That's deliberate.
+* **Fast blocks still tunnel** up to a step (0.6 m at 30 m/s) before PhysX pushes them out; one impact per launch keeps that from double-counting. The averaged contact point reads 3–9 cm inside the face at 15 m/s; the box pose used for the footprint is corrected separately.
+* **Physics repeatability is at the millimetre level.** Identical launches can differ by a few mm of contact (up to about 1 cm of mesh after 33 hits) because PhysX keeps internal contact history across resets. The deformation itself is exact for a given impact sequence.
+* **Many hits fold triangles.** After 84 heavy hits, 5 % of triangles are folded, from the visual system under extreme saturation, not the hitbox.
+
 ## Limitations / next steps
 
 * **Performance.** About 20 ms per rebuild is fine for a lab with eased sliders, but not for gameplay. Next steps: port `Displacement` and the normal pass to Burst + Jobs (`MeshData` API), or move them to a compute/vertex shader using the precomputed per-vertex data.

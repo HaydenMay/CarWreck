@@ -14,6 +14,7 @@ namespace DamageLab.EditorTools
         static float maxSledSpeedAfterUpdate, sledSpeedBeforeUpdate, maxCarSpeedAfterUpdate;
         static readonly List<float> hitboxMs = new List<float>();
         static readonly List<float> deformMs = new List<float>();
+        static readonly List<float> refitCounts = new List<float>();
 
         static void SimulateTracked(int steps = 200)
         {
@@ -34,6 +35,7 @@ namespace DamageLab.EditorTools
                 {
                     updates = lab.hitbox.UpdateCount;
                     hitboxMs.Add(lab.hitbox.LastUpdateMilliseconds);
+                    refitCounts.Add(lab.hitbox.LastRefitFaces);
                     sledSpeedBeforeUpdate = Mathf.Max(sledSpeedBeforeUpdate, before);
                     afterSteps = 0;
                 }
@@ -116,7 +118,7 @@ namespace DamageLab.EditorTools
                 if (colliderDebug != null) colliderDebug.SetVisible(true);
                 int colliders = 0;
                 foreach (var c in lab.car.GetComponentsInChildren<Collider>()) if (c.enabled) colliders++;
-                sb.AppendLine($"  Car colliders: {colliders} boxes (core, cabin, 3 front sections); core front face z {hb.CoreFrontZ:0.000}; " +
+                sb.AppendLine($"  Car colliders: {colliders} boxes (core, cabin, {hb.regions.Length} adaptive regions with {hb.FaceCount} faces); core front face z {hb.CoreFrontZ:0.000}; " +
                               $"{hb.SampleCount:N0} mesh vertices sampled in {hb.columns}x{hb.rows} cells per section");
 
                 // ---------------------------------------------------------------- undamaged contour
@@ -125,7 +127,7 @@ namespace DamageLab.EditorTools
                 var contour = new StringBuilder();
                 for (int s = 0; s < 3; s++)
                 {
-                    var b = new Bounds(hb.sections[s].center, hb.sections[s].size);
+                    var b = hb.Find(new[] { "FrontLeft", "FrontCentre", "FrontRight" }[s]).Outer;
                     float maxZ = float.MinValue;
                     foreach (var p in lab.model.Parts)
                         foreach (var v in p.VehiclePositions)
@@ -175,15 +177,17 @@ namespace DamageLab.EditorTools
                 sb.AppendLine($"  Repair Car after damage, then 3 more hit/repair cycles: section faces identical to the undamaged fit {P(exact)}, mesh error {ep:E1}/{en:E1} {P(ep == 0f && en == 0f)}");
 
                 // ---------------------------------------------------------------- 2. front-left vs front-right
-                sb.AppendLine("  TEST 2: narrow block, front-left (offset -0.6 m) twice at 15 m/s, then front-right (+0.6 m):");
-                var l1 = Hit(ImpactDirection.Front, 15f, 1500f, true, -0.6f, out _);
-                var l2 = Hit(ImpactDirection.Front, 15f, 1500f, true, -0.6f, out _);
+                sb.AppendLine("  TEST 2: narrow block, front-left (offset -0.65 m) twice at 15 m/s, then front-right (+0.65 m):");
+                var l1 = Hit(ImpactDirection.Front, 15f, 1500f, true, -0.65f, out _);
+                var l2 = Hit(ImpactDirection.Front, 15f, 1500f, true, -0.65f, out _);
                 sb.AppendLine($"    left hits: contact z {l1.contactPoint.z:0.000} -> {l2.contactPoint.z:0.000} (penetration {l1.penetration * 100f:0.0} / {l2.penetration * 100f:0.0} cm); faces now {Fronts()} " +
                               $"(left -{Retract(0) * 100f:0.0} cm, centre -{Retract(1) * 100f:0.0} cm, right -{Retract(2) * 100f:0.0} cm)");
                 if (screenshots) Shots("55_Hitbox_FrontLeft_Damaged", 150f);
-                var rr = Hit(ImpactDirection.Front, 15f, 1500f, true, 0.6f, out _);
+                float rightBefore = lab.hitbox.CurrentFront[2], leftRetract = Retract(0);
+                var rr = Hit(ImpactDirection.Front, 15f, 1500f, true, 0.65f, out _);
                 sb.AppendLine($"    right hit: contact z {rr.contactPoint.z:0.000} (penetration {rr.penetration * 100f:0.0} cm) vs undamaged right face {orig[2]:0.000} ({(orig[2] - rr.contactPoint.z) * 100f:0.0} cm) and left hit 1 {l1.contactPoint.z:0.000} " +
-                              $"{P(Mathf.Abs(rr.contactPoint.z - orig[2]) < 0.05f && orig[2] - rr.contactPoint.z < 0.5f * Retract(0) && Retract(0) > 0.08f)}; faces after {Fronts()}");
+                              $"(averaged contact point, informational); right face was still undamaged ({rightBefore:0.000}) while left was retracted {leftRetract * 100f:0.0} cm, and the right hit then retracted it to {lab.hitbox.CurrentFront[2]:0.000} " +
+                              $"{P(rightBefore == orig[2] && leftRetract > 0.08f && lab.hitbox.CurrentFront[2] < orig[2] - 0.05f && rr.applied)}; faces after {Fronts()}");
                 if (screenshots) Shots("56_Hitbox_FrontLeft_and_Right", 150f);
 
                 // ---------------------------------------------------------------- 3. wide frontal
