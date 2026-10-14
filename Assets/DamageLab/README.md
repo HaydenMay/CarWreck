@@ -316,8 +316,8 @@ Phase 3 limitations:
 
 **Validation** (`collision-phase4`, real PhysX, anchored):
 
-* **Coverage.** All 14 targets, two identical narrow hits at 15 m/s from a repaired car: front L/C/R, rear L/C/R, left and right front/mid/rear, front-left and rear-right angled corners.
-  * In every case the second hit lands 9–31 cm deeper.
+* **Coverage.** All targets, two identical narrow hits at 15 m/s from a repaired car: front L/C/R, rear L/C/R, left and right front/mid/rear, and (since the vehicle engine milestone) all four angled corners.
+  * In every case the second hit lands 9–31 cm deeper. Since the vehicle engine milestone "deeper" is measured where it is exact: the parked block is swept (`Physics.BoxCast`) along its launch path against the car's current colliders. The averaged contact point and the recorded block pose are both reported after a 30 cm physics step (PhysX does not sweep a 4 m block moving 0.3 m per step), so they land 0–15 cm past the true first touch depending on step phase; at a corner the averaged point also slides between the two faces. That is why the hatchback's rear-right corner used to read 0 cm deeper although both of its faces retract.
   * For straight hits, it lands at the retracted face (within 6 cm).
   * The struck region retracts 15–44 cm.
 * **Locality.**
@@ -360,8 +360,203 @@ Phase 4 limitations:
 * **Height.** The cabin box doesn't adapt, and section height doesn't change, so a crushed hood or roof still collides at its original height.
 * **Thin side shell.** Sides are only 0.45 m deep, so a very deep door crush bottoms out on the core. That's deliberate.
 * **Fast blocks still tunnel** up to a step (0.6 m at 30 m/s) before PhysX pushes them out; one impact per launch keeps that from double-counting. The averaged contact point reads 3–9 cm inside the face at 15 m/s; the box pose used for the footprint is corrected separately.
-* **Physics repeatability is at the millimetre level.** Identical launches can differ by a few mm of contact (up to about 1 cm of mesh after 33 hits) because PhysX keeps internal contact history across resets. The deformation itself is exact for a given impact sequence.
+* **Physics repeatability is at the millimetre level.** Identical launches can differ by a few mm of contact because PhysX keeps internal contact history across resets. The deformation itself is exact for a given impact sequence. (The vehicle engine milestone found and removed four discontinuities in the box crush that could amplify such differences to tens of centimetres; see *Repeatability investigation* below.)
 * **Many hits fold triangles.** After 84 heavy hits, 5 % of triangles are folded, from the visual system under extreme saturation, not the hitbox.
+
+## Vehicle engine (reusable vehicles)
+
+A vehicle is **data**. The destruction code is the same for every vehicle; a new vehicle needs a model, a definition asset and a validation run, not new code. This section is the technical reference for adding one (and for a future guided `/addacar` workflow).
+
+**Working today:** the blue muscle car (regression baseline) and the red compact hatchback run through the same definition → rig → damage → hitbox path, in the editor and in WebGL, and can be switched at runtime.
+**Not built yet:** an in-editor wizard or `/addacar` skill, per-panel stiffness maps, automatic profile tuning, driving/gameplay use. These are planned, not present.
+
+### Pieces
+
+| Piece | File | Role |
+|---|---|---|
+| `VehicleDefinition` | `Scripts/Vehicle/VehicleDefinition.cs`, assets in `Settings/Vehicles/` | Everything vehicle-specific: model, mass, damage profile, component rules, shell proportions, impact height, record limit |
+| `VehiclePartRule` | `Scripts/Vehicle/VehiclePartRule.cs` | One rule per component family: name pattern, match mode, role, mode, crumple |
+| `VehicleDamageProfile` | `Scripts/Deformation/VehicleDamageProfile.cs` | Directional crush regions, cabin line, localized-impact tuning |
+| `VehicleRig` | `Scripts/Collision/VehicleRig.cs` | Builds a destructible physics vehicle from a definition (runtime-safe) |
+| `VehicleDamageModel` | `Scripts/Vehicle/VehicleDamageModel.cs` | Classifies parts, owns the deformable meshes, impact history, warnings |
+| `VehicleHitbox` | `Scripts/Collision/VehicleHitbox.cs` | Damage-aware 14-box physics shell |
+| `VehicleDefinitionSetup` | `Editor/VehicleDefinitionSetup.cs` | Writes/refreshes the two shipped definitions (*Damage Lab ▸ Create or Refresh Vehicle Definitions*, bridge `vehicles-setup`) |
+
+### Vehicle definition fields
+
+| Field | Meaning | Automatic when 0 |
+|---|---|---|
+| `displayName` | Shown in the selector and diagnostics | — |
+| `model` | Imported FBX prefab. Must face **+Z**, metres, **Read/Write enabled** meshes | — |
+| `mass` | Rigidbody mass for free-physics collisions (kg) | — |
+| `profile` | `VehicleDamageProfile` (crush regions, cabin line, impact tuning) | — |
+| `components` | Ordered list of `VehiclePartRule` (first match wins) | — |
+| `unknownComponentCrumple` | Crumple for unmatched parts (they still deform and are reported) | — |
+| `frontSectionDepth` / `rearSectionDepth` | Depth of the adaptive nose / tail sections | 14 % of body length |
+| `sideSectionDepth` | Depth of the adaptive side shell | 22 % of body width (max 45 %) |
+| `cabinBoxScale` | Cabin collider size relative to the Cabin parts' bounds (width, length) | default 0.92 × 0.85 |
+| `impactHeight` | Collision Lab impactor centre line above the car's base | body centre height, at least 0.6 m |
+| `maxImpactRecords` | Impact records kept individually; older ones merge into the accumulated damage | default 24 |
+
+### How `VehicleRig` builds a vehicle
+
+1. Instantiate the model at the origin, identity rotation, unit scale.
+2. **Measure** (`VehicleRig.Measure`) from the component roles: body bounds (Body + Bumper parts, or any rule with `definesImpactFaces`), cabin bounds (Cabin parts), wheel bounds and wheel centres (Wheel / Rigid parts), ground lift (puts the tyres on the ground). Missing roles fall back to the whole model and produce a warning.
+3. **Physics shell**: 14 boxes tiling the body — a fixed core, a fixed cabin box, and 12 adaptive regions: nose and tail thirds (end face adapts; the four corner boxes also adapt their outer side face) and side-shell thirds (outer face adapts). 16 adaptive faces in total.
+4. Rigidbody (mass, ContinuousDynamic, centre of mass at wheel base + 0.45 m), `VehicleDamageModel` (definition, profile, rules), `CollisionDamageReceiver`, `VehicleHitbox`, footprint and collider debug views.
+5. `CollisionLabController.SelectVehicle` destroys the previous car (deactivated first, so its colliders leave the physics scene immediately), adopts the new rig, initialises the damage model and hitbox, collects warnings and resets the lab. Aim points and impactor height come from the new vehicle's measured geometry.
+
+### Component roles and naming
+
+| Role | Effect | Typical crumple |
+|---|---|---|
+| `Body` | Main shell; defines the outer impact faces and the physics shell | 1.0 |
+| `Bumper` | Also defines the outer impact faces | 0.25 |
+| `Cabin` | Greenhouse (roof, pillars, glass); defines the cabin collider | 0.85 |
+| `Wheel` | Rigid (mode `Rigid`): follows the crush, defines wheel-mount zones | 0 |
+| `Panel` | Other painted sheet metal (valances, sills, spoilers, scoops) | 1.0 |
+| `Fascia` | Grilles, intakes, splitters | 0.55 |
+| `Light` | Lamps and housings | 0.45 |
+| `Trim` | Mouldings, handles, mirrors, wipers, plates (exhausts 0.4) | 1.0 |
+| `Underbody` | Floor pan / underside | 1.0 |
+| `Ignore` | Not deformed (e.g. wireframe overlays) | — |
+
+* **Matching** is case-insensitive. `Token` (default): the name equals the pattern or continues with a non-letter — `Body` matches `Body`, `Body.001`, `Body_L`, but **not** `Underbody` or `BodyKit`. `Exact` and legacy `Contains` (substring) are available per rule.
+* **First match wins.** More than one matching rule is reported as *ambiguous*.
+* **Names for new models:** one object per component family, named `<Family>`, `<Family>.<n>` or `<Family>_<side>` (e.g. `Headlight`, `Headlight.001`, `Mirror_L`). A longer name that merely starts with another family's name is a different family and needs its own rule: `HeadlightHousing` does not token-match `Headlight`.
+
+### Configuration validation
+
+`VehicleDamageModel.Warnings` (shown in the Collision Lab vehicle panel and by `vehicle-<name>` validation) reports:
+* **unclassified** components (deform as generic sheet with `unknownComponentCrumple` — never silently),
+* **ambiguous** components (several rules match),
+* **unreadable** meshes (Read/Write disabled),
+* **no impact-face parts** (no Body/Bumper role) and **no wheels**,
+* a damage-profile **cabin line more than 12 cm from the measured beltline** (cabin protection misplaced).
+
+Both shipped vehicles produce **0 warnings**. The hatchback with the old muscle-car configuration produces 55 (the regression `vehicle-hatch-legacy` keeps that comparison).
+
+### Damage profiles and structural zones
+
+* The profile holds the four directional crush regions (Damage Lab sliders), the **cabin line** (`roofLineStart`/`roofLineEnd`: above it the stiffer cabin limit applies) and the localized-impact settings.
+* Per-vertex crush **capacity** (how far metal can move before it saturates): panels 0.50 m, cabin 0.36 m (blended over ±0.1 m around `roofLineStart`), wheel mounts 0.20 m within 0.5 m of a wheel centre (fading out by 0.95 m), scaled by `0.6 + 0.4 · crumple` for stiff parts. Saturation is linear to 60 % of capacity, then eases toward it.
+* **Work hardening**: a hit on already-crushed metal (within an earlier dent's footprint and crush zone) crushes less and spreads wider.
+* A new vehicle normally starts from a copy of an existing profile with its cabin line set from the measured beltline and roof (`VehicleDefinitionSetup` does this for the hatchback: 0.93–1.35 m).
+
+### Adaptive collider configuration
+
+* Section depths default to 14 % / 14 % / 22 % of the body; override them in the definition when a vehicle's crumple zones are unusual (the muscle car keeps its explicit 0.7 / 0.7 / 0.45 m).
+* Faces sit at the median of the outermost *current* metal in a 6 × 4 grid of cells per face, only ever move inward, stop 6 cm short of the region's inner face, and re-fit only near new impacts (1.2 m + footprint). Repair restores the exact original boxes.
+* Limits: one flat face per region (a partly struck section retracts only if most of its metal moved); corners are stepped (two faces), not bevelled; collider height never changes.
+
+### Adding a vehicle (checklist)
+
+1. **Model**: export facing +Z in metres, one object per component family with token-friendly names, Read/Write enabled meshes, wheels as separate objects.
+2. **Definition**: create *Damage Lab ▸ Vehicle Definition* (or extend `VehicleDefinitionSetup`), set `displayName`, `model`, `mass`.
+3. **Rules**: one `VehiclePartRule` per component family with its role and crumple (use the role table above).
+4. **Profile**: copy an existing profile, set `roofLineStart` to the measured beltline and `roofLineEnd` about 7 cm below the roof.
+5. **Shell**: leave section depths and impact height at 0 (automatic) unless the vehicle needs explicit values.
+6. **Register**: save the definition asset in `Settings/Vehicles/`. The scene builder lists every definition there (muscle car and hatchback first); rebuild the scene (`collision-build`) to get its selector button.
+7. **Validate** (bridge commands take the vehicle's index in the Collision Lab list): warnings must be 0; `vehicle <i>` (integration: every direction, repeats, saturation, Damage Lab paths, folded triangles per part, rebuild exactness), `collision-phase4 <i>` (coverage of all 16 targets, locality, 84-hit long run, repair), `collision-overflow <i>` (33 heavy hits, record merging, repeatability investigation), `vehicle-switch`.
+8. **Review folds per part**: parts that fold far more than their neighbours under ordinary hits are usually mesh problems (thin recessed geometry, overlapping shells), to be fixed in the model, not by weakening the shared engine.
+
+### Repeatability investigation (vehicle engine milestone)
+
+**Symptom.** Running the 33-launch overflow sequence twice (real PhysX, same start state) gave meshes 17–25 cm apart, although the recorded impact inputs differed by under 1 mm. Before the milestone the same check gave 0.016 mm – 1.8 cm. Replaying identical recorded impacts was, and is, bit-identical.
+
+**Method** (`collision-overflow`, `collision-overflow-hatch`, `repeat-probe`, `repeat-probe-hatch`; `Editor/CollisionRepeatabilityInvestigation.cs`):
+
+| Test | What | Result |
+|---|---|---|
+| A | Replay the recorded impacts with every rebuild optimisation on vs off (stored and re-resolved footprints) | **0.000 mm**, 0 of 33 footprints differ |
+| C | Each optimisation alone (part culling, selective rebuild, sweep part filter, silhouette prefilter, `AccumulateRange`) vs all off | **0.000 mm** each |
+| B | Replay with every impactor shifted 0.1 mm (footprints re-resolved), optimisations off and on | **41 mm after one impact, 415 mm after 33** — identical with optimisations off, so the amplifier is in the crush function itself (unchanged from `main`) |
+| D | Per-impact divergence, then the worst vertex's terms (`ImpactField.ExplainBox`) both ways | four discontinuities, below |
+| E | Fixed vs pre-fix function (`ImpactField.LegacyBehaviour`) on the same impacts | what the fix changed (below) |
+
+**Root causes** — all in `ImpactField` box-impact code that predates this milestone:
+
+1. **Draw-in singularity.** Metal just outside the impactor's silhouette is pulled toward the dent by `(q − x)·drawIn·push / sd`, but `q` is nudged 2 mm *inside* the silhouette (so `Lead` never misses the box). `|q − x|` is therefore `sd + 2 mm`, and the pull grew without bound at the edge: ×6 at 0.4 mm, ×21 at 0.1 mm. A 0.1 mm impactor shift moved one vertex from sd 0.5 to 0.4 mm and its displacement by 44 mm. **Fix:** unit direction to `q`, faded in over `edgeSoftness` (3 cm), so the pull is continuous and bounded.
+2. **Crease cut-offs.** The crease band (up to `rimCrease·travel`, several cm) was cut abruptly where the function stops (behind the crush zone at `over = −edgeSoftness`, and at 3ρ outside the silhouette). **Fix:** faded to zero over the last `edgeSoftness` and between 2ρ and 3ρ. Unchanged elsewhere.
+3. **Hardening at an argmin vertex.** Work hardening was evaluated at the single vertex with the smallest gap. On flattened metal many vertices tie within fractions of a millimetre, so the chosen vertex (and the crush depth) jumped. **Fix:** a smoothly weighted contact point (Gaussian over the first 2 cm of gap).
+4. **Hardening along an infinite line.** `Prior()` measured only lateral distance to each earlier impact's line, so 24 front-centre hits "hardened" the untouched rear on the same centre line: the rear crushed 0.12–0.18 m instead of 0.28 m, and sat on the steep flank of 24 stacked Gaussians (a 1.3 cm shift changed the crush by 6.5 cm). **Fix:** earlier damage counts within that dent's crush zone along its direction (as before for same-spot repeats), fading beyond it.
+
+The milestone did not introduce these; it changed PhysX contact histories enough that sub-millimetre run-to-run differences reached them more often. I could not attribute that to one specific change, and with the amplifiers gone it no longer matters: sub-millimetre input differences now give millimetre-level mesh differences.
+
+**Results** (measured, editor):
+
+| Measure | Muscle car before → after | Hatchback after |
+|---|---|---|
+| 0.1 mm shift of every impactor, mesh difference after 33 impacts | 381–415 mm → 0.6–5.6 mm | 0.3–3.6 mm (pre-fix 42 mm) |
+| Physics re-run of the 33 launches | 170–250 mm (WIP) → 0.7 and 4.8 mm (two final runs) | 0.3 and 31 mm (two final runs; the 31 mm is the edge case below) |
+| Replay of identical recorded impacts | 1e-7 m (unchanged) | 6e-7 m |
+| Rebuild optimisations vs none | 0.000 mm (unchanged) | 0.000 mm |
+
+**What the fix changed** (Test E, same impacts): on a single front hit, 677 of 79,918 muscle-car vertices (0.85 %) and 513 of 97,188 hatchback vertices (0.53 %) move by more than 1 cm — these are the edge spikes (the old draw-in yanked edge metal sideways by up to 24 cm). Folded triangles after 33 heavy hits: 2.65 % vs 2.42–2.71 % pre-fix (muscle; the pre-fix count varies with the recorded run), 4.06 % vs 4.10 % (hatchback). A region hit after another region was hammered now deforms like a fresh car (rear after 25 front hits: 0.306 m vs 0.281 m fresh).
+
+**Remaining physically sensitive cases** (continuous, bounded):
+* Metal exactly at the impactor's silhouette edge: a few mm of block position decides whether a corner is inside the crushed patch or dragged as edge metal. The 1.9 m wide sled on the 1.85 m hatchback's rear has its edges on the rear corners: a 6 mm PhysX contact difference there gave 31 mm in one re-run (0.05 mm in another).
+* A wide block that arrives yawed by ~1° leads with its side wall near its edge; that leading surface changes ~45 mm per mm of lateral position (a real property of the box, not a discontinuity).
+* Footprint extents still change in small steps when a row of vertices enters the patch (2 cm patch grid); the crush depth barely moves (area enters as area^0.35, clamped).
+
+### Performance (vehicle engine milestone)
+
+Measured in the editor on this machine (real PhysX, `vehicle-muscle`, `vehicle-hatch`, `collision-phase4[-hatch]`). Browser figures are in the WebGL section below.
+
+| | Muscle car | Hatchback |
+|---|---|---|
+| Deforming parts / vertices / triangles | 12 / 62,014 / 152,276 | 72 / 80,108 / 136,316 |
+| Physics colliders | 14 boxes | 14 boxes |
+| Deformation per hit, 15 mixed hits (avg / max) | 55 / 81 ms | 85 / 122 ms |
+| — of a wide front hit: footprint resolve | 37 ms | 44 ms |
+| — contribution accumulation (parts evaluated) | 36 ms (9 of 12) | 67 ms (50 of 72) |
+| — mesh rebuild + normals (parts rebuilt) | 9 ms (9 of 12) | 12 ms (50 of 72) |
+| Deformation per hit over the 84-hit long run | 49 ms | 77 ms |
+| Adaptive hitbox update (after an impact only) | 1.3 ms avg, 2.4 ms max | 1.9 ms avg, 3.2 ms max |
+| Physics step | 0.045 ms | 0.061 ms |
+| Same 9 recorded impacts replayed, optimisations off → on | 31–33 → 28 ms (−11 to −15 %) | 52–54 → 48–50 ms (−8 %) |
+
+* The rebuild optimisations (part culling, selective rebuild, sweep filter, silhouette prefilter, ranged accumulation) are exact (0.000 mm, Tests A and C above) and give a modest 8–15 % per replayed hit.
+* **Bottlenecks** are the per-vertex box crush (procedural noise per crushed vertex: about 45–55 % of a hit) and the footprint resolve (current position and silhouette test per candidate vertex, then the patch hull: about 35–45 %). Mesh rebuild and normals are only 10–15 %. Physics and the adaptive hitbox are negligible.
+* The hatchback costs about 1.5× the muscle car: 30 % more vertices and 6× more parts, and its front and rear parts sit inside more impact zones.
+* Next step (not started, by design): move the box crush and the footprint resolve to Burst/Jobs, then the rebuild. That is where the time is.
+
+### Remaining hatchback asset issues (for the asset author)
+
+Measured after the engine fixes, with the hatchback's own configuration, from a repaired car. Reproduce with bridge command `hatch-defects` (close-ups in `Screenshots/80_Sol_*.png`). The shared engine was **not** weakened to hide these; the muscle car folds far less in the same tests.
+
+| Object | Reproduction | Folded triangles | Muscle-car comparison | Close-up |
+|---|---|---|---|---|
+| `FrontValance` | Front, wide sled 1.9 m, 15 m/s, 1500 kg | 558 / 3,248 (17.2 %) | `Bumper_Front` 32 / 3,068 (1.0 %) | `80_Sol_FrontValance_FrontHit` |
+| `LicenseRecess` | Rear, wide sled, 15 m/s, 1500 kg | 189 / 1,088 (17.4 %) | — | `80_Sol_LicenseRecess_RearHit` |
+| `MirrorGlass` | Left side, wide sled, 15 m/s, 1500 kg | 64 / 188 (34 %) | `Mirrors` 85 / 1,824 (4.7 %) | `80_Sol_MirrorGlass_LeftHit` |
+| `SideIndicator` | Left side, same hit | 33 / 188 (17.6 %) | — | `80_Sol_SideIndicator_LeftHit` |
+| `DoorSeam` | Left side, same hit | 23 / 80 (28.8 %) | — | (same shot) |
+| `Body` | Click dent from above on the hood at (0.22, 0.88, 1.38), strength 0.8 | 142 / 61,168 | hood dent: 0 | `80_Sol_Body_HoodDent` |
+| `Body` | Click dent on the door at (−0.81, 0.58, −0.17), strength 0.8 | 57 | door dent: 0 | `80_Sol_Body_DoorDent` |
+| `Body` | Click dent on the hatch at (−0.06, 1.09, −1.52), strength 0.8 | 83 (+38 `LicenseRecess`) | rear dent: 0 on the body | `80_Sol_Body_RearDent` |
+
+Likely causes (not yet confirmed in the model): recessed panels whose front and back faces are only millimetres apart (valance, licence recess), very small parts made of few large triangles relative to the crease spacing (mirror glass, indicators, door seams), and long or uneven triangles in the body around the hood, door and hatch dents (the muscle car's body is an even 3–4 cm quad grid). Vehicle-space coordinates: +Z forward, +X right, metres.
+
+### WebGL (vehicle engine milestone)
+
+`collision-webgl` builds both vehicles into one 16.9 MB build (data 8.3 MB, up from 6.0 MB with the hatchback). Tested in Chromium (the desktop app's browser pane, 1920 × 1080), measured from the build's own console log:
+
+* Both vehicles load from the selector: "Muscle Car ready: 12 deforming parts, 62,014 vertices, 14 colliders, 0 warnings" and "Compact Hatchback ready: 72 deforming parts, 80,108 vertices, 14 colliders, 0 warnings".
+* All eight directions on both vehicles hit where the vehicle's own geometry is (front at z 2.51 / 2.05 m); damage accumulates; repeated narrow hits land deeper (muscle 2.25 → 2.13 m, hatchback 1.76 → 1.65 m).
+* Repair Car and Reset All restore the car; switching vehicles gives a pristine car with no leftover damage.
+* The hatchback's paint shader and both cars' stripes render correctly and stay on the deformed metal.
+* Deformation per hit in the browser: muscle car 10–32 ms (15 m/s) and 10–20 ms (30 m/s, 4000 kg); hatchback 19–23 ms (15 m/s). That is lower than the editor's figures because the build is IL2CPP release code (single-threaded).
+* Console: no errors; only the existing warnings that some URP post-process shaders (depth of field, Panini, FSR) are stripped from the build.
+* Known, pre-existing (same code on `main`): in WebGL the speed / mass / offset number boxes look empty until they are first focused; the sliders and values work.
+
+### Known limitations (vehicle engine)
+
+* A new definition appears in the Collision Lab after a scene rebuild (`collision-build`); there is no runtime asset discovery.
+* Damage profiles are copied and the cabin line set from geometry; there is no automatic tuning of crush depths per vehicle.
+* The adaptive hitbox is coarse (one flat face per region, stepped corners, fixed height); see phase 4.
+* The Collision Lab impactor is a box sled; vehicle-to-vehicle contact, driving and gameplay are separate milestones.
+* Deformation costs 50–85 ms per heavy hit in the editor (10–30 ms in the browser) for one car; several cars crashing at once needs the planned Burst/Jobs work.
 
 ## Limitations / next steps
 

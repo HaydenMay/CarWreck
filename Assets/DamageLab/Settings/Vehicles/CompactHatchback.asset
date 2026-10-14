@@ -1,0 +1,306 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3cbd3e93ddb31f547aaeb5bb9afb5bb6, type: 3}
+  m_Name: CompactHatchback
+  m_EditorClassIdentifier: Assembly-CSharp::DamageLab.Vehicle.VehicleDefinition
+  displayName: Compact Hatchback
+  model: {fileID: 919132149155446097, guid: 91f6fba65ac948f4a81ce22b14e1f389, type: 3}
+  mass: 950
+  profile: {fileID: 11400000, guid: afe4ee58fee3c7747b20c3a2335d5a89, type: 2}
+  components:
+  - nameContains: Wheel
+    match: 0
+    role: 4
+    mode: 1
+    crumple: 0
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Body
+    match: 0
+    role: 1
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Bumper
+    match: 0
+    role: 2
+    mode: 0
+    crumple: 0.25
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Cabin
+    match: 0
+    role: 3
+    mode: 0
+    crumple: 0.85
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Underbody
+    match: 0
+    role: 9
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: FrontValance
+    match: 0
+    role: 5
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: RearValance
+    match: 0
+    role: 5
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Sill
+    match: 0
+    role: 5
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Spoiler
+    match: 0
+    role: 5
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Grille
+    match: 0
+    role: 6
+    mode: 0
+    crumple: 0.55
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: GrilleSlat
+    match: 0
+    role: 6
+    mode: 0
+    crumple: 0.55
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: GrilleSurround
+    match: 0
+    role: 6
+    mode: 0
+    crumple: 0.55
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: LowerIntake
+    match: 0
+    role: 6
+    mode: 0
+    crumple: 0.55
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: LowerSlat
+    match: 0
+    role: 6
+    mode: 0
+    crumple: 0.55
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: FrontSplitter
+    match: 0
+    role: 6
+    mode: 0
+    crumple: 0.55
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Headlight
+    match: 0
+    role: 7
+    mode: 0
+    crumple: 0.45
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: HeadlightHousing
+    match: 0
+    role: 7
+    mode: 0
+    crumple: 0.45
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: FogLight
+    match: 0
+    role: 7
+    mode: 0
+    crumple: 0.45
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: FogHousing
+    match: 0
+    role: 7
+    mode: 0
+    crumple: 0.45
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Taillight
+    match: 0
+    role: 7
+    mode: 0
+    crumple: 0.45
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: TaillightHousing
+    match: 0
+    role: 7
+    mode: 0
+    crumple: 0.45
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: ReverseLight
+    match: 0
+    role: 7
+    mode: 0
+    crumple: 0.45
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: RearIndicator
+    match: 0
+    role: 7
+    mode: 0
+    crumple: 0.45
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: FrontIndicator
+    match: 0
+    role: 7
+    mode: 0
+    crumple: 0.45
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: SideIndicator
+    match: 0
+    role: 7
+    mode: 0
+    crumple: 0.45
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Exhaust
+    match: 0
+    role: 8
+    mode: 0
+    crumple: 0.4
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: SpoilerMount
+    match: 0
+    role: 8
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: LicenseRecess
+    match: 0
+    role: 8
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: BlankPlate
+    match: 0
+    role: 8
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: HatchLock
+    match: 0
+    role: 8
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: HatchSeam
+    match: 0
+    role: 8
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: DoorSeam
+    match: 0
+    role: 8
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: DoorHandle
+    match: 0
+    role: 8
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: SideMoulding
+    match: 0
+    role: 8
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Mirror
+    match: 0
+    role: 8
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: MirrorGlass
+    match: 0
+    role: 8
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: MirrorStem
+    match: 0
+    role: 8
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: FrontWiper
+    match: 0
+    role: 8
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: RearWiper
+    match: 0
+    role: 8
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: RoofGutter
+    match: 0
+    role: 8
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  unknownComponentCrumple: 1
+  frontSectionDepth: 0
+  rearSectionDepth: 0
+  sideSectionDepth: 0
+  cabinBoxScale: {x: 0.92, y: 0.85}
+  impactHeight: 0
+  maxImpactRecords: 24

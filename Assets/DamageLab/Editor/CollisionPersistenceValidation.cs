@@ -18,11 +18,13 @@ namespace DamageLab.EditorTools
         static List<Vector3[]> baseVerts;
         static List<Vector3[]> baseNormals;
 
-        static void Open()
+        static void Open(int vehicle = 0)
         {
             if (EditorSceneManager.GetActiveScene().path != CollisionLabSceneBuilder.ScenePath)
                 EditorSceneManager.OpenScene(CollisionLabSceneBuilder.ScenePath, OpenSceneMode.Single);
             lab = Object.FindAnyObjectByType<CollisionLabController>();
+            if (vehicle >= 0 && lab.vehicles != null && vehicle < lab.vehicles.Length && (lab.model == null || lab.model.definition != lab.vehicles[vehicle]))
+                lab.SelectVehicle(vehicle);
             receiver = lab.receiver;
             lab.model.Initialize();
             lab.Setup();
@@ -45,6 +47,7 @@ namespace DamageLab.EditorTools
             lab.ResetAll();
             receiver.logImpacts = true;
             Physics.simulationMode = prev;
+            if (lab.vehicleIndex != 0 && lab.vehicles != null && lab.vehicles.Length > 0) lab.SelectVehicle(0);   // leave the scene on the baseline vehicle
             lab.model.Shutdown();
             var cam = lab.cameraController;
             cam.pivot = new Vector3(0f, 0.6f, 1.5f);

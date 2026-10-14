@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 namespace DamageLab.CollisionTest
 {
-    public enum ImpactDirection { Front, Rear, LeftSide, RightSide, FrontCornerAngled, RearCornerAngled }
+    public enum ImpactDirection { Front, Rear, LeftSide, RightSide, FrontCornerAngled, RearCornerAngled, FrontRightCornerAngled, RearLeftCornerAngled }
 
     /// <summary>
     /// Collision Lab: places the test sled for the chosen direction, launches it with a real Rigidbody velocity
@@ -40,6 +40,16 @@ namespace DamageLab.CollisionTest
         public bool anchored = true;
         public VehicleHitbox hitbox;
         public PhysicsHitboxDebug colliderDebug;
+
+        [Header("Vehicles")]
+        [Tooltip("Vehicles the lab can test; each is built from its definition by VehicleRig.")]
+        public VehicleDefinition[] vehicles = new VehicleDefinition[0];
+        public int vehicleIndex;
+        public VehicleRigSettings rigSettings = new VehicleRigSettings();
+        [Tooltip("Ground point the vehicles stand on.")]
+        public Vector3 vehicleBase = Vector3.zero;
+        public Button[] vehicleButtons;
+        public Text vehicleInfoText;
 
         [Header("UI")]
         public Slider speedSlider;
@@ -77,7 +87,7 @@ namespace DamageLab.CollisionTest
         /// <summary>Record the car's resting pose once (also called by the edit-mode validation).</summary>
         public void Setup()
         {
-            if (hasStartPose) return;
+            if (hasStartPose || car == null) return;
             carStartPos = car.transform.position;
             carStartRot = car.transform.rotation;
             if (cameraController != null) homePivot = cameraController.pivot;
@@ -96,13 +106,140 @@ namespace DamageLab.CollisionTest
 
         void Start()
         {
+            // Build the selected vehicle if the scene's car is not it (or there is none).
+            if (vehicles != null && vehicles.Length > 0)
+            {
+                vehicleIndex = Mathf.Clamp(vehicleIndex, 0, vehicles.Length - 1);
+                if (car == null || model == null || model.definition != vehicles[vehicleIndex]) SelectVehicle(vehicleIndex);
+            }
             if (model != null && !model.IsInitialized) model.Initialize();
             if (hitbox != null) hitbox.Setup();
+            CaptureGeometry();
             BindUI();
             SetAnchored(anchored);
             ResetAll();
-            if (receiver != null) receiver.ImpactRegistered += _ => RefreshDiagnostics();
+            SubscribeVehicle();
+            RefreshVehicleInfo();
+        }
+
+        bool subscribedVehicle;
+        void SubscribeVehicle()
+        {
+            if (subscribedVehicle) return;
+            if (receiver != null) receiver.ImpactRegistered += OnImpactRegistered;
             if (hitbox != null) hitbox.Changed += RefreshDiagnostics;
+            subscribedVehicle = true;
+        }
+
+        void UnsubscribeVehicle()
+        {
+            if (!subscribedVehicle) return;
+            if (receiver != null) receiver.ImpactRegistered -= OnImpactRegistered;
+            if (hitbox != null) hitbox.Changed -= RefreshDiagnostics;
+            subscribedVehicle = false;
+        }
+
+        void OnImpactRegistered(CollisionDamageReceiver.Report r) => RefreshDiagnostics();
+
+        // ------------------------------------------------------------------ vehicles
+
+        VehicleGeometry geometry;
+        bool hasGeometry;
+        /// <summary>Geometry of the current vehicle (car space).</summary>
+        public VehicleGeometry Geometry { get { CaptureGeometry(); return geometry; } }
+        public VehicleDefinition CurrentVehicle => model != null ? model.definition : null;
+        /// <summary>Warnings from building and initialising the current vehicle (classification, missing roles...).</summary>
+        public readonly System.Collections.Generic.List<string> VehicleWarnings = new System.Collections.Generic.List<string>();
+
+        void CaptureGeometry()
+        {
+            if (hasGeometry || car == null) return;
+            var def = model != null ? model.definition : null;
+            if (def != null)
+            {
+                // Measure a model copy at the origin (the scene car may already be placed and deformed).
+                var tmp = Instantiate(def.model);
+                try { geometry = VehicleRig.Measure(def, tmp); }
+                finally { if (Application.isPlaying) Destroy(tmp); else DestroyImmediate(tmp); }
+                sledHeight = VehicleRig.ImpactHeight(def, geometry);
+            }
+            else if (model != null)
+            {
+                geometry = new VehicleGeometry { body = model.BodyBounds, cabin = model.BodyBounds, wheels = model.BodyBounds };
+            }
+            hasGeometry = true;
+        }
+
+        /// <summary>Replace the current car with vehicle <paramref name="index"/> built from its definition, undamaged and parked.</summary>
+        public void SelectVehicle(int index)
+        {
+            if (vehicles == null || vehicles.Length == 0) return;
+            index = Mathf.Clamp(index, 0, vehicles.Length - 1);
+            UnsubscribeVehicle();
+            if (car != null)
+            {
+                var old = car.gameObject;
+                if (model != null) model.Shutdown();
+                old.SetActive(false);   // its colliders leave the physics scene now; Destroy only happens at the end of the frame
+                if (Application.isPlaying) Destroy(old); else DestroyImmediate(old);
+            }
+            var rig = VehicleRig.Build(vehicles[index], transform.parent, vehicleBase, rigSettings);
+            AdoptRig(rig, index);
+            model.Initialize();
+            hitbox.Setup();
+            VehicleWarnings.Clear();
+            VehicleWarnings.AddRange(rig.warnings);
+            VehicleWarnings.AddRange(model.Warnings);
+            carStartPos = car.transform.position;
+            carStartRot = car.transform.rotation;
+            hasStartPose = true;
+            if (cameraController != null && homePivot == Vector3.zero) homePivot = cameraController.pivot;
+            SetAnchored(anchored);
+            ResetAll();
+            SubscribeVehicle();
+            if (Application.isPlaying) { footprintDebug.Rebuild(); colliderDebug.Rebuild(); }
+            RefreshVehicleInfo();
+            RefreshDirectionButtons();
+            SetStatus($"{rig.definition.displayName} ready");
+            Debug.Log($"[CollisionLab] {rig.definition.displayName} ready: {model.PartCount} deforming parts, {model.DeformableVertices:N0} vertices, {car.GetComponentsInChildren<Collider>().Length} colliders, {VehicleWarnings.Count} warnings");
+        }
+
+        /// <summary>Take over a freshly built rig as the lab's car (no initialisation: the scene builder uses this too).</summary>
+        public void AdoptRig(VehicleRig.Rig rig, int index)
+        {
+            vehicleIndex = index;
+            car = rig.body; model = rig.model; receiver = rig.receiver; hitbox = rig.hitbox;
+            footprintDebug = rig.footprintDebug; colliderDebug = rig.colliderDebug;
+            geometry = rig.geometry; hasGeometry = true;
+            sledHeight = VehicleRig.ImpactHeight(rig.definition, geometry);
+            if (footprintToggle != null) footprintDebug.show = footprintToggle.isOn;
+            if (collidersToggle != null) colliderDebug.show = collidersToggle.isOn;
+        }
+
+        public void RefreshVehicleInfo()
+        {
+            if (vehicleButtons != null)
+                for (int i = 0; i < vehicleButtons.Length; i++)
+                    if (vehicleButtons[i] != null && vehicleButtons[i].targetGraphic != null)
+                        vehicleButtons[i].targetGraphic.color = i == vehicleIndex ? selectedColor : unselectedColor;
+            if (vehicleInfoText == null || model == null) return;
+            if (model.IsInitialized && VehicleWarnings.Count == 0 && model.Warnings.Count > 0) VehicleWarnings.AddRange(model.Warnings);
+            var g = Geometry;
+            int rigidCount = g.wheelCenters != null ? g.wheelCenters.Length : 0;
+            int colliders = car != null ? car.GetComponentsInChildren<Collider>().Length : 0;
+            string name = CurrentVehicle != null ? CurrentVehicle.displayName : car.name;
+            var sb = new System.Text.StringBuilder();
+            sb.Append($"{name}   {g.body.size.x:0.00} × {g.body.size.z:0.00} m body, {car.mass:0} kg\n");
+            sb.Append($"{model.PartCount} deforming parts · {model.DeformableVertices:N0} vertices · {rigidCount} wheels\n");
+            sb.Append($"Physics: {colliders} boxes ({(hitbox != null ? hitbox.regions.Length : 0)} adaptive) · impact height {sledHeight:0.00} m\n");
+            if (VehicleWarnings.Count == 0) sb.Append("Validation: no warnings");
+            else
+            {
+                sb.Append($"Validation: {VehicleWarnings.Count} warning(s)");
+                for (int i = 0; i < Mathf.Min(3, VehicleWarnings.Count); i++) sb.Append("\n• ").Append(VehicleWarnings[i]);
+                if (VehicleWarnings.Count > 3) sb.Append($"\n• … {VehicleWarnings.Count - 3} more (see console)");
+            }
+            vehicleInfoText.text = sb.ToString();
         }
 
         // ------------------------------------------------------------------ test control
@@ -197,6 +334,13 @@ namespace DamageLab.CollisionTest
             RefreshDirectionButtons();
         }
 
+        // Single-argument entry points for SendMessage (browser tests drive the WebGL build with these).
+        public void SetDirectionIndex(int d) => SetDirection((ImpactDirection)Mathf.Clamp(d, 0, System.Enum.GetValues(typeof(ImpactDirection)).Length - 1));
+        public void SetNarrowIndex(int narrow) => SetNarrowImpactor(narrow != 0);
+        public void SetSpeed(float v) { speed = Mathf.Clamp(v, 0f, 30f); RefreshDirectionButtons(); }
+        public void SetMass(float m) { mass = Mathf.Clamp(m, 100f, 4000f); RefreshDirectionButtons(); }
+        public void SetAimOffset(float o) { aimOffset = Mathf.Clamp(o, -1.5f, 1.5f); if (!launched) PlaceSled(); }
+
         public void SetNarrowImpactor(bool narrow)
         {
             narrowImpactor = narrow;
@@ -242,17 +386,39 @@ namespace DamageLab.CollisionTest
         public static Vector3 AimOffsetVector(ImpactDirection d) =>
             d == ImpactDirection.LeftSide || d == ImpactDirection.RightSide ? Vector3.forward : Vector3.right;
 
-        /// <summary>Aim point on the car's outline and travel direction, in car space (car faces +Z, left is -X).</summary>
-        public static void Aim(ImpactDirection d, out Vector3 target, out Vector3 dir)
+        /// <summary>Travel direction of the impactor for a test direction, in car space (car faces +Z, left is -X).</summary>
+        public static Vector3 Direction(ImpactDirection d)
         {
             switch (d)
             {
-                case ImpactDirection.Rear: target = new Vector3(0f, 0f, -2.45f); dir = Vector3.forward; break;
-                case ImpactDirection.LeftSide: target = new Vector3(-1.0f, 0f, -0.15f); dir = Vector3.right; break;
-                case ImpactDirection.RightSide: target = new Vector3(1.0f, 0f, -0.15f); dir = Vector3.left; break;
-                case ImpactDirection.FrontCornerAngled: target = new Vector3(-0.85f, 0f, 2.25f); dir = new Vector3(0.55f, 0f, -0.835f).normalized; break;
-                case ImpactDirection.RearCornerAngled: target = new Vector3(0.85f, 0f, -2.25f); dir = new Vector3(-0.55f, 0f, 0.835f).normalized; break;
-                default: target = new Vector3(0f, 0f, 2.45f); dir = Vector3.back; break;
+                case ImpactDirection.Rear: return Vector3.forward;
+                case ImpactDirection.LeftSide: return Vector3.right;
+                case ImpactDirection.RightSide: return Vector3.left;
+                case ImpactDirection.FrontCornerAngled: return new Vector3(0.55f, 0f, -0.835f).normalized;
+                case ImpactDirection.RearCornerAngled: return new Vector3(-0.55f, 0f, 0.835f).normalized;
+                case ImpactDirection.FrontRightCornerAngled: return new Vector3(-0.55f, 0f, -0.835f).normalized;
+                case ImpactDirection.RearLeftCornerAngled: return new Vector3(0.55f, 0f, 0.835f).normalized;
+                default: return Vector3.back;
+            }
+        }
+
+        /// <summary>Aim point on the current vehicle's outline (car space), computed from its measured body bounds:
+        /// end and side centres, and corner points 8 % of the width / 5 % of the length inside the body's corner.</summary>
+        public void Aim(ImpactDirection d, out Vector3 target, out Vector3 dir)
+        {
+            Bounds b = Geometry.body;
+            dir = Direction(d);
+            float cx = b.center.x, cz = b.center.z, w = b.size.x, l = b.size.z;
+            switch (d)
+            {
+                case ImpactDirection.Rear: target = new Vector3(cx, 0f, b.min.z); break;
+                case ImpactDirection.LeftSide: target = new Vector3(b.min.x, 0f, cz); break;
+                case ImpactDirection.RightSide: target = new Vector3(b.max.x, 0f, cz); break;
+                case ImpactDirection.FrontCornerAngled: target = new Vector3(b.min.x + 0.08f * w, 0f, b.max.z - 0.05f * l); break;
+                case ImpactDirection.RearCornerAngled: target = new Vector3(b.max.x - 0.08f * w, 0f, b.min.z + 0.05f * l); break;
+                case ImpactDirection.FrontRightCornerAngled: target = new Vector3(b.max.x - 0.08f * w, 0f, b.max.z - 0.05f * l); break;
+                case ImpactDirection.RearLeftCornerAngled: target = new Vector3(b.min.x + 0.08f * w, 0f, b.min.z + 0.05f * l); break;
+                default: target = new Vector3(cx, 0f, b.max.z); break;
             }
         }
 
@@ -265,6 +431,8 @@ namespace DamageLab.CollisionTest
                 case ImpactDirection.RightSide: return "Right side";
                 case ImpactDirection.FrontCornerAngled: return "Front-left corner (angled)";
                 case ImpactDirection.RearCornerAngled: return "Rear-right corner (angled)";
+                case ImpactDirection.FrontRightCornerAngled: return "Front-right corner (angled)";
+                case ImpactDirection.RearLeftCornerAngled: return "Rear-left corner (angled)";
                 default: return "Front";
             }
         }
@@ -329,6 +497,12 @@ namespace DamageLab.CollisionTest
             }
             if (launchButton != null) launchButton.onClick.AddListener(() => Launch());
             if (resetButton != null) resetButton.onClick.AddListener(ResetAll);
+            if (vehicleButtons != null)
+                for (int i = 0; i < vehicleButtons.Length; i++)
+                {
+                    int v = i;
+                    if (vehicleButtons[i] != null) vehicleButtons[i].onClick.AddListener(() => SelectVehicle(v));
+                }
             if (resetBlockButton != null) resetBlockButton.onClick.AddListener(() => { ResetBlock(); SetStatus("Block reset"); });
             if (repairButton != null) repairButton.onClick.AddListener(RepairCar);
             if (anchorToggle != null) { anchorToggle.SetIsOnWithoutNotify(anchored); anchorToggle.onValueChanged.AddListener(SetAnchored); }
@@ -389,14 +563,15 @@ namespace DamageLab.CollisionTest
                 $"Impulse              {r.impulse:N0} N·s\n" +
                 $"Energy (½μv²)        {r.energy / 1000f:0.0} kJ   μ {r.reducedMass:0} kg\n" +
                 $"Impact strength      {r.strength * 100f:0} / 100{(r.applied ? "" : r.strength > 0f ? "  (not applied)" : "  (below threshold)")}\n" +
-                $"Location             {r.region}  {r.localPoint.ToString("F2")}\n" +
+                $"Location             {r.region}  {r.localPoint.ToString("F2")}{(string.IsNullOrEmpty(r.carCollider) ? "" : $"  [{r.carCollider}]")}\n" +
                 (r.footprint.valid
                     ? $"Contact footprint    {r.footprint.kind}, {r.footprint.halfU * 2f:0.00} x {r.footprint.halfV * 2f:0.00} m ({r.footprint.area:0.00} m²)\n" +
                       $"Crush depth          {r.footprint.travel * 100f:0} cm  (area factor ×{r.footprint.areaFactor:0.00})\n"
                     : "") +
                 $"Mesh deformation     {(r.applied ? $"{r.deformMilliseconds:0.0} ms" : "-")}\n" +
+                (r.applied ? $"  resolve {model.LastResolveMilliseconds:0.0} · accumulate {model.LastAccumulateMilliseconds:0.0} ({model.LastImpactPartsEvaluated}/{model.PartCount} parts) · rebuild {model.LastDeformMilliseconds:0.0} ms ({model.LastRebuiltParts}/{model.PartCount})\n" : "") +
                 $"Impacts on car       {model.TotalImpactCount} ({model.ImpactCount} stored, {model.MergedImpactCount} merged into damage)" +
-                (hitbox != null && !string.IsNullOrEmpty(hitbox.LastChangeSummary) ? $"\nHitbox update        {hitbox.LastChangeSummary}" : "");
+                (hitbox != null && !string.IsNullOrEmpty(hitbox.LastChangeSummary) ? $"\nHitbox update        {hitbox.LastChangeSummary}  ({hitbox.LastUpdateMilliseconds:0.0} ms)" : "");
         }
 
         void SetStatus(string s)

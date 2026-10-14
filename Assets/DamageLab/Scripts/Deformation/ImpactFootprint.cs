@@ -45,6 +45,7 @@ namespace DamageLab.Deformation
     {
         public readonly Vector3 c, d, e1, e2;
         public readonly Vector2[] hull;   // CCW silhouette in (e1, e2), relative to c
+        public readonly Vector2 hullMin, hullMax;   // its axis-aligned extent
         public readonly float frontA;     // furthest box point along d, relative to c
         readonly Vector3 ax, ay, az, h, dl;
         readonly Vector3[] corners = new Vector3[8];
@@ -71,6 +72,16 @@ namespace DamageLab.Deformation
                 frontA = Mathf.Max(frontA, Vector3.Dot(k, d));
             }
             hull = ConvexHull(pts).ToArray();
+            hullMin = hullMax = hull.Length > 0 ? hull[0] : Vector2.zero;
+            foreach (var hp in hull) { hullMin = Vector2.Min(hullMin, hp); hullMax = Vector2.Max(hullMax, hp); }
+        }
+
+        /// <summary>Axis-aligned bounds of the box (vehicle space).</summary>
+        public Bounds BoxBounds()
+        {
+            var b = new Bounds(c, Vector3.zero);
+            foreach (var k in corners) b.Encapsulate(c + k);
+            return b;
         }
 
         /// <summary>Number of box corners within <paramref name="depth"/> of the leading point (1 corner, 2 edge, 4 face).</summary>

@@ -120,6 +120,41 @@ namespace DamageLab.Deformation
 
         public int Count => states.Count;
 
+        /// <summary>Skip vertices far outside the impactor's silhouette before evaluating their current position (exact). Off = test every vertex (for validation).</summary>
+        public static bool SilhouettePrefilter = true;
+
+        /// <summary>Validation only: reproduce the pre-fix behaviour (unbounded draw-in at the silhouette edge, crease cut off
+        /// abruptly, hardening evaluated at the single argmin contact vertex and along earlier impacts' whole lines) to
+        /// measure what the repeatability fix changed against the verified implementation.</summary>
+        public static bool LegacyBehaviour = false;
+
+        /// <summary>
+        /// Conservative vehicle-space bounds outside which impact <paramref name="index"/> contributes nothing, so parts
+        /// entirely outside need not be evaluated (or rebuilt). Radial: the footprint reach and depth zone. Box: the
+        /// impactor swept forward past its crush plane and tent zone, widened by the edge falloff, plus 0.6 m for metal
+        /// that earlier impacts already moved (box impacts measure gaps from the current surface).
+        /// </summary>
+        public Bounds InfluenceBounds(int index)
+        {
+            var st = states[index];
+            if (st.box == null)
+            {
+                float along = Mathf.Max(st.zone, 1.2f * st.radius);
+                float r = Mathf.Sqrt(st.reach2 + along * along) + 0.05f;
+                return new Bounds(st.p, Vector3.one * (2f * r));
+            }
+            var pj = st.box;
+            float tentLen = cfg.tentLength * st.travel + 0.1f;
+            float deepest = st.travel * (1f + cfg.faceUnevenness + cfg.pleatDepth);
+            float reach = Mathf.Max(0f, st.gapMin) + deepest + tentLen + cfg.edgeSoftness;
+            var b = pj.BoxBounds();
+            var swept = b;
+            swept.center += pj.d * reach;
+            b.Encapsulate(swept);
+            b.Expand(2f * (3f * st.rho + 0.6f));
+            return b;
+        }
+
         public void Clear() => states.Clear();
 
         /// <summary>Forget the oldest impact record (its displacement stays in the parts' cached sums).</summary>
@@ -209,8 +244,13 @@ namespace DamageLab.Deformation
             foreach (var o in states)
             {
                 Vector3 r0 = point - o.p;
-                Vector3 lat0 = r0 - o.d * Vector3.Dot(r0, o.d);
-                prior += o.depth / Mathf.Max(1e-3f, cfg.maxDepth) * Mathf.Exp(-lat0.sqrMagnitude * o.invRadius * o.invRadius);
+                float a0 = Vector3.Dot(r0, o.d);
+                Vector3 lat0 = r0 - o.d * a0;
+                // Only metal near the earlier dent counts: anywhere within its crush zone along its direction (as before), fading
+                // over one footprint radius beyond. The earlier impact's whole line used to count, so 24 front-centre hits
+                // hardened the untouched rear on the same centre line (and the rear sat on the steep flank of 24 Gaussians).
+                float along = LegacyBehaviour ? 0f : Mathf.Max(0f, Mathf.Abs(a0) - o.zone) * o.invRadius;
+                prior += o.depth / Mathf.Max(1e-3f, cfg.maxDepth) * Mathf.Exp(-lat0.sqrMagnitude * o.invRadius * o.invRadius - along * along);
             }
             return prior;
         }
@@ -226,16 +266,28 @@ namespace DamageLab.Deformation
         /// Fills <see cref="LocalImpact.footprint"/> and moves the impact point to the patch centre; returns false
         /// (and leaves the impact as an ordinary localized one) if the box does not overlap the car at all.
         /// </summary>
-        public bool ResolveFootprint(ref LocalImpact im, IEnumerable<Vector3[]> vertexSets, bool damagedSurface = false)
+        public bool ResolveFootprint(ref LocalImpact im, IReadOnlyList<DeformablePart> parts, bool damagedSurface = false)
         {
             if (!im.impactor.valid) return false;
             var pj = new BoxProjection(im.impactor, im.direction);
             var inside = new List<Vector3>(4096);      // (u, v, gap) of vertices within the silhouette
+            var insideX = new List<Vector3>(4096);     // and their current positions
+            Vector3 argmin = im.point;
             float gapMin = float.MaxValue;
             Vector3 first = im.point;
-            foreach (var verts in vertexSets)
-                foreach (var x in verts)
+            // Earlier impacts can have moved a vertex by at most its capacity (< 0.75 m), so an ORIGINAL position further
+            // than that outside the silhouette's extent cannot be inside it now: skip it before computing its current position.
+            const float margin = 0.75f;
+            bool prefilter = SilhouettePrefilter;
+            foreach (var part in parts)
+            {
+                var orig = part.VehiclePositions;
+                for (int i = 0; i < orig.Length; i++)
                 {
+                    Vector3 r0 = orig[i] - pj.c;
+                    float u0 = Vector3.Dot(r0, pj.e1), v0 = Vector3.Dot(r0, pj.e2);
+                    if (prefilter && (u0 < pj.hullMin.x - margin || u0 > pj.hullMax.x + margin || v0 < pj.hullMin.y - margin || v0 > pj.hullMax.y + margin)) continue;
+                    Vector3 x = part.ImpactedVehiclePosition(i, this);
                     Vector3 r = x - pj.c;
                     float u = Vector3.Dot(r, pj.e1), v = Vector3.Dot(r, pj.e2);
                     if (pj.SignedDistance(u, v, out _, out _) > 0f) continue;
@@ -243,9 +295,26 @@ namespace DamageLab.Deformation
                     if (float.IsNaN(lead)) continue;
                     float gap = Vector3.Dot(r, pj.d) - lead;
                     inside.Add(new Vector3(u, v, gap));
-                    if (gap < gapMin) { gapMin = gap; first = x; }
+                    insideX.Add(x);
+                    if (gap < gapMin) { gapMin = gap; argmin = x; }
                 }
+            }
             if (inside.Count == 0) return false;
+            // Where the impactor meets the bodywork: the leading vertices, weighted smoothly by how close they are to the
+            // first contact. A single argmin vertex jumps between near-equal candidates (flattened metal ties within
+            // fractions of a millimetre), and the work hardening evaluated there jumped with it.
+            {
+                const float band = 0.02f;
+                Vector3 sum = Vector3.zero; float wsum = 0f;
+                for (int i = 0; i < inside.Count; i++)
+                {
+                    float t = (inside[i].z - gapMin) / band;
+                    if (t > 3f) continue;
+                    float w = Mathf.Exp(-t * t);
+                    sum += insideX[i] * w; wsum += w;
+                }
+                first = LegacyBehaviour ? argmin : sum / wsum;
+            }
             // On already-damaged bodywork the impactor stops at the (retracted) physical hitbox, which can sit behind
             // metal that still sticks out. That metal is crushed from the impactor face, not from its own tip.
             if (damagedSurface && gapMin < 0f) gapMin = 0f;
@@ -330,6 +399,25 @@ namespace DamageLab.Deformation
         /// position x with smoothed normal n. Parts cache the sum of these, so a new click costs one impact.</summary>
         public Vector3 Contribution(int index, Vector3 x, Vector3 n, float crumple) => Contribution(index, x, n, crumple, Vector3.zero, 1f);
 
+        /// <summary>Add impact <paramref name="index"/>'s contribution to vertices [start, end) of one part's cached sum
+        /// (the state is fetched once per range rather than per vertex). Equivalent to calling <see cref="Contribution"/>
+        /// for each vertex with its sum before the addition.</summary>
+        public void AccumulateRange(int index, Vector3[] x, Vector3[] n, float crumple, Vector3[] sum, float[] cap, int start, int end)
+        {
+            var st = states[index];
+            if (st.box == null)
+            {
+                for (int i = start; i < end; i++) sum[i] += One(st, x[i], n[i], crumple);
+                return;
+            }
+            Vector3 d = st.box.d;
+            for (int i = start; i < end; i++)
+            {
+                Vector3 s = sum[i];
+                float priorAlong = s.sqrMagnitude > 0f ? Vector3.Dot(Limit(s, cap[i]), d) : 0f;
+                sum[i] = s + OneBox(st, x[i], n[i], crumple, priorAlong);
+            }
+        }
         /// <summary>As above, given the vertex's summed raw displacement from the EARLIER impacts and its capacity.
         /// Geometry-aware impacts crush the CURRENT surface: the vertex's present position (original + saturated
         /// earlier damage) decides how far the impactor's face is from it. The result is still a pure function of
@@ -428,12 +516,77 @@ namespace DamageLab.Deformation
             // Creases along the boundary of the crushed patch (depth edge and silhouette edge).
             float bw = 0.25f * st.travel + 0.02f;
             float band = Mathf.Max(Mathf.Exp(-(over / bw) * (over / bw)), 4f * lat * (1f - lat));
-            float crease = cfg.rimCrease * st.travel * crumple * band * noise.Ridged(q * 3.4f);
+            float crease = cfg.rimCrease * st.travel * crumple * band * noise.Ridged(q * 3.4f) * (LegacyBehaviour ? 1f : CreaseFade(over, soft, sd, st.rho));
 
             Vector3 disp = pj.d * push + outward * ((fold + crease + tent) * align);
-            if (sd > 1e-4f)   // pulled in toward the crushed area
-                disp += (pj.e1 * (qu - u) + pj.e2 * (qv - v)) * (cfg.drawIn * push / sd);
+            // Pulled in toward the crushed area. q is nudged 2 mm inside the silhouette (so Lead never misses the box), so
+            // |q - x| is sd + ~2 mm: dividing by sd alone made the pull grow without bound as sd -> 0 (x6 at 0.4 mm), and a
+            // 0.1 mm shift of the impactor moved metal at the silhouette edge by centimetres. The pull is now drawIn·push
+            // along the unit direction to q, faded in over the crease softening band, so it is continuous at the edge.
+            if (LegacyBehaviour) { if (sd > 1e-4f) disp += (pj.e1 * (qu - u) + pj.e2 * (qv - v)) * (cfg.drawIn * push / sd); }
+            else if (sd > 0f)
+            {
+                Vector3 toEdge = pj.e1 * (qu - u) + pj.e2 * (qv - v);
+                float len = toEdge.magnitude;
+                if (len > 1e-6f) disp += toEdge * (cfg.drawIn * push * Mathf.Min(1f, sd / soft) / len);
+            }
             return disp;
+        }
+
+        /// <summary>Diagnostics: the intermediate terms of a box impact's contribution at one vertex.</summary>
+        public string ExplainBox(int index, Vector3 x, Vector3 n, float crumple, Vector3 priorSum, float capacity)
+        {
+            var st = states[index];
+            if (st.box == null) return "radial impact";
+            var pj = st.box;
+            float priorAlong = priorSum.sqrMagnitude > 0f ? Vector3.Dot(Limit(priorSum, capacity), st.box.d) : 0f;
+            Vector3 r = x - pj.c;
+            float a = Vector3.Dot(r, pj.d) + priorAlong;
+            float soft = cfg.edgeSoftness;
+            float tentLen = cfg.tentLength * st.travel + 0.1f;
+            float u = Vector3.Dot(r, pj.e1), v = Vector3.Dot(r, pj.e2);
+            float sd = pj.SignedDistance(u, v, out float qu, out float qv);
+            float lead = pj.Lead(qu, qv);
+            float gap = a - lead - st.gapMin;
+            float lat = sd > 0f ? Mathf.Exp(-(sd / st.rho) * (sd / st.rho)) : 1f;
+            Vector3 latPos = pj.e1 * u + pj.e2 * v;
+            Vector3 ql = latPos + st.noiseOffset;
+            float tp = Vector3.Dot(latPos, st.pleatAxis) / cfg.pleatWavelength + st.phase + 0.5f * noise.Fbm(ql * 1.3f, 2);
+            float pleat = 1f - 4f * Mathf.Abs(tp - Mathf.Floor(tp) - 0.5f);
+            float plane = st.travel * (1f + cfg.faceUnevenness * noise.Fbm(ql * 2.4f, 2) + cfg.pleatDepth * pleat);
+            float over = Mathf.Min(plane - gap, plane);
+            Vector3 nl = n - pj.d * Vector3.Dot(n, pj.d);
+            float behind = -over;
+            Vector3 radial = latPos - st.centreLat;
+            float rl = radial.magnitude;
+            float align = rl > 1e-5f ? Mathf.Abs(Vector3.Dot(nl, radial)) / rl : 0f;
+            float c = over >= soft ? over : over <= -soft ? 0f : (over + soft) * (over + soft) / (4f * soft);
+            float push = c * cfg.crushCompression * lat;
+            Vector3 q = x + st.noiseOffset;
+            float tf = gap / cfg.foldWavelength + st.phase + 0.45f * noise.Fbm(q * 1.7f, 2);
+            float tri = 1f - 4f * Mathf.Abs(tf - Mathf.Floor(tf) - 0.5f);
+            float fold = cfg.foldStrength * Mathf.Min(c, cfg.foldWavelength) * lat * tri * crumple * (0.6f + 0.4f * noise.Perlin(q * 3.1f));
+            float bw = 0.25f * st.travel + 0.02f;
+            float band = Mathf.Max(Mathf.Exp(-(over / bw) * (over / bw)), 4f * lat * (1f - lat));
+            float crease = cfg.rimCrease * st.travel * crumple * band * noise.Ridged(q * 3.4f) * (LegacyBehaviour ? 1f : CreaseFade(over, soft, sd, st.rho));
+            Vector3 disp = OneBox(st, x, n, crumple, priorAlong);
+            Vector3 total = Limit(priorSum + disp, capacity), before = Limit(priorSum, capacity);
+            return $"x {x.ToString("F4")} n {n.ToString("F3")} prior {priorSum.ToString("F4")} (|{priorSum.magnitude:0.0000}| cap {capacity:0.000}, along {priorAlong:0.0000}) u {u:0.0000} v {v:0.0000} sd {sd:0.0000} lead {lead:0.0000} " +
+                   $"gap {gap:0.0000} lat {lat:0.000} plane {plane:0.0000} over {over:0.0000} c {c:0.0000} push {push:0.0000} tf {tf:0.000} tri {tri:0.000} fold {fold:0.0000} band {band:0.000} crease {crease:0.0000} " +
+                   $"align {align:0.000} radial {radial.ToString("F3")} -> disp {disp.ToString("F4")}; saturated displacement {before.ToString("F4")} -> {total.ToString("F4")}";
+        }
+
+        /// <summary>
+        /// The box crush is cut off behind the crush zone (over &lt;= -edgeSoftness: only the tent remains) and at 3·rho outside
+        /// the silhouette. The crease band does not vanish at either cut, so a vertex moving across one by a fraction of a
+        /// millimetre gained or lost a whole crease (up to rimCrease·travel, several cm). Fade it to zero at both cuts:
+        /// over the last edgeSoftness before the zone's back edge and between 2·rho and 3·rho laterally. Elsewhere it is 1.
+        /// </summary>
+        static float CreaseFade(float over, float soft, float sd, float rho)
+        {
+            float b = Mathf.Clamp01((over + soft) / soft);
+            float l = Mathf.Clamp01(3f - sd / rho);
+            return b * b * (3f - 2f * b) * l * l * (3f - 2f * l);
         }
 
         Vector3 One(in State st, Vector3 x, Vector3 n, float crumple)
