@@ -29,12 +29,18 @@ namespace DamageLab.Vehicle
         [Tooltip("How quickly the applied damage catches up with the slider value (1/s). 0 = instant.")]
         public float responseSharpness = 16f;
 
+        [Header("Click-to-damage")]
+        [Tooltip("Maximum number of stored localized impacts.")]
+        public int maxImpacts = 10;
+
         [Header("Debug")]
         public Material wireframeMaterial;
         [SerializeField] bool wireframe;
 
         /// <summary>Raised after the mesh has been rebuilt.</summary>
         public event Action Deformed;
+        /// <summary>Raised when a localized impact is added or the impacts are cleared.</summary>
+        public event Action ImpactsChanged;
 
         public bool IsInitialized { get; private set; }
         public int TotalTriangles { get; private set; }
@@ -49,6 +55,9 @@ namespace DamageLab.Vehicle
         readonly float[] applied = new float[DamageDirections.Count];
         readonly RegionState[] states = new RegionState[DamageDirections.Count];
         CrushField[] fields;
+        readonly List<LocalImpact> impacts = new List<LocalImpact>();
+        readonly List<MeshCollider> pickColliders = new List<MeshCollider>();
+        ImpactField impactField;
         readonly Stopwatch stopwatch = new Stopwatch();
         bool dirty;
 
@@ -120,15 +129,89 @@ namespace DamageLab.Vehicle
             ApplyDeformation();
         }
 
+        /// <summary>Directional sliders to 0 and all localized impacts removed.</summary>
         public void ResetAll()
         {
             front = rear = left = right = 0f;
+            ClearImpacts();
+        }
+
+        // ------------------------------------------------------------------ localized impacts
+
+        public int ImpactCount => impacts.Count;
+        public bool ImpactLimitReached => impacts.Count >= maxImpacts;
+        public IReadOnlyList<LocalImpact> Impacts => impacts;
+        /// <summary>Vehicle-space bounds of the parts that define the impact faces (body + bumpers).</summary>
+        public Bounds BodyBounds { get; private set; }
+
+        /// <summary>
+        /// Cast a world-space ray against the vehicle's picking colliders (the ORIGINAL, undamaged meshes)
+        /// and, if it hits the car, add an impact at the hit point pushing along the ray.
+        /// </summary>
+        public bool TryApplyImpact(Ray worldRay, float strength01, out string message)
+        {
+            if (!IsInitialized) Initialize();
+            if (ImpactLimitReached) { message = $"Impact limit reached ({maxImpacts})"; return false; }
+            if (strength01 <= 0f) { message = "Impact strength is 0"; return false; }
+            Physics.SyncTransforms();
+            if (!Physics.Raycast(worldRay, out var hit, 500f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore)
+                || !(hit.collider is MeshCollider mc) || !pickColliders.Contains(mc))
+            {
+                message = "Missed the vehicle";
+                return false;
+            }
+            Vector3 dir = transform.InverseTransformDirection(worldRay.direction).normalized;
+            Vector3 n = transform.InverseTransformDirection(hit.normal).normalized;
+            if (Vector3.Dot(n, dir) > 0f) n = -n;
+            AddImpact(new LocalImpact
+            {
+                point = transform.InverseTransformPoint(hit.point),
+                direction = dir,
+                normal = n,
+                strength = Mathf.Clamp01(strength01),
+            });
+            message = $"Impact on {hit.collider.name}";
+            return true;
+        }
+
+        /// <summary>Add an impact given in vehicle space. Ignored once <see cref="maxImpacts"/> is reached.</summary>
+        public bool AddImpact(LocalImpact impact)
+        {
+            if (ImpactLimitReached || impact.strength <= 0f) return false;
+            impacts.Add(impact);
+            if (IsInitialized) AccumulateImpact(impact);
+            OnImpactsChanged();
+            return true;
+        }
+
+        /// <summary>Remove only the localized impacts; the directional sliders are untouched.</summary>
+        public void ClearImpacts()
+        {
+            if (impacts.Count == 0) return;
+            impacts.Clear();
+            impactField?.Clear();
+            foreach (var p in parts) p.ClearImpacts();
+            OnImpactsChanged();
+        }
+
+        void AccumulateImpact(LocalImpact impact)
+        {
+            int index = impactField.Add(impact);
+            foreach (var p in parts) p.AccumulateImpact(impactField, index);
+        }
+
+        void OnImpactsChanged()
+        {
+            // Impacts appear at once (no easing), so rebuild now rather than next frame.
+            if (IsInitialized) ApplyDeformation();
+            ImpactsChanged?.Invoke();
         }
 
         public bool IsDamaged
         {
             get
             {
+                if (impacts.Count > 0) return true;
                 for (int d = 0; d < DamageDirections.Count; d++)
                     if (applied[d] > 0f || GetDamage((DamageDirection)d) > 0f) return true;
                 return false;
@@ -208,6 +291,7 @@ namespace DamageLab.Vehicle
                 }
             }
 
+            BodyBounds = faceBounds;
             fields = new CrushField[DamageDirections.Count];
             for (int d = 0; d < DamageDirections.Count; d++)
             {
@@ -221,6 +305,19 @@ namespace DamageLab.Vehicle
                 var rp = new RigidPart(t, transform, follow);
                 rp.Precompute(fields);
                 rigidParts.Add(rp);
+            }
+            impactField = new ImpactField(profile.impact);
+            var wheelCenters = new Vector3[rigidParts.Count];
+            for (int i = 0; i < rigidParts.Count; i++) wheelCenters[i] = rigidParts[i].VehicleCenter;
+            impactField.SetStructure(wheelCenters, profile.roofLineStart);
+            foreach (var im in impacts) AccumulateImpact(im);
+
+            // Static picking colliders built from the ORIGINAL meshes (never re-cooked as the car deforms).
+            foreach (var p in parts) AddPickCollider(p.filter.gameObject, p.sourceMesh);
+            foreach (var rp in rigidParts)
+            {
+                var mf = rp.transform.GetComponent<MeshFilter>();
+                if (mf != null) AddPickCollider(mf.gameObject, mf.sharedMesh);
             }
 
             IsInitialized = true;
@@ -242,10 +339,17 @@ namespace DamageLab.Vehicle
                 if (Application.isPlaying) { Destroy(mf.sharedMesh); Destroy(go); }
                 else { DestroyImmediate(mf.sharedMesh); DestroyImmediate(go); }
             }
+            foreach (var c in pickColliders)
+            {
+                if (c == null) continue;
+                if (Application.isPlaying) Destroy(c); else DestroyImmediate(c);
+            }
+            pickColliders.Clear();
             parts.Clear();
             rigidParts.Clear();
             rigidWireframes.Clear();
             fields = null;
+            impactField = null;
             IsInitialized = false;
         }
 
@@ -255,6 +359,15 @@ namespace DamageLab.Vehicle
             Shutdown();
             Initialize();
             dirty = true;
+        }
+
+        void AddPickCollider(GameObject go, Mesh mesh)
+        {
+            if (mesh == null) return;
+            var mc = go.AddComponent<MeshCollider>();
+            mc.hideFlags = HideFlags.DontSave; // runtime-only; never written into the scene
+            mc.sharedMesh = mesh;
+            pickColliders.Add(mc);
         }
 
         VehiclePartRule FindRule(string objectName)
@@ -274,7 +387,7 @@ namespace DamageLab.Vehicle
             stopwatch.Restart();
             for (int d = 0; d < DamageDirections.Count; d++) states[d] = fields[d].Evaluate(applied[d] / 100f);
             float roofStart = profile.roofLineStart, roofEnd = profile.roofLineEnd;
-            foreach (var p in parts) p.Apply(fields, states, roofStart, roofEnd);
+            foreach (var p in parts) p.Apply(fields, states, roofStart, roofEnd, impactField);
             foreach (var rp in rigidParts) rp.Apply(fields, states, roofStart, roofEnd);
             stopwatch.Stop();
             LastDeformMilliseconds = (float)stopwatch.Elapsed.TotalMilliseconds;

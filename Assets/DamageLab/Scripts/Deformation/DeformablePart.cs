@@ -133,18 +133,25 @@ namespace DamageLab.Deformation
             {
                 var field = fields[d];
                 var arr = samples[d] = new CrushSample[vehiclePos.Length];
-                Parallel.For(0, (vehiclePos.Length + 1023) / 1024, chunk =>
+                if (MultiThreaded)
                 {
-                    int end = Mathf.Min(vehiclePos.Length, (chunk + 1) * 1024);
-                    for (int i = chunk * 1024; i < end; i++) arr[i] = field.Sample(vehiclePos[i]);
-                });
+                    Parallel.For(0, (vehiclePos.Length + 1023) / 1024, chunk =>
+                    {
+                        int end = Mathf.Min(vehiclePos.Length, (chunk + 1) * 1024);
+                        for (int i = chunk * 1024; i < end; i++) arr[i] = field.Sample(vehiclePos[i]);
+                    });
+                }
+                else
+                {
+                    for (int i = 0; i < arr.Length; i++) arr[i] = field.Sample(vehiclePos[i]);
+                }
             }
         }
 
         /// <summary>Rebuild the deformed mesh from the original data for the given direction states.</summary>
-        public void Apply(CrushField[] fields, RegionState[] states, float roofStart, float roofEnd)
+        public void Apply(CrushField[] fields, RegionState[] states, float roofStart, float roofEnd, ImpactField impacts = null)
         {
-            bool any = false;
+            bool any = impacts != null && hasImpacts;
             for (int d = 0; d < states.Length; d++) any |= states[d].active;
             int n = baseVerts.Length;
 
@@ -163,7 +170,8 @@ namespace DamageLab.Deformation
 
             // Displacement is a pure function of per-vertex constants, so vertex chunks run in parallel.
             applyFields = fields; applyStates = states; applyRoofStart = roofStart; applyRoofEnd = roofEnd;
-            if (n >= 4096) Parallel.For(0, (n + ChunkSize - 1) / ChunkSize, applyChunk ??= DisplaceChunk);
+            applyImpacts = any && hasImpacts ? impacts : null;
+            if (MultiThreaded && n >= 4096) Parallel.For(0, (n + ChunkSize - 1) / ChunkSize, applyChunk ??= DisplaceChunk);
             else DisplaceChunk(0, n);
 
             ComputeNormals(work, workNormals);
@@ -184,10 +192,16 @@ namespace DamageLab.Deformation
         }
 
         const int ChunkSize = 2048;
+#if UNITY_WEBGL && !UNITY_EDITOR
+        const bool MultiThreaded = false; // no thread pool in the browser
+#else
+        const bool MultiThreaded = true;
+#endif
         System.Action<int> applyChunk;
         CrushField[] applyFields;
         RegionState[] applyStates;
         float applyRoofStart, applyRoofEnd;
+        ImpactField applyImpacts;
 
         void DisplaceChunk(int chunk) => DisplaceChunk(chunk * ChunkSize, Mathf.Min(baseVerts.Length, (chunk + 1) * ChunkSize));
 
@@ -203,8 +217,46 @@ namespace DamageLab.Deformation
                     if (!states[d].active) continue;
                     disp += fields[d].Displacement(in samples[d][i], vehicleNormal[i], in states[d], crumple, applyRoofStart, applyRoofEnd);
                 }
+                // Localized click impacts (cached sum, computed from the original positions).
+                if (applyImpacts != null) disp += applyImpacts.Limit(impactSum[i], impactCap[i]);
                 work[i] = baseVerts[i] + vehicleToMesh.MultiplyVector(disp);
             }
+        }
+
+        Vector3[] impactSum;              // per vertex: summed raw displacement of all localized impacts
+        float[] impactCap;                // per vertex: structural crush capacity (depends only on the original mesh)
+        bool hasImpacts;
+
+        /// <summary>Add impact <paramref name="index"/> of the field to this part's cached impact sum.
+        /// Only the new impact is evaluated, so a click costs one impact and slider moves cost none.</summary>
+        public void AccumulateImpact(ImpactField field, int index)
+        {
+            int n = vehiclePos.Length;
+            impactSum ??= new Vector3[n];
+            if (impactCap == null)
+            {
+                impactCap = new float[n];
+                for (int i = 0; i < n; i++) impactCap[i] = field.Capacity(vehiclePos[i], crumple);
+            }
+            hasImpacts = true;
+            if (MultiThreaded && n >= 4096)
+            {
+                Parallel.For(0, (n + ChunkSize - 1) / ChunkSize, chunk =>
+                {
+                    int end = Mathf.Min(n, (chunk + 1) * ChunkSize);
+                    for (int i = chunk * ChunkSize; i < end; i++) impactSum[i] += field.Contribution(index, vehiclePos[i], vehicleNormal[i], crumple);
+                });
+            }
+            else
+            {
+                for (int i = 0; i < n; i++) impactSum[i] += field.Contribution(index, vehiclePos[i], vehicleNormal[i], crumple);
+            }
+        }
+
+        public void ClearImpacts()
+        {
+            if (impactSum != null) System.Array.Clear(impactSum, 0, impactSum.Length);
+            hasImpacts = false;
         }
 
         void ComputeNormals(Vector3[] pos, Vector3[] result)
@@ -260,6 +312,8 @@ namespace DamageLab.Deformation
         readonly Vector3 baseLocalPosition;
         readonly Quaternion baseLocalRotation;
         readonly Vector3 vehicleCenter;
+        /// <summary>Centre of the part in vehicle space (used as a wheel-mount position).</summary>
+        public Vector3 VehicleCenter => vehicleCenter;
         readonly Vector3 vehicleExtents;
         readonly float follow;
         readonly Transform vehicleRoot;

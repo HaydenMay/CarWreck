@@ -20,6 +20,9 @@ namespace DamageLab.Deformation
         [Tooltip("Height (m) where the roof sag is at full strength.")]
         public float roofLineEnd = 1.40f;
 
+        [Header("Click-to-damage")]
+        public ImpactSettings impact = new ImpactSettings();
+
         public DamageRegion Get(DamageDirection d)
         {
             switch (d)
@@ -40,6 +43,7 @@ namespace DamageLab.Deformation
             right = Lateral(DamageDirection.Right, new Vector2(0.15f, 0.6f), 53);
             roofLineStart = 1.05f;
             roofLineEnd = 1.40f;
+            impact = new ImpactSettings();
         }
 
         // Front / rear: a wide barrier-like hit that shortens the car and folds hood / trunk / fenders.

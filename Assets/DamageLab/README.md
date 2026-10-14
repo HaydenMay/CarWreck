@@ -61,6 +61,53 @@ On the mesh side, each part gets a runtime `Mesh` copy, and the imported asset i
 * Left 20 set directly matches Left 20 reached via 60 → 20 **exactly**. Front 80 + Left 60 reached by two different paths also matches **exactly**.
 * A full rebuild with all four directions active takes about 15–25 ms in the editor.
 
+## Click-to-damage (localized impacts)
+
+The **Impact Testing** card adds three controls: an *Enable Click-to-Damage* toggle, an *Impact Strength* slider (0–100), and *Clear Impacts*. It also shows an *Active Impacts n / 10* counter.
+
+* **Input.** `ImpactPicker` lives on the camera. A left click, or a one-finger tap, counts as an impact only when all of these hold:
+  * it started off the UI;
+  * it moved less than about 10 px (scaled with screen height);
+  * it lasted under 0.6 s;
+  * it never became multi-touch.
+
+  Orbit, pan, and pinch therefore never apply damage, and the camera controller is unchanged.
+* **Picking.** `VehicleDamageModel.TryApplyImpact(ray, strength)`:
+  * casts a `Physics.Raycast` against `MeshCollider`s built once from the original meshes;
+  * stores the hit point, the ray direction, and the surface normal in vehicle space, so impacts rotate with the turntable;
+  * ignores misses, strength 0, and any click after the 10th.
+* **Deformation.** `ImpactField` is the `CrushField` idea in a frame built from the ray. Depth `a` runs along the ray, and footprint distance `l` runs across it:
+  * **Push:** `D·g(l)·w(a)`. `g` is a super-gaussian with a noisy outline. `w = 1 − smoothstep(a/L)` with `L ≥ 1.5·D`, so the dent stays monotonic along the push.
+  * **Folds:** radial triangle-wave buckles on the dent wall and ridged creases on the rim.
+  * **Lip:** a small outward roll just outside the dent.
+  * **Draw-in:** pulls material toward the centre.
+  * **Grazing hits** are made shallower (×0.45 when the ray is parallel to the surface).
+* **Size.** Depth reaches 0.42 m and radius 0.16 → 0.60 m between strength 0 and 100.
+* **Combination.**
+  * Each part caches the summed raw displacement of all impacts. A click evaluates only the new impact.
+  * The result is added to the four directional fields.
+  * Everything is still evaluated on the original vertices, so Clear Impacts and Reset All restore the mesh exactly.
+* **Saturation and structure.** Repeated hits get diminishing returns rather than a hard stop:
+  * **Structural limit per vertex** (`ImpactField.Capacity`):
+    * outer panels 0.50 m;
+    * passenger compartment above the roof line 0.36 m;
+    * within 0.5–0.95 m of a wheel centre, it fades down to 0.20 m, so fenders crumple around the wheel without leaving it behind;
+    * stiff parts get less (×0.6–1 by crumple).
+
+    The summed impact displacement is linear up to 60% of the limit and then eases toward it (tanh).
+  * **Work hardening.** A new hit is scaled by `1 / (1 + 0.6 · earlier damage at that spot)`.
+  * **Spreading.** The footprint widens by up to +22% on damaged metal, and its outward lip shrinks. Repeated hits widen the crushed area instead of drilling ever deeper.
+  * **Order now matters.** The same clicks in a different order give a slightly different result (a few mm). The same sequence is always identical.
+* **Validation:** *Damage Lab ▸* bridge commands `verify-impacts` and `verify-stress` (1/3/5 × strength 100 per location). Screenshots come from `impact-set` (`Screenshots/11_…`–`17_…`) and `stress-set` (`21_…`–`28_…`).
+
+Click-to-damage limitations:
+
+* **Picking uses the original shape.** After heavy damage, a click lands on where the undamaged surface was. The point can sit up to the dent depth in front of the visible metal, and a ray can hit a panel that has since been pushed out of view.
+* **Wheels.** Wheels are pickable, and a hit there dents the surrounding bodywork. The wheels themselves don't move from impacts; they only move from the sliders. A deep corner hit can push the fender into the tyre.
+* **The direction is the camera ray, by design.** A grazing click slides the metal sideways. This is reduced, but not removed, by the grazing factor.
+* **Repeated extreme stacking.** Five strength-100 hits on one spot still fold some small triangles in the crumple (0.1–1.7% of the mesh, worst on the angled front corner). That's roughly half the count before saturation.
+* **The structure map is spatial.** It uses the roof line and the wheel centres, not real panels or a chassis. The four directional sliders are unchanged and are not saturated against impacts.
+
 ## Limitations / next steps
 
 * **Performance.** About 20 ms per rebuild is fine for a lab with eased sliders, but not for gameplay. Next steps: port `Displacement` and the normal pass to Burst + Jobs (`MeshData` API), or move them to a compute/vertex shader using the precomputed per-vertex data.

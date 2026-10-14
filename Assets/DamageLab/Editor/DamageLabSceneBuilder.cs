@@ -155,7 +155,9 @@ namespace DamageLab.EditorTools
             car.SetActive(true);
 
             // ---------------------------------------------------------------- UI
-            DamageLabUIBuilder.Build(cam, damage, turntable, camController);
+            var picker = camGO.AddComponent<ImpactPicker>();
+            picker.model = damage;
+            DamageLabUIBuilder.Build(cam, damage, turntable, camController, picker);
             new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene, ScenePath);
@@ -165,6 +167,19 @@ namespace DamageLab.EditorTools
 
         static void ConfigurePipeline()
         {
+            // The "Mobile" quality level is the default for WebGL builds: give it sharper soft shadows and MSAA.
+            var mobile = AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>("Assets/Settings/Mobile_RPAsset.asset");
+            if (mobile != null)
+            {
+                mobile.shadowDistance = 18f;
+                mobile.msaaSampleCount = 2;
+                mobile.renderScale = 1f;
+                var mso = new SerializedObject(mobile);
+                SetInt(mso, "m_MainLightShadowmapResolution", 2048);
+                SetBool(mso, "m_SoftShadowsSupported", true);
+                mso.ApplyModifiedPropertiesWithoutUndo();
+                EditorUtility.SetDirty(mobile);
+            }
             var asset = QualitySettings.renderPipeline as UniversalRenderPipelineAsset ?? GraphicsSettings.defaultRenderPipeline as UniversalRenderPipelineAsset;
             if (asset == null) { Debug.LogWarning("[DamageLab] No URP asset found."); return; }
             asset.shadowDistance = 22f;

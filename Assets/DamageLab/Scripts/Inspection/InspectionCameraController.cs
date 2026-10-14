@@ -1,13 +1,16 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.Controls;
 
 namespace DamageLab.Inspection
 {
     /// <summary>
     /// Orbit / pan / zoom inspection camera.
-    ///   Orbit: left or right mouse drag      Pan: middle drag or Shift + left drag
-    ///   Zoom:  scroll wheel                   Reset: F key or <see cref="ResetView"/>
+    ///   Mouse: orbit = left or right drag, pan = middle drag or Shift + left drag, zoom = scroll wheel
+    ///   Touch: orbit = one-finger drag, zoom = pinch, pan = two-finger drag
+    ///   Reset: F key or <see cref="ResetView"/>
     /// Drags that start over UI are ignored so sliders do not spin the camera.
     /// </summary>
     [RequireComponent(typeof(Camera))]
@@ -30,6 +33,7 @@ namespace DamageLab.Inspection
 
         [Header("Feel")]
         public float orbitSpeed = 0.25f;
+        public float touchOrbitSpeed = 0.18f;
         public float zoomStep = 0.12f;
         public float damping = 12f;
 
@@ -40,7 +44,14 @@ namespace DamageLab.Inspection
         float yawTarget, pitchTarget, distanceTarget;
         Vector3 panOffset, panTarget;
         bool orbiting, panning;
+        bool touchGesture;          // a touch gesture that started over the 3D view
+        float lastPinchDistance;
+        Vector2 lastPinchCenter;
+        int lastTouchCount;
         Camera cam;
+
+        readonly List<RaycastResult> uiHits = new List<RaycastResult>();
+        PointerEventData uiPointer;
 
         public float Yaw => yaw;
 
@@ -78,42 +89,10 @@ namespace DamageLab.Inspection
 
         void Update()
         {
-            var mouse = Mouse.current;
+            // Touch takes priority; browsers also synthesize mouse events from touches.
+            if (!HandleTouch()) HandleMouse();
+
             var keyboard = Keyboard.current;
-            if (mouse != null)
-            {
-                bool shift = keyboard != null && keyboard.shiftKey.isPressed;
-                bool overUI = EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
-
-                if ((mouse.leftButton.wasPressedThisFrame || mouse.rightButton.wasPressedThisFrame) && !overUI)
-                {
-                    if (mouse.leftButton.wasPressedThisFrame && shift) panning = true;
-                    else orbiting = true;
-                }
-                if (mouse.middleButton.wasPressedThisFrame && !overUI) panning = true;
-                if (!mouse.leftButton.isPressed && !mouse.rightButton.isPressed) orbiting = false;
-                if (!mouse.middleButton.isPressed && !(mouse.leftButton.isPressed && shift)) panning = false;
-
-                Vector2 delta = mouse.delta.ReadValue();
-                if (orbiting && !panning)
-                {
-                    yawTarget += delta.x * orbitSpeed;
-                    pitchTarget = Mathf.Clamp(pitchTarget - delta.y * orbitSpeed, minPitch, maxPitch);
-                }
-                else if (panning)
-                {
-                    float scale = distance * 0.0016f;
-                    panTarget -= (transform.right * delta.x + transform.up * delta.y) * scale;
-                    panTarget = Vector3.ClampMagnitude(panTarget, panLimit);
-                }
-
-                float scroll = mouse.scroll.ReadValue().y;
-                if (Mathf.Abs(scroll) > 0.01f && !overUI)
-                {
-                    distanceTarget *= scroll > 0f ? 1f - zoomStep : 1f + zoomStep;
-                    distanceTarget = Mathf.Clamp(distanceTarget, minDistance, maxDistance);
-                }
-            }
             if (keyboard != null && keyboard.fKey.wasPressedThisFrame) ResetView();
 
             float k = 1f - Mathf.Exp(-damping * Time.unscaledDeltaTime);
@@ -122,6 +101,108 @@ namespace DamageLab.Inspection
             distance = Mathf.Lerp(distance, distanceTarget, k);
             panOffset = Vector3.Lerp(panOffset, panTarget, k);
             ApplyTransform();
+        }
+
+        bool HandleTouch()
+        {
+            var ts = Touchscreen.current;
+            if (ts == null) return false;
+
+            TouchControl t0 = null, t1 = null;
+            int count = 0;
+            foreach (var t in ts.touches)
+            {
+                if (!t.isInProgress) continue;
+                if (count == 0) t0 = t; else if (count == 1) t1 = t;
+                count++;
+            }
+            if (count == 0)
+            {
+                touchGesture = false;
+                lastTouchCount = 0;
+                return false;
+            }
+
+            // A gesture belongs to the camera only if its first finger landed outside the UI.
+            if (lastTouchCount == 0) touchGesture = !OverUI(t0.startPosition.ReadValue());
+            if (!touchGesture) { lastTouchCount = count; return true; }
+
+            if (count == 1)
+            {
+                Vector2 delta = t0.delta.ReadValue();
+                if (lastTouchCount == 1)
+                {
+                    yawTarget += delta.x * touchOrbitSpeed;
+                    pitchTarget = Mathf.Clamp(pitchTarget - delta.y * touchOrbitSpeed, minPitch, maxPitch);
+                }
+            }
+            else
+            {
+                Vector2 p0 = t0.position.ReadValue(), p1 = t1.position.ReadValue();
+                float dist = Vector2.Distance(p0, p1);
+                Vector2 center = (p0 + p1) * 0.5f;
+                if (lastTouchCount >= 2 && lastPinchDistance > 1f)
+                {
+                    distanceTarget = Mathf.Clamp(distanceTarget * (lastPinchDistance / Mathf.Max(dist, 1f)), minDistance, maxDistance);
+                    Vector2 d = center - lastPinchCenter;
+                    float scale = distance * 0.0016f;
+                    panTarget = Vector3.ClampMagnitude(panTarget - (transform.right * d.x + transform.up * d.y) * scale, panLimit);
+                }
+                lastPinchDistance = dist;
+                lastPinchCenter = center;
+            }
+            lastTouchCount = count;
+            return true;
+        }
+
+        void HandleMouse()
+        {
+            var mouse = Mouse.current;
+            if (mouse == null) return;
+            var keyboard = Keyboard.current;
+            bool shift = keyboard != null && keyboard.shiftKey.isPressed;
+            bool pressed = mouse.leftButton.wasPressedThisFrame || mouse.rightButton.wasPressedThisFrame || mouse.middleButton.wasPressedThisFrame;
+            bool overUI = pressed && OverUI(mouse.position.ReadValue());
+
+            if ((mouse.leftButton.wasPressedThisFrame || mouse.rightButton.wasPressedThisFrame) && !overUI)
+            {
+                if (mouse.leftButton.wasPressedThisFrame && shift) panning = true;
+                else orbiting = true;
+            }
+            if (mouse.middleButton.wasPressedThisFrame && !overUI) panning = true;
+            if (!mouse.leftButton.isPressed && !mouse.rightButton.isPressed) orbiting = false;
+            if (!mouse.middleButton.isPressed && !(mouse.leftButton.isPressed && shift)) panning = false;
+
+            Vector2 delta = mouse.delta.ReadValue();
+            if (orbiting && !panning)
+            {
+                yawTarget += delta.x * orbitSpeed;
+                pitchTarget = Mathf.Clamp(pitchTarget - delta.y * orbitSpeed, minPitch, maxPitch);
+            }
+            else if (panning)
+            {
+                float scale = distance * 0.0016f;
+                panTarget = Vector3.ClampMagnitude(panTarget - (transform.right * delta.x + transform.up * delta.y) * scale, panLimit);
+            }
+
+            float scroll = mouse.scroll.ReadValue().y;
+            if (Mathf.Abs(scroll) > 0.01f && !OverUI(mouse.position.ReadValue()))
+            {
+                distanceTarget *= scroll > 0f ? 1f - zoomStep : 1f + zoomStep;
+                distanceTarget = Mathf.Clamp(distanceTarget, minDistance, maxDistance);
+            }
+        }
+
+        /// <summary>Raycast the UI directly (works on the first frame of a touch, unlike IsPointerOverGameObject).</summary>
+        bool OverUI(Vector2 screenPosition)
+        {
+            var es = EventSystem.current;
+            if (es == null) return false;
+            uiPointer ??= new PointerEventData(es);
+            uiPointer.position = screenPosition;
+            uiHits.Clear();
+            es.RaycastAll(uiPointer, uiHits);
+            return uiHits.Count > 0;
         }
 
         void ApplyTransform()

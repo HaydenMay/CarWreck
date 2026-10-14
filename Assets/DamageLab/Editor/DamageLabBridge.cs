@@ -96,8 +96,23 @@ namespace DamageLab.EditorTools
                 case "reimport":
                     AssetDatabase.ImportAsset(DamageLabAssets.ModelPath, ImportAssetOptions.ForceUpdate);
                     break;
+                case "webgl":
+                    DamageLabWebBuild.Build();
+                    break;
                 case "verify":
                     Debug.Log(DamageLabValidation.Run());
+                    break;
+                case "impact-set":
+                    DamageLabCapture.CaptureImpactSet();
+                    break;
+                case "stress-set":
+                    DamageLabCapture.CaptureStressSet();
+                    break;
+                case "verify-stress":
+                    Debug.Log(DamageLabValidation.RunStress());
+                    break;
+                case "verify-impacts":
+                    Debug.Log(DamageLabValidation.RunImpacts());
                     break;
                 case "capture-set":
                     DamageLabCapture.CaptureSet(DamageLabCapture.ComparisonSet, 145f, 14f, 7.6f, true, "");

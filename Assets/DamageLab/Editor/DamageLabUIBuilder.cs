@@ -28,9 +28,10 @@ namespace DamageLab.EditorTools
 
         static Font font;
 
-        public static DamageLabUI Build(Camera cam, VehicleDamageModel model, ModelTurntable turntable, InspectionCameraController camController)
+        public static DamageLabUI Build(Camera cam, VehicleDamageModel model, ModelTurntable turntable, InspectionCameraController camController, ImpactPicker picker = null)
         {
             font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            hintKeys.Clear();
 
             var canvasGO = new GameObject("LabCanvas", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
             var canvas = canvasGO.GetComponent<Canvas>();
@@ -49,12 +50,36 @@ namespace DamageLab.EditorTools
             ui.model = model;
             ui.turntable = turntable;
             ui.cameraController = camController;
+            ui.impactPicker = picker;
 
             BuildTopBar(root);
             BuildRightPanel(root, ui);
             BuildControlsHint(root, ui);
             BuildRotateBar(root, ui, turntable);
+            var overlay = BuildPortraitOverlay(root);
+
+            var responsive = canvasGO.AddComponent<ResponsiveLabLayout>();
+            responsive.scaler = scaler;
+            responsive.sidePanel = sidePanel;
+            responsive.portraitOverlay = overlay;
+            responsive.cameraController = camController;
+            responsive.hintTexts = hintKeys.ToArray();
             return ui;
+        }
+
+        static RectTransform sidePanel;
+        static readonly System.Collections.Generic.List<Text> hintKeys = new System.Collections.Generic.List<Text>();
+
+        static GameObject BuildPortraitOverlay(Transform root)
+        {
+            var bg = Img("RotateToLandscape", root, new Color(0.08f, 0.085f, 0.095f, 0.97f), null);
+            Stretch(bg.rectTransform, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+            var icon = Img("Icon", bg.transform, Accent, DamageLabAssets.GetSprite("IconReset"));
+            Place(icon.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0, 90), new Vector2(110, 110));
+            var t = Label("Message", bg.transform, "Rotate your phone to landscape\nto use the Damage Lab", 40, TextMain, FontStyle.Bold, TextAnchor.MiddleCenter);
+            Stretch(t.rectTransform, new Vector2(0, 0.5f), new Vector2(1, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -40), new Vector2(-60, 140));
+            bg.gameObject.SetActive(false);
+            return bg.gameObject;
         }
 
         // ------------------------------------------------------------------ sections
@@ -90,6 +115,7 @@ namespace DamageLab.EditorTools
             var prt = panel.rectTransform;
             prt.anchorMin = new Vector2(1, 0); prt.anchorMax = new Vector2(1, 1); prt.pivot = new Vector2(1, 0.5f);
             prt.sizeDelta = new Vector2(PanelWidth, 0); prt.anchoredPosition = Vector2.zero;
+            sidePanel = prt;
             var edge = Img("Edge", panel.transform, Hex("2E3135"), null);
             Stretch(edge.rectTransform, new Vector2(0, 0), new Vector2(0, 1), new Vector2(0, 0.5f), Vector2.zero, new Vector2(1, 0));
 
@@ -105,14 +131,27 @@ namespace DamageLab.EditorTools
             var hsub = Label("Subtitle", header.transform, "D E F O R M A T I O N    T E S T I N G    T O O L", 13, TextDim, FontStyle.Normal, TextAnchor.MiddleLeft);
             Place(hsub.rectTransform, new Vector2(0, 0.5f), new Vector2(102, -20), new Vector2(360, 22), new Vector2(0, 0.5f));
 
-            // Scrollable content column (fits 1080p without scrolling; layout groups keep it tidy).
+            // Scrollable content column: fits 1080p without scrolling, scrolls on phones where the UI is scaled up.
+            var viewport = new GameObject("Scroll", typeof(RectTransform), typeof(RectMask2D)).GetComponent<RectTransform>();
+            viewport.SetParent(panel.transform, false);
+            viewport.anchorMin = new Vector2(0, 0); viewport.anchorMax = new Vector2(1, 1);
+            viewport.offsetMin = new Vector2(16, 0); viewport.offsetMax = new Vector2(-16, -TopBarHeight - 112);
             var content = new GameObject("Content", typeof(RectTransform)).GetComponent<RectTransform>();
-            content.SetParent(panel.transform, false);
-            content.anchorMin = new Vector2(0, 0); content.anchorMax = new Vector2(1, 1);
-            content.offsetMin = new Vector2(16, 14); content.offsetMax = new Vector2(-16, -TopBarHeight - 112);
+            content.SetParent(viewport, false);
+            content.anchorMin = new Vector2(0, 1); content.anchorMax = new Vector2(1, 1); content.pivot = new Vector2(0.5f, 1);
+            content.sizeDelta = Vector2.zero; content.anchoredPosition = Vector2.zero;
             var vlg = content.gameObject.AddComponent<VerticalLayoutGroup>();
             vlg.spacing = 12; vlg.childControlHeight = true; vlg.childControlWidth = true;
             vlg.childForceExpandHeight = false; vlg.childForceExpandWidth = true;
+            vlg.padding = new RectOffset(0, 0, 0, 14);
+            content.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            var scroll = viewport.gameObject.AddComponent<ScrollRect>();
+            scroll.content = content;
+            scroll.viewport = viewport;
+            scroll.horizontal = false;
+            scroll.vertical = true;
+            scroll.movementType = ScrollRect.MovementType.Clamped;
+            scroll.scrollSensitivity = 30f;
 
             // Header sits below the top bar.
             header.rectTransform.anchoredPosition = new Vector2(0, -TopBarHeight);
@@ -163,6 +202,8 @@ namespace DamageLab.EditorTools
             Place(wd.rectTransform, new Vector2(0, 0.5f), new Vector2(62, -12), new Vector2(360, 20), new Vector2(0, 0.5f));
             ui.wireframeToggle = toggle;
 
+            BuildImpactCard(content, ui);
+
             // Quick info
             var info = CardBox("QuickInfo", content, 236);
             var iv = info.gameObject.AddComponent<VerticalLayoutGroup>();
@@ -182,10 +223,24 @@ namespace DamageLab.EditorTools
 
         static DamageSliderControl SliderRow(Transform parent, string title, DamageDirection dir, bool divider)
         {
-            var row = new GameObject(title.Replace(" ", "") + "Row", typeof(RectTransform)).GetComponent<RectTransform>();
-            row.SetParent(parent, false);
-            Layout(row.gameObject, 80);
+            var row = Row(parent, title.Replace(" ", "") + "Row", 80);
+            SliderWidgets(row, title, out var slider, out var field);
+            if (divider)
+            {
+                var d = Img("Divider", row, CardBorder, null);
+                Stretch(d.rectTransform, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0.5f, 0), Vector2.zero, new Vector2(0, 1));
+            }
 
+            var control = row.gameObject.AddComponent<DamageSliderControl>();
+            control.direction = dir;
+            control.slider = slider;
+            control.valueField = field;
+            return control;
+        }
+
+        /// <summary>Title, numeric box, 0-100 slider and min/max labels inside an 80 px tall row.</summary>
+        static void SliderWidgets(RectTransform row, string title, out Slider slider, out InputField field)
+        {
             var label = Label("Label", row, title, 19, TextMain, FontStyle.Bold, TextAnchor.MiddleLeft);
             Place(label.rectTransform, new Vector2(0, 1), new Vector2(0, -22), new Vector2(260, 28), new Vector2(0, 0.5f));
 
@@ -195,7 +250,7 @@ namespace DamageLab.EditorTools
             var fieldText = Label("Text", fieldBg.transform, "0", 20, TextMain, FontStyle.Bold, TextAnchor.MiddleCenter);
             Stretch(fieldText.rectTransform, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
             fieldText.supportRichText = false;
-            var field = fieldBg.gameObject.AddComponent<InputField>();
+            field = fieldBg.gameObject.AddComponent<InputField>();
             field.textComponent = fieldText;
             field.contentType = InputField.ContentType.IntegerNumber;
             field.characterLimit = 3;
@@ -223,7 +278,7 @@ namespace DamageLab.EditorTools
             handle.rectTransform.sizeDelta = new Vector2(26, 0);
             var dot = Img("Dot", handle.transform, Color.white, DamageLabAssets.GetSprite("Circle"));
             Place(dot.rectTransform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(10, 10));
-            var slider = sliderGO.AddComponent<Slider>();
+            slider = sliderGO.AddComponent<Slider>();
             slider.fillRect = fill.rectTransform;
             slider.handleRect = handle.rectTransform;
             slider.targetGraphic = handle;
@@ -235,17 +290,72 @@ namespace DamageLab.EditorTools
             Place(min.rectTransform, new Vector2(0, 1), new Vector2(0, -72), new Vector2(40, 16), new Vector2(0, 0.5f));
             var max = Label("Max", row, "100", 13, TextFaint, FontStyle.Normal, TextAnchor.MiddleRight);
             Place(max.rectTransform, new Vector2(1, 1), new Vector2(0, -72), new Vector2(40, 16), new Vector2(1, 0.5f));
-            if (divider)
-            {
-                var d = Img("Divider", row, CardBorder, null);
-                Stretch(d.rectTransform, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0.5f, 0), Vector2.zero, new Vector2(0, 1));
-            }
+        }
 
-            var control = row.gameObject.AddComponent<DamageSliderControl>();
-            control.direction = dir;
-            control.slider = slider;
-            control.valueField = field;
-            return control;
+        static RectTransform Row(Transform parent, string name, float height)
+        {
+            var row = new GameObject(name, typeof(RectTransform)).GetComponent<RectTransform>();
+            row.SetParent(parent, false);
+            Layout(row.gameObject, height);
+            return row;
+        }
+
+        static Toggle CheckToggle(RectTransform row, string text)
+        {
+            var hit = Img("Hit", row, new Color(0, 0, 0, 0), null); // whole row is clickable
+            Stretch(hit.rectTransform, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+            var toggle = row.gameObject.AddComponent<Toggle>();
+            var box = Img("Box", row, Well, DamageLabAssets.GetSprite("RoundedRectSmall"), sliced: true);
+            Place(box.rectTransform, new Vector2(0, 0.5f), Vector2.zero, new Vector2(30, 30), new Vector2(0, 0.5f));
+            var check = Img("Checkmark", box.transform, Accent, DamageLabAssets.GetSprite("Check"));
+            Place(check.rectTransform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(26, 26));
+            toggle.targetGraphic = box;
+            toggle.graphic = check;
+            toggle.isOn = false;
+            var l = Label("Label", row, text, 19, TextMain, FontStyle.Bold, TextAnchor.MiddleLeft);
+            Place(l.rectTransform, new Vector2(0, 0.5f), new Vector2(44, 0), new Vector2(360, 28), new Vector2(0, 0.5f));
+            return toggle;
+        }
+
+        /// <summary>Impact Testing card: click-to-damage toggle, strength slider, impact count, Clear Impacts.</summary>
+        static void BuildImpactCard(Transform content, DamageLabUI ui)
+        {
+            var card = CardBox("ImpactTesting", content, 0);
+            var v = card.gameObject.AddComponent<VerticalLayoutGroup>();
+            v.padding = new RectOffset(18, 18, 10, 12); v.spacing = 4;
+            v.childControlHeight = true; v.childControlWidth = true; v.childForceExpandHeight = false; v.childForceExpandWidth = true;
+            card.GetComponent<LayoutElement>().minHeight = -1;
+            card.GetComponent<LayoutElement>().preferredHeight = -1;
+
+            var heading = Label("Heading", card.transform, "Impact Testing", 17, TextDim, FontStyle.Bold, TextAnchor.MiddleLeft);
+            Layout(heading.gameObject, 28);
+
+            ui.clickToDamageToggle = CheckToggle(Row(card.transform, "ClickToDamageRow", 42), "Enable Click-to-Damage");
+
+            var strength = Row(card.transform, "ImpactStrengthRow", 80);
+            SliderWidgets(strength, "Impact Strength", out ui.impactStrengthSlider, out ui.impactStrengthField);
+            ui.impactStrengthSlider.value = 50;
+            ui.impactStrengthField.text = "50";
+
+            var countRow = Row(card.transform, "ActiveImpactsRow", 34);
+            var ck = Label("Key", countRow, "Active Impacts", 16, TextDim, FontStyle.Normal, TextAnchor.MiddleLeft);
+            Stretch(ck.rectTransform, Vector2.zero, new Vector2(0.6f, 1), new Vector2(0, 0.5f), Vector2.zero, Vector2.zero);
+            ui.impactCountText = Label("Value", countRow, "0 / 10", 19, TextMain, FontStyle.Bold, TextAnchor.MiddleRight);
+            Stretch(ui.impactCountText.rectTransform, new Vector2(0.6f, 0), Vector2.one, new Vector2(1, 0.5f), Vector2.zero, Vector2.zero);
+
+            var clear = Img("ClearImpactsButton", card.transform, Hex("33373C"), DamageLabAssets.GetSprite("RoundedRectSmall"), sliced: true);
+            Layout(clear.gameObject, 44);
+            var cb = clear.gameObject.AddComponent<Button>();
+            cb.targetGraphic = clear;
+            cb.colors = ButtonColors();
+            var ci = Img("Icon", clear.transform, Accent, DamageLabAssets.GetSprite("IconReset"));
+            Place(ci.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(-78, 0), new Vector2(24, 24));
+            var cl = Label("Label", clear.transform, "Clear Impacts", 18, TextMain, FontStyle.Bold, TextAnchor.MiddleCenter);
+            Place(cl.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(14, 0), new Vector2(200, 34));
+            ui.clearImpactsButton = cb;
+
+            ui.impactHintText = Label("Hint", card.transform, "Enable, then click or tap the car.", 14, TextDim, FontStyle.Normal, TextAnchor.MiddleCenter);
+            Layout(ui.impactHintText.gameObject, 26);
         }
 
         static void InfoRow(Transform parent, string key, string value, out Text valueText, bool last = false)
@@ -282,6 +392,7 @@ namespace DamageLab.EditorTools
                 var n = Label("Name", card.transform, r.name, 16, TextMain, FontStyle.Bold, TextAnchor.MiddleLeft);
                 Place(n.rectTransform, new Vector2(0, 1), new Vector2(52, y + 2), new Vector2(70, 28), new Vector2(0, 1));
                 var k = Label("Keys", card.transform, r.keys, 13, TextDim, FontStyle.Normal, TextAnchor.MiddleLeft);
+                hintKeys.Add(k);
                 Place(k.rectTransform, new Vector2(0, 1), new Vector2(112, y + 2), new Vector2(140, 28), new Vector2(0, 1));
                 y -= 38;
             }
@@ -370,7 +481,7 @@ namespace DamageLab.EditorTools
             img.color = color;
             img.sprite = sprite;
             img.type = sliced ? Image.Type.Sliced : Image.Type.Simple;
-            img.raycastTarget = false;
+            img.raycastTarget = true; // panels block camera drags; buttons/sliders need hits
             if (sliced) img.pixelsPerUnitMultiplier = 2f;
             return img;
         }
