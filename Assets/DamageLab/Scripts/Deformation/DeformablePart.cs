@@ -283,6 +283,22 @@ namespace DamageLab.Deformation
             }
         }
 
+
+        /// <summary>Copy of the per-vertex impact sum (null when this part has no impact damage).</summary>
+        public Vector3[] ImpactSumCopy() => impactSum != null && hasImpacts ? (Vector3[])impactSum.Clone() : null;
+
+        /// <summary>Restore a sum saved by <see cref="ImpactSumCopy"/> (same mesh) instead of replaying impacts.</summary>
+        public void RestoreImpactSum(Vector3[] sum, ImpactField field)
+        {
+            if (sum == null || sum.Length != vehiclePos.Length) return;
+            impactSum = (Vector3[])sum.Clone();
+            if (impactCap == null)
+            {
+                impactCap = new float[sum.Length];
+                for (int i = 0; i < sum.Length; i++) impactCap[i] = field.Capacity(vehiclePos[i], crumple);
+            }
+            hasImpacts = true;
+        }
         public void ClearImpacts()
         {
             if (impactSum != null) System.Array.Clear(impactSum, 0, impactSum.Length);

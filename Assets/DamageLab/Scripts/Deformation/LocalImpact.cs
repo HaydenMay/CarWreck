@@ -122,6 +122,9 @@ namespace DamageLab.Deformation
 
         public void Clear() => states.Clear();
 
+        /// <summary>Forget the oldest impact record (its displacement stays in the parts' cached sums).</summary>
+        public void RemoveOldest() { if (states.Count > 0) states.RemoveAt(0); }
+
         /// <summary>Lightweight structure map: wheel mount positions and the height where the cabin starts (vehicle space).</summary>
         public void SetStructure(Vector3[] wheels, float cabinLineStart)
         {
@@ -181,9 +184,10 @@ namespace DamageLab.Deformation
             st.e2 = Vector3.Cross(st.d, st.e1);
             // Noise offset and buckle phase come from the hit position, so the same click always
             // produces the same dent pattern (its spread still depends on the damage already there).
-            // Physics contacts jitter by fractions of a millimetre between otherwise identical runs; seed the pattern
-            // from the patch centre on a 2 cm grid so the same collision always gives the same wrinkles.
-            Vector3 seed = st.box != null ? new Vector3(Mathf.Round(im.point.x * 50f), Mathf.Round(im.point.y * 50f), Mathf.Round(im.point.z * 50f)) * 0.02f : im.point;
+            // Physics contacts jitter by fractions of a millimetre between otherwise identical runs, and any quantised
+            // position can flip at a cell edge. Geometry-aware impacts are therefore seeded by their ordinal in the impact
+            // sequence (stored with the footprint): the same sequence always gives the same wrinkles, jitter or not.
+            Vector3 seed = st.box != null ? new Vector3(im.footprint.seed * 0.731f, im.footprint.seed * 1.379f, im.footprint.seed * 2.113f) : im.point;
             st.noiseOffset = new Vector3(Hash(seed.x * 13.1f + seed.z * 3.7f), Hash(seed.y * 17.3f + seed.x * 5.1f), Hash(seed.z * 11.7f + seed.y * 7.9f)) * 40f;
             st.phase = Hash(seed.x * 7.3f + seed.y * 3.1f + seed.z * 5.9f);
             states.Add(st);

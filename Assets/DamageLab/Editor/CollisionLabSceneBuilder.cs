@@ -152,7 +152,8 @@ namespace DamageLab.EditorTools
             footprintDebug.outlineMaterial = UnlitMaterial("FootprintOutline", new Color(0.1f, 0.95f, 1f));
             footprintDebug.arrowMaterial = UnlitMaterial("FootprintArrow", new Color(1f, 0.85f, 0.1f));
             footprintDebug.show = true;
-            damage.maxImpacts = 24;                  // damage persists across launches
+            damage.maxImpacts = 24;                  // records kept individually; older ones merge into the damage sum
+            damage.impactOverflow = ImpactOverflow.MergeOldest;
             var hitbox = car.AddComponent<FrontHitbox>();
             hitbox.model = damage;
             hitbox.core = lower;
@@ -417,7 +418,7 @@ namespace DamageLab.EditorTools
             Layout(dgh.gameObject, 28);
             lab.diagnosticsText = Label("Text", diag.transform, "No collision yet.", 15, TextMain, FontStyle.Normal, TextAnchor.UpperLeft);
             lab.diagnosticsText.supportRichText = false;
-            Layout(lab.diagnosticsText.gameObject, 196);
+            Layout(lab.diagnosticsText.gameObject, 216);
 
             // Controls hint (top-left)
             var hint = Img("ControlsHint", root, new Color(0.11f, 0.12f, 0.13f, 0.86f), DamageLabAssets.RoundedRectSprite, sliced: true);

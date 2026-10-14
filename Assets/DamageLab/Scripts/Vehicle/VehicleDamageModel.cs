@@ -31,8 +31,12 @@ namespace DamageLab.Vehicle
         public float responseSharpness = 16f;
 
         [Header("Click-to-damage")]
-        [Tooltip("Maximum number of stored localized impacts.")]
+        [Tooltip("Maximum number of individually stored localized impacts.")]
         public int maxImpacts = 10;
+        [Tooltip("What happens when maxImpacts is reached. Reject: further impacts are refused (Damage Lab click limit). " +
+                 "MergeOldest: the oldest impact record is dropped; its deformation stays in the per-vertex damage sum, so " +
+                 "damage keeps accumulating forever with a bounded history (Collision Lab).")]
+        public ImpactOverflow impactOverflow = ImpactOverflow.Reject;
         [Tooltip("Build concave MeshColliders from the original meshes for click picking. Turn off when the car has a dynamic Rigidbody (Collision Lab).")]
         public bool createPickingColliders = true;
 
@@ -144,7 +148,10 @@ namespace DamageLab.Vehicle
         // ------------------------------------------------------------------ localized impacts
 
         public int ImpactCount => impacts.Count;
-        public bool ImpactLimitReached => impacts.Count >= maxImpacts;
+        public bool ImpactLimitReached => impactOverflow == ImpactOverflow.Reject && impacts.Count >= maxImpacts;
+        /// <summary>Impacts merged into the accumulated damage (no longer stored individually), and the grand total.</summary>
+        public int MergedImpactCount => mergedImpacts;
+        public int TotalImpactCount => mergedImpacts + impacts.Count;
         public IReadOnlyList<LocalImpact> Impacts => impacts;
         /// <summary>Vehicle-space bounds of the parts that define the impact faces (body + bumpers).</summary>
         public Bounds BodyBounds { get; private set; }
@@ -196,16 +203,21 @@ namespace DamageLab.Vehicle
             return best < float.MaxValue;
         }
 
-        /// <summary>Add an impact given in vehicle space. Ignored once <see cref="maxImpacts"/> is reached.</summary>
+        /// <summary>Add an impact given in vehicle space. With <see cref="ImpactOverflow.Reject"/> it is ignored once
+        /// <see cref="maxImpacts"/> is reached; with <see cref="ImpactOverflow.MergeOldest"/> the oldest record is merged
+        /// into the accumulated damage first, so impacts never stop working.</summary>
         public bool AddImpact(LocalImpact impact)
         {
             if (ImpactLimitReached || impact.strength <= 0f) return false;
+            if (!IsInitialized) Initialize();
+            while (impacts.Count >= Mathf.Max(1, maxImpacts)) MergeOldestImpact();
             if (impact.impactor.valid && !impact.footprint.valid)
             {
                 // Geometry-aware impact: find the contact patch on the CURRENT (already damaged) bodywork once and store
                 // it with the impact; the mesh itself is still rebuilt from the original vertices.
                 if (!IsInitialized) Initialize();
-                impactField.ResolveFootprint(ref impact, parts.Select(p => p.ImpactedVehiclePositions(impactField)), impacts.Count > 0);
+                if (impactField.ResolveFootprint(ref impact, parts.Select(p => p.ImpactedVehiclePositions(impactField)), TotalImpactCount > 0))
+                    impact.footprint.seed = TotalImpactCount + 1;
             }
             impacts.Add(impact);
             if (IsInitialized) AccumulateImpact(impact);
@@ -213,10 +225,28 @@ namespace DamageLab.Vehicle
             return true;
         }
 
+        /// <summary>
+        /// Drop the oldest impact RECORD. Its deformation is already part of every part's per-vertex impact sum (which the
+        /// mesh is rebuilt from), so the car keeps it; only the record (debug footprint, hardening/spread memory) goes.
+        /// History stays bounded at <see cref="maxImpacts"/> records and per-impact cost stays constant.
+        /// </summary>
+        void MergeOldestImpact()
+        {
+            impacts.RemoveAt(0);
+            impactField.RemoveOldest();
+            mergedImpacts++;
+        }
+
+        int mergedImpacts;
+        // Accumulated damage kept across Shutdown/Initialize when it can no longer be rebuilt from the records alone.
+        List<Vector3[]> savedImpactSums;
+
         /// <summary>Remove only the localized impacts; the directional sliders are untouched.</summary>
         public void ClearImpacts()
         {
-            if (impacts.Count == 0) return;
+            if (impacts.Count == 0 && mergedImpacts == 0) return;
+            mergedImpacts = 0;
+            savedImpactSums = null;
             impacts.Clear();
             impactField?.Clear();
             foreach (var p in parts) p.ClearImpacts();
@@ -339,7 +369,14 @@ namespace DamageLab.Vehicle
             var wheelCenters = new Vector3[rigidParts.Count];
             for (int i = 0; i < rigidParts.Count; i++) wheelCenters[i] = rigidParts[i].VehicleCenter;
             impactField.SetStructure(wheelCenters, profile.roofLineStart);
-            foreach (var im in impacts) AccumulateImpact(im);
+            if (mergedImpacts > 0 && savedImpactSums != null && savedImpactSums.Count == parts.Count)
+            {
+                // Some records were merged: restore the saved per-vertex sums instead of replaying the records.
+                for (int i = 0; i < parts.Count; i++) parts[i].RestoreImpactSum(savedImpactSums[i], impactField);
+                foreach (var im in impacts) impactField.Add(im);
+            }
+            else foreach (var im in impacts) AccumulateImpact(im);
+            savedImpactSums = null;
 
             // Static picking colliders built from the ORIGINAL meshes (never re-cooked as the car deforms).
             // Skipped when the car is a dynamic Rigidbody: concave MeshColliders cannot be part of it.
@@ -363,6 +400,7 @@ namespace DamageLab.Vehicle
         public void Shutdown()
         {
             if (!IsInitialized) return;
+            if (mergedImpacts > 0) savedImpactSums = parts.Select(p => p.ImpactSumCopy()).ToList();
             foreach (var p in parts) p.Dispose();
             foreach (var rp in rigidParts) rp.Restore();
             foreach (var go in rigidWireframes)
@@ -435,4 +473,10 @@ namespace DamageLab.Vehicle
         }
 #endif
     }
+}
+
+namespace DamageLab.Vehicle
+{
+    /// <summary>Behaviour of <see cref="VehicleDamageModel.AddImpact"/> once <see cref="VehicleDamageModel.maxImpacts"/> records are stored.</summary>
+    public enum ImpactOverflow { Reject, MergeOldest }
 }

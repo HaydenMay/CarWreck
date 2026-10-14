@@ -204,7 +204,7 @@ Phase 2 limitations:
   * The car can't translate or rotate, but it still collides with continuous detection and still gets collision events.
   * Off restores free physics.
   * While anchored, the receiver treats the car as immovable, so the reduced mass is the impactor's mass. The same 12 m/s 1500 kg hit therefore scores 83 instead of 57 when free. It isn't calibrated.
-* **LAUNCH** no longer repairs the car. Damage accumulates through the existing impact list, with saturation. `maxImpacts` is 24 in this scene.
+* **LAUNCH** no longer repairs the car. Damage accumulates, with saturation. The history is bounded: see *Impact history* below.
 * **Reset Block** re-parks the block for the current settings and clears the collision cooldowns. The car is untouched. The block is placed relative to the car's current ground pose, which is the start pose when anchored.
 * **Repair Car** restores the original mesh and the original hitbox, and keeps every setting. A block that would overlap the regrown hitbox is re-parked.
 * **Reset All** restores everything, including the car's pose and velocities.
@@ -254,6 +254,32 @@ Phase 2 limitations:
 
   The visual deformation is the bottleneck, not the hitbox.
 
+
+**Impact history (fix for "no damage after 24 impacts").**
+
+* **Cause.** Phase 3 gave the Collision Lab car `maxImpacts = 24`, and `AddImpact()` *rejected* every impact past the limit. That's the Damage Lab's click-limit behaviour.
+  * Rejected hits fired no `ImpactsChanged`, so the mesh and the front hitbox stopped updating.
+  * The receiver marked them `applied = false`, which the panel showed as "(below threshold)".
+  * Its "keep the last damaging hit" rule then hid them entirely.
+* **Fix.** `VehicleDamageModel.impactOverflow`: `Reject` stays the default (the Damage Lab still allows 10 clicks), and the Collision Lab uses `MergeOldest`.
+  * **Merging.** At the limit, the oldest impact record is dropped. Its deformation is already in every part's per-vertex impact sum, which the mesh is rebuilt from, so the car keeps it. This is O(1), memory is bounded (24 records plus a fixed per-vertex sum), and per-hit cost doesn't grow.
+  * **Saturation** still works per vertex. A saturated area barely moves, while new areas deform fully.
+  * **Re-initialising** with merged impacts restores the saved sums instead of replaying records.
+  * **Seeding.** Box impacts are now seeded by their ordinal in the sequence, not by a quantised contact position. Sub-millimetre physics jitter can't flip the wrinkle pattern, and replaying the same impacts gives the same mesh.
+* **Diagnostics.**
+  * A hit that has strength but is refused shows "(not applied)", never "(below threshold)", and is never hidden.
+  * The panel shows `Impacts on car N (stored / merged)`.
+* **Trade-off.** Hardening and spread on repeated hits look only at the last 24 records. Damage older than that is still in the shape and still saturates, but it no longer widens new dents. The debug view shows footprints for the stored records only.
+* **Fast-block side effects, found by the 30 m/s regression.** At 30 m/s a block moves 0.6 m per physics step. It can end a step deep inside a crushed notch, and PhysX's depenetration can then push it sideways into the dent wall. That's a second "damaging" contact in the same launch, about 1 in 33 launches.
+  * `CollisionDamageReceiver.oneImpactPerLaunch` (on) makes each launch one damaging impact. Later contacts from the same block are logged ("no damage (block already made its impact this launch)") until the block is re-armed by Launch, Reset Block or Reset All.
+  * Contact points are now corrected per contact: a point is moved out by its penetration only when it lies inside the car's box. PhysX may report the points on either collider of the pair, and the phase 3 code assumed the block's.
+* **Overflow validation results** (`collision-overflow`, 33 hits at 30 m/s and 4000 kg):
+  * Hits 24, 25, 26, 30 and 33 all applied. Undamaged right side and rear deformed fully after 25 hits.
+  * Front-left and front-right hitbox sections still retracted. The saturated centre moved ≤ 3 cm per hit.
+  * Records stayed at 24.
+  * Replaying the recorded impacts matched to 4e-16 m, and the physics re-run matched to 0.016 mm.
+  * Repair Car and Reset All were exact.
+  * Deformation cost per hit stayed about 70 ms before and after the limit.
 Phase 3 limitations:
 
 * **Front only.** The sides and rear still collide with the core and cabin boxes.

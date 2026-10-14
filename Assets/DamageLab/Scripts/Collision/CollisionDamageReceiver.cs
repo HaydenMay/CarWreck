@@ -45,6 +45,9 @@ namespace DamageLab.CollisionTest
         public bool logImpacts = true;
         [Tooltip("Use the impacting BoxCollider's shape for the dent footprint (off = Phase 1 point impacts).")]
         public bool geometryAwareFootprint = true;
+        [Tooltip("After a body has made its damaging impact, its further contacts (bounces, depenetration pushes, re-touches) are logged " +
+                 "but cause no damage until it is re-armed (ClearCooldowns / ResetState: the lab does this on every launch and block reset).")]
+        public bool oneImpactPerLaunch = true;
 
         public struct Report
         {
@@ -58,6 +61,7 @@ namespace DamageLab.CollisionTest
             public float energy;          // J
             public float strength;        // 0..1
             public bool applied;
+            public bool suppressed;       // had strength, but this body already made its damaging impact this launch
             public int contacts;
             public Vector3 localPoint;    // vehicle space, on the original surface
             public Vector3 contactPoint;  // vehicle space, averaged physics contact point backed out by the penetration (where the colliders met)
@@ -84,6 +88,7 @@ namespace DamageLab.CollisionTest
 
         readonly Dictionary<Rigidbody, Pending> pending = new Dictionary<Rigidbody, Pending>();
         readonly Dictionary<Rigidbody, float> lastHit = new Dictionary<Rigidbody, float>();
+        readonly HashSet<Rigidbody> spent = new HashSet<Rigidbody>();   // bodies that already made their damaging impact
         readonly List<ContactPoint> contactBuffer = new List<ContactPoint>(32);
         readonly Stopwatch stopwatch = new Stopwatch();
         float lastAppliedClock = float.NegativeInfinity;
@@ -100,6 +105,7 @@ namespace DamageLab.CollisionTest
         {
             pending.Clear();
             lastHit.Clear();
+            spent.Clear();
             HasReport = false;
             EventCount = 0;
         }
@@ -109,6 +115,7 @@ namespace DamageLab.CollisionTest
         {
             pending.Clear();
             lastHit.Clear();
+            spent.Clear();
             lastAppliedClock = float.NegativeInfinity;
         }
 
@@ -131,7 +138,12 @@ namespace DamageLab.CollisionTest
             {
                 Vector3 n = cp.normal;
                 if (Vector3.Dot(n, com - cp.point) < 0f) n = -n;      // orient into the car
-                p.pointSum += cp.point;
+                // Contact points may be reported on either shape. A point lying inside the car's box (on the block's
+                // penetrated face) is moved out by its penetration so it sits where the surfaces first met.
+                Vector3 pt = cp.point;
+                float pen = -cp.separation;
+                if (pen > 0f && cp.thisCollider is BoxCollider own && InsideDepth(own, pt) > 0.5f * pen) pt -= n * pen;
+                p.pointSum += pt;
                 p.normalSum += n;
                 p.contacts++;
                 p.minSeparation = Mathf.Min(p.minSeparation, cp.separation);
@@ -166,10 +178,10 @@ namespace DamageLab.CollisionTest
             lastHit[other] = clock;
             EventCount++;
             Vector3 n = p.normalSum.sqrMagnitude > 1e-8f ? p.normalSum.normalized : (body.worldCenterOfMass - p.pointSum / p.contacts).normalized;
-            // A fast block can be reported only after it has moved part of a step into the collider. Back the contact
-            // point and the impactor pose out along the normal by that penetration: where the surfaces first met.
+            // A fast block can be reported only after it has moved part of a step into the collider. Back the impactor
+            // pose out along the normal by that penetration (contact points were corrected per contact above).
             float penetration = Mathf.Max(0f, -p.minSeparation);
-            Vector3 point = p.pointSum / p.contacts - n * penetration;
+            Vector3 point = p.pointSum / p.contacts;
             if (p.box.valid) p.box.center -= n * penetration;
             // Collision.relativeVelocity is the other body's velocity relative to this one (verified by the
             // validation: every approaching hit has vn > 0). A contact whose bodies are already separating
@@ -227,7 +239,8 @@ namespace DamageLab.CollisionTest
                 penetration = penetration,
                 region = Region(localPoint),
             };
-            if (strength > 0f)
+            report.suppressed = strength > 0f && oneImpactPerLaunch && spent.Contains(other);
+            if (strength > 0f && !report.suppressed)
             {
                 stopwatch.Restart();
                 report.applied = model.AddImpact(impact);
@@ -235,13 +248,14 @@ namespace DamageLab.CollisionTest
                 report.deformMilliseconds = (float)stopwatch.Elapsed.TotalMilliseconds;
                 if (report.applied)
                 {
+                    spent.Add(other);
                     report.footprint = model.Impacts[model.ImpactCount - 1].footprint;
                     if (report.footprint.valid) { report.localPoint = report.footprint.center; report.region = Region(report.footprint.center); }
                 }
             }
-            // A harmless re-touch shortly after a damaging hit (e.g. the block creeping into a freshly retracted hitbox)
+            // A harmless (below-threshold) re-touch shortly after a damaging hit, or a suppressed second contact of the same launch,
             // must not replace the hit in the diagnostics; it is still counted and logged.
-            bool keepLast = !report.applied && HasReport && Last.applied && clock - lastAppliedClock < 3f;
+            bool keepLast = !report.applied && HasReport && Last.applied && (report.suppressed || (report.strength <= 0f && clock - lastAppliedClock < 3f));
             if (report.applied) lastAppliedClock = clock;
             if (!keepLast) Last = report;
             HasReport = true;
@@ -250,10 +264,19 @@ namespace DamageLab.CollisionTest
                                       $"impulse {report.impulse:0} N·s, μ {report.reducedMass:0} kg, E {report.energy / 1000f:0.0} kJ, strength {report.strength * 100f:0.0}, " +
                                       $"{report.contacts} contacts, at {report.localPoint.ToString("F2")} ({report.region}) dir {report.localDirection.ToString("F2")}, " +
                                       $"{(report.footprint.valid ? $"footprint {report.footprint.kind} {report.footprint.halfU * 2f:0.00} x {report.footprint.halfV * 2f:0.00} m ({report.footprint.area:0.00} m², crush {report.footprint.travel:0.000} m), " : "")}" +
-                                      $"{(report.separating ? "separating, " : "")}{(report.applied ? $"deform {report.deformMilliseconds:0.0} ms" : "no damage")}");
+                                      $"{(report.separating ? "separating, " : "")}{(report.applied ? $"deform {report.deformMilliseconds:0.0} ms" : report.suppressed ? "no damage (block already made its impact this launch)" : "no damage")}");
             ImpactRegistered?.Invoke(report);
         }
 
+
+        /// <summary>How far point p (world) lies inside the box collider (≤ 0 = on or outside its surface).</summary>
+        static float InsideDepth(BoxCollider bc, Vector3 p)
+        {
+            Vector3 l = bc.transform.InverseTransformPoint(p) - bc.center;
+            Vector3 h = Vector3.Scale(bc.size * 0.5f, bc.transform.lossyScale);
+            l = Vector3.Scale(l, bc.transform.lossyScale);
+            return Mathf.Min(h.x - Mathf.Abs(l.x), Mathf.Min(h.y - Mathf.Abs(l.y), h.z - Mathf.Abs(l.z)));
+        }
         /// <summary>Approach speed along the inward normal n for the other body's velocity relative to the car;
         /// 0 (and <paramref name="separating"/>) when the bodies are moving apart.</summary>
         public static float ClosingSpeed(Vector3 relativeVelocity, Vector3 inwardNormal, out bool separating)

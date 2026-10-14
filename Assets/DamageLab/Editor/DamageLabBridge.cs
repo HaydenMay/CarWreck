@@ -123,6 +123,9 @@ namespace DamageLab.EditorTools
                 case "collision-persist-b":
                     Debug.Log(CollisionPersistenceValidation.RunB());
                     break;
+                case "collision-overflow":
+                    Debug.Log(CollisionPersistenceValidation.RunOverflow());
+                    break;
                 case "collision-webgl":
                     DamageLabWebBuild.BuildCollision();
                     break;

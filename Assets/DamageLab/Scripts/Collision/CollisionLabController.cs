@@ -385,13 +385,14 @@ namespace DamageLab.CollisionTest
                 $"Closing (normal)     {r.closingSpeed:0.0} m/s\n" +
                 $"Impulse              {r.impulse:N0} N·s\n" +
                 $"Energy (½μv²)        {r.energy / 1000f:0.0} kJ   μ {r.reducedMass:0} kg\n" +
-                $"Impact strength      {r.strength * 100f:0} / 100{(r.applied ? "" : "  (below threshold)")}\n" +
+                $"Impact strength      {r.strength * 100f:0} / 100{(r.applied ? "" : r.strength > 0f ? "  (not applied)" : "  (below threshold)")}\n" +
                 $"Location             {r.region}  {r.localPoint.ToString("F2")}\n" +
                 (r.footprint.valid
                     ? $"Contact footprint    {r.footprint.kind}, {r.footprint.halfU * 2f:0.00} x {r.footprint.halfV * 2f:0.00} m ({r.footprint.area:0.00} m²)\n" +
                       $"Crush depth          {r.footprint.travel * 100f:0} cm  (area factor ×{r.footprint.areaFactor:0.00})\n"
                     : "") +
-                $"Mesh deformation     {(r.applied ? $"{r.deformMilliseconds:0.0} ms" : "-")}";
+                $"Mesh deformation     {(r.applied ? $"{r.deformMilliseconds:0.0} ms" : "-")}\n" +
+                $"Impacts on car       {model.TotalImpactCount} ({model.ImpactCount} stored, {model.MergedImpactCount} merged into damage)";
         }
 
         void SetStatus(string s)

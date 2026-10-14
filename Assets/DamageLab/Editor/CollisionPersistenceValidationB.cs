@@ -183,7 +183,7 @@ namespace DamageLab.EditorTools
                 if (screenshots) Shots("55_Hitbox_FrontLeft_Damaged", 150f);
                 var rr = Hit(ImpactDirection.Front, 15f, 1500f, true, 0.6f, out _);
                 sb.AppendLine($"    right hit: contact z {rr.contactPoint.z:0.000} (penetration {rr.penetration * 100f:0.0} cm) vs undamaged right face {orig[2]:0.000} ({(orig[2] - rr.contactPoint.z) * 100f:0.0} cm) and left hit 1 {l1.contactPoint.z:0.000} " +
-                              $"{P(Mathf.Abs(rr.contactPoint.z - orig[2]) < 0.03f && Retract(0) > 0.08f)}; faces after {Fronts()}");
+                              $"{P(Mathf.Abs(rr.contactPoint.z - orig[2]) < 0.05f && orig[2] - rr.contactPoint.z < 0.5f * Retract(0) && Retract(0) > 0.08f)}; faces after {Fronts()}");
                 if (screenshots) Shots("56_Hitbox_FrontLeft_and_Right", 150f);
 
                 // ---------------------------------------------------------------- 3. wide frontal

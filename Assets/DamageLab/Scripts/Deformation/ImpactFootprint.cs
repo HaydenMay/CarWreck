@@ -33,6 +33,7 @@ namespace DamageLab.Deformation
         public float travel;          // crush depth applied (m)
         public float areaFactor;      // depth multiplier from the contact area (small patch = deeper)
         public Vector3[] outline;     // patch outline on the crushed surface (for the debug view)
+        public int seed;              // wrinkle-pattern seed: the impact's ordinal on the car (set when it is added)
     }
 
     /// <summary>
