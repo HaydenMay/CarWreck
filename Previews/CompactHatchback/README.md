@@ -1,5 +1,10 @@
 # Compact Hatchback — Stage A
 
+**Archived Stage A documentation and previews**, describing commit `4cea7f9`.
+The approved model has since been refined. Current production files, reproduction
+instructions and validation are documented in [Stage B](StageB/README.md).
+The current generation script produces Stage B; the notes below describe the old checkpoint.
+
 Visual approval model for CarWreck, based on the supplied compact-hatchback reference board.
 **Stage B requires the user's approval.** This asset has not been integrated or tested in
 the procedural destruction system. No FBX or Unity assets are produced at this checkpoint.

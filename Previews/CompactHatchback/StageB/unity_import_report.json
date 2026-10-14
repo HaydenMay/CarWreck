@@ -1,0 +1,33 @@
+{
+    "unityVersion": "6000.6.0f1",
+    "status": "PASS: asset import and paint setup",
+    "bounds_xyz_m": [
+        1.8919999599456787,
+        1.4249989986419678,
+        4.042999744415283
+    ],
+    "materialNames": [
+        "Hatch_Paint",
+        "Hatch_Rubber",
+        "Hatch_Trim",
+        "Hatch_Glass",
+        "Hatch_Rim",
+        "Hatch_Silver",
+        "Hatch_Underbody",
+        "Hatch_Headlight",
+        "Hatch_Indicator",
+        "Hatch_Taillight",
+        "Hatch_Reverse"
+    ],
+    "meshCount": 73,
+    "importedVertices": 90251,
+    "readable": true,
+    "forwardPositiveZ": true,
+    "leftNegativeX": true,
+    "maskLinear": true,
+    "independentPaintProperties": true,
+    "shaderCompiled": true,
+    "destructionTestsRun": false,
+    "renderedColorChanges": true,
+    "additionalLightRendered": true
+}
