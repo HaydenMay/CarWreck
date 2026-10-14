@@ -130,6 +130,12 @@ namespace DamageLab.EditorTools
                 case "collision-random":   // "collision-random [vehicle] [seed] [count]"
                     Debug.Log(CollisionPersistenceValidation.RunRandom(a.Length > 1 ? int.Parse(a[1]) : 0, a.Length > 2 ? int.Parse(a[2]) : 2026, a.Length > 3 ? int.Parse(a[3]) : 50));
                     break;
+                case "vehicle-import":   // "vehicle-import <manifest.json> [dry]"
+                    Debug.Log(VehicleManifestImporter.Import(a[1], a.Length > 2 && a[2] == "dry", out _, out _));
+                    break;
+                case "vehicle-import-check":   // reference manifest vs the hand-written hatchback definition
+                    Debug.Log(VehicleManifestImporter.CheckAgainstExisting("Docs/VehicleProduction/examples/compact_hatchback.vehicle.json", VehicleDefinitionSetup.HatchPath));
+                    break;
                 case "hatch-defects":
                     Debug.Log(CollisionPersistenceValidation.RunHatchbackDefects());
                     break;
