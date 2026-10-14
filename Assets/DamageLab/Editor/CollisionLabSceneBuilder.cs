@@ -307,8 +307,9 @@ namespace DamageLab.EditorTools
             var gl = grid.gameObject.AddComponent<GridLayoutGroup>();
             gl.cellSize = new Vector2(196, 44); gl.spacing = new Vector2(8, 8);
             gl.constraint = GridLayoutGroup.Constraint.FixedColumnCount; gl.constraintCount = 2;
-            Layout(grid.gameObject, 44 * 3 + 16);
-            string[] names = { "Front", "Rear", "Left Side", "Right Side", "Front Corner (Angled)", "Rear Corner (Angled)" };
+            Layout(grid.gameObject, 44 * 4 + 24);
+            // Index = ImpactDirection value; the angled corners are listed in enum order (front-left, rear-right, front-right, rear-left).
+            string[] names = { "Front", "Rear", "Left Side", "Right Side", "Front-Left Corner", "Rear-Right Corner", "Front-Right Corner", "Rear-Left Corner" };
             lab.directionButtons = new Button[names.Length];
             for (int i = 0; i < names.Length; i++)
             {

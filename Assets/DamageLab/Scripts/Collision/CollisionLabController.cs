@@ -201,6 +201,7 @@ namespace DamageLab.CollisionTest
             RefreshVehicleInfo();
             RefreshDirectionButtons();
             SetStatus($"{rig.definition.displayName} ready");
+            Debug.Log($"[CollisionLab] {rig.definition.displayName} ready: {model.PartCount} deforming parts, {model.DeformableVertices:N0} vertices, {car.GetComponentsInChildren<Collider>().Length} colliders, {VehicleWarnings.Count} warnings");
         }
 
         /// <summary>Take over a freshly built rig as the lab's car (no initialisation: the scene builder uses this too).</summary>
@@ -332,6 +333,13 @@ namespace DamageLab.CollisionTest
             if (!launched) PlaceSled();
             RefreshDirectionButtons();
         }
+
+        // Single-argument entry points for SendMessage (browser tests drive the WebGL build with these).
+        public void SetDirectionIndex(int d) => SetDirection((ImpactDirection)Mathf.Clamp(d, 0, System.Enum.GetValues(typeof(ImpactDirection)).Length - 1));
+        public void SetNarrowIndex(int narrow) => SetNarrowImpactor(narrow != 0);
+        public void SetSpeed(float v) { speed = Mathf.Clamp(v, 0f, 30f); RefreshDirectionButtons(); }
+        public void SetMass(float m) { mass = Mathf.Clamp(m, 100f, 4000f); RefreshDirectionButtons(); }
+        public void SetAimOffset(float o) { aimOffset = Mathf.Clamp(o, -1.5f, 1.5f); if (!launched) PlaceSled(); }
 
         public void SetNarrowImpactor(bool narrow)
         {

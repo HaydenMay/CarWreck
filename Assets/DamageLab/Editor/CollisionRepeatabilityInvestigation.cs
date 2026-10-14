@@ -133,9 +133,26 @@ namespace DamageLab.EditorTools
                         }
                     }
                 }
+                // Test E: what the repeatability fix changed, against the pre-fix crush function (main), on the same impacts.
+                SetOptimizations(true, true, true, true, true);
+                ImpactField.LegacyBehaviour = true;
+                var legacy = new List<List<Vector3[]>>();
+                ReplayImpacts(recorded, true, Vector3.zero, null, legacy, null, out _);
+                DamageLabValidation.CheckSanity(filters, baseVerts, out _, out int flipLegacy, out int tris);
+                var dLegacyShift = ReplayImpacts(recorded, true, new Vector3(1e-4f, 0f, 0f), legacy, null, null, out var wLS);
+                ImpactField.LegacyBehaviour = false;
+                var dE = ReplayImpacts(recorded, true, Vector3.zero, legacy, null, null, out var wE);
+                DamageLabValidation.CheckSanity(filters, baseVerts, out _, out int flipFixed, out _);
+                ReplayImpacts(recorded.GetRange(0, 1), true, Vector3.zero, null, null, null, out _);
+                float d1 = MaxDiffWhere(legacy[0], CollisionLabValidation.Snapshot(filters), out int f1, out _, out int over1);
+                int verts = 0; foreach (var a in legacy[0]) verts += a.Length;
+                sb.AppendLine($"    E  pre-fix function, 0.1 mm x shift (same session): {Summ(dLegacyShift, wLS)}");
+                sb.AppendLine($"    E  fixed vs pre-fix function on the same impacts: impact 1 max {d1 * 1000f:0.0} mm ({(f1 >= 0 ? filters[f1].name : "-")}), {over1} of {verts:N0} vertices differ by > 1 cm; " +
+                              $"after all {recorded.Count}: {Summ(dE, wE)}; folded triangles after all {flipFixed} vs {flipLegacy} pre-fix ({100f * flipFixed / Mathf.Max(1, tris):0.00}% vs {100f * flipLegacy / Mathf.Max(1, tris):0.00}%)");
             }
             finally
             {
+                ImpactField.LegacyBehaviour = false;
                 SetOptimizations(true, true, true, true, true);
                 lab.ResetAll();
             }

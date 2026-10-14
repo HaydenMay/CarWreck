@@ -123,6 +123,11 @@ namespace DamageLab.Deformation
         /// <summary>Skip vertices far outside the impactor's silhouette before evaluating their current position (exact). Off = test every vertex (for validation).</summary>
         public static bool SilhouettePrefilter = true;
 
+        /// <summary>Validation only: reproduce the pre-fix behaviour (unbounded draw-in at the silhouette edge, crease cut off
+        /// abruptly, hardening evaluated at the single argmin contact vertex and along earlier impacts' whole lines) to
+        /// measure what the repeatability fix changed against the verified implementation.</summary>
+        public static bool LegacyBehaviour = false;
+
         /// <summary>
         /// Conservative vehicle-space bounds outside which impact <paramref name="index"/> contributes nothing, so parts
         /// entirely outside need not be evaluated (or rebuilt). Radial: the footprint reach and depth zone. Box: the
@@ -239,8 +244,13 @@ namespace DamageLab.Deformation
             foreach (var o in states)
             {
                 Vector3 r0 = point - o.p;
-                Vector3 lat0 = r0 - o.d * Vector3.Dot(r0, o.d);
-                prior += o.depth / Mathf.Max(1e-3f, cfg.maxDepth) * Mathf.Exp(-lat0.sqrMagnitude * o.invRadius * o.invRadius);
+                float a0 = Vector3.Dot(r0, o.d);
+                Vector3 lat0 = r0 - o.d * a0;
+                // Only metal near the earlier dent counts: anywhere within its crush zone along its direction (as before), fading
+                // over one footprint radius beyond. The earlier impact's whole line used to count, so 24 front-centre hits
+                // hardened the untouched rear on the same centre line (and the rear sat on the steep flank of 24 Gaussians).
+                float along = LegacyBehaviour ? 0f : Mathf.Max(0f, Mathf.Abs(a0) - o.zone) * o.invRadius;
+                prior += o.depth / Mathf.Max(1e-3f, cfg.maxDepth) * Mathf.Exp(-lat0.sqrMagnitude * o.invRadius * o.invRadius - along * along);
             }
             return prior;
         }
@@ -262,6 +272,7 @@ namespace DamageLab.Deformation
             var pj = new BoxProjection(im.impactor, im.direction);
             var inside = new List<Vector3>(4096);      // (u, v, gap) of vertices within the silhouette
             var insideX = new List<Vector3>(4096);     // and their current positions
+            Vector3 argmin = im.point;
             float gapMin = float.MaxValue;
             Vector3 first = im.point;
             // Earlier impacts can have moved a vertex by at most its capacity (< 0.75 m), so an ORIGINAL position further
@@ -285,7 +296,7 @@ namespace DamageLab.Deformation
                     float gap = Vector3.Dot(r, pj.d) - lead;
                     inside.Add(new Vector3(u, v, gap));
                     insideX.Add(x);
-                    if (gap < gapMin) gapMin = gap;
+                    if (gap < gapMin) { gapMin = gap; argmin = x; }
                 }
             }
             if (inside.Count == 0) return false;
@@ -302,7 +313,7 @@ namespace DamageLab.Deformation
                     float w = Mathf.Exp(-t * t);
                     sum += insideX[i] * w; wsum += w;
                 }
-                first = sum / wsum;
+                first = LegacyBehaviour ? argmin : sum / wsum;
             }
             // On already-damaged bodywork the impactor stops at the (retracted) physical hitbox, which can sit behind
             // metal that still sticks out. That metal is crushed from the impactor face, not from its own tip.
@@ -505,14 +516,15 @@ namespace DamageLab.Deformation
             // Creases along the boundary of the crushed patch (depth edge and silhouette edge).
             float bw = 0.25f * st.travel + 0.02f;
             float band = Mathf.Max(Mathf.Exp(-(over / bw) * (over / bw)), 4f * lat * (1f - lat));
-            float crease = cfg.rimCrease * st.travel * crumple * band * noise.Ridged(q * 3.4f) * CreaseFade(over, soft, sd, st.rho);
+            float crease = cfg.rimCrease * st.travel * crumple * band * noise.Ridged(q * 3.4f) * (LegacyBehaviour ? 1f : CreaseFade(over, soft, sd, st.rho));
 
             Vector3 disp = pj.d * push + outward * ((fold + crease + tent) * align);
             // Pulled in toward the crushed area. q is nudged 2 mm inside the silhouette (so Lead never misses the box), so
             // |q - x| is sd + ~2 mm: dividing by sd alone made the pull grow without bound as sd -> 0 (x6 at 0.4 mm), and a
             // 0.1 mm shift of the impactor moved metal at the silhouette edge by centimetres. The pull is now drawIn·push
             // along the unit direction to q, faded in over the crease softening band, so it is continuous at the edge.
-            if (sd > 0f)
+            if (LegacyBehaviour) { if (sd > 1e-4f) disp += (pj.e1 * (qu - u) + pj.e2 * (qv - v)) * (cfg.drawIn * push / sd); }
+            else if (sd > 0f)
             {
                 Vector3 toEdge = pj.e1 * (qu - u) + pj.e2 * (qv - v);
                 float len = toEdge.magnitude;
@@ -556,7 +568,7 @@ namespace DamageLab.Deformation
             float fold = cfg.foldStrength * Mathf.Min(c, cfg.foldWavelength) * lat * tri * crumple * (0.6f + 0.4f * noise.Perlin(q * 3.1f));
             float bw = 0.25f * st.travel + 0.02f;
             float band = Mathf.Max(Mathf.Exp(-(over / bw) * (over / bw)), 4f * lat * (1f - lat));
-            float crease = cfg.rimCrease * st.travel * crumple * band * noise.Ridged(q * 3.4f) * CreaseFade(over, soft, sd, st.rho);
+            float crease = cfg.rimCrease * st.travel * crumple * band * noise.Ridged(q * 3.4f) * (LegacyBehaviour ? 1f : CreaseFade(over, soft, sd, st.rho));
             Vector3 disp = OneBox(st, x, n, crumple, priorAlong);
             Vector3 total = Limit(priorSum + disp, capacity), before = Limit(priorSum, capacity);
             return $"x {x.ToString("F4")} n {n.ToString("F3")} prior {priorSum.ToString("F4")} (|{priorSum.magnitude:0.0000}| cap {capacity:0.000}, along {priorAlong:0.0000}) u {u:0.0000} v {v:0.0000} sd {sd:0.0000} lead {lead:0.0000} " +

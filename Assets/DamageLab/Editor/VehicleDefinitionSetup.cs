@@ -74,8 +74,15 @@ namespace DamageLab.EditorTools
             hatch.profile = profile;
             EditorUtility.SetDirty(hatch);
             AssetDatabase.SaveAssets();
-            Debug.Log($"[DamageLab] Vehicle definitions: {muscle.displayName}, {hatch.displayName} (hatchback cabin line {profile.roofLineStart:0.00}-{profile.roofLineEnd:0.00} m)");
-            return new[] { muscle, hatch };
+            // Any other definition asset in the folder is a vehicle too (added as data, no code): listed after the shipped two.
+            var all = new List<VehicleDefinition> { muscle, hatch };
+            foreach (var guid in AssetDatabase.FindAssets("t:VehicleDefinition", new[] { Folder }))
+            {
+                var d = AssetDatabase.LoadAssetAtPath<VehicleDefinition>(AssetDatabase.GUIDToAssetPath(guid));
+                if (d != null && !all.Contains(d) && d.model != null) all.Add(d);
+            }
+            Debug.Log($"[DamageLab] Vehicle definitions: {string.Join(", ", all.ConvertAll(d => d.displayName))} (hatchback cabin line {profile.roofLineStart:0.00}-{profile.roofLineEnd:0.00} m)");
+            return all.ToArray();
         }
 
         static VehicleDefinition LoadOrCreate(string path)
