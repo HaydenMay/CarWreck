@@ -98,13 +98,17 @@ are supplementary. If the configured remote or authentication is unavailable, re
 provide the local files; do not claim the images were uploaded or use a different/public host without authorization.
 Pushing review evidence does not approve the checkpoint or authorize a merge.
 
-Keep images for the active checkpoint until the user has approved it. After approval, remove superseded drafts and
-redundant temporary images once they are no longer needed for the next comparison. Preserve the approved Stage A
-baseline through the Stage B comparison and the approved Stage B baseline through final validation. When all
-checkpoints are approved, clean intermediate review uploads from the branch, retaining the source/generators,
-reference catalogue, measurements/reports and a compact final render/comparison/QA evidence set. Update gallery and
-report links when removing images. Use ordinary follow-up deletion commits, not Git/LFS history rewriting; list
-what was cleaned and push the cleanup. Do not clean another vehicle's evidence or the current pending review.
+Keep all images for the active checkpoint while approval is pending. When the user approves a checkpoint, record
+the approved revision (commit and image paths) in its report. **Retain every approved checkpoint's renders and
+comparison sheets, including A, B and C, for later review, through completion and merge.** Keep their galleries and
+links working. Later checkpoints do not make earlier approved images disposable; if revising an approved checkpoint,
+save the new draft under separate revision paths rather than overwriting the approved images.
+
+After all checkpoints are approved, clean up **only unapproved drafts and superseded unapproved renders/comparisons**
+and their temporary uploads. Preserve the approved checkpoint images, source/generators, references/catalogue,
+measurements/reports and final QA evidence. Update links to removed drafts without breaking approved-image links.
+Use ordinary follow-up deletion commits, not Git/LFS history rewriting; list what was cleaned and push the cleanup.
+Do not delete images from a pending review, approved checkpoint, or another vehicle.
 
 ## Phase 3 — Blockout → Checkpoint A (initial blockout)
 

@@ -36,5 +36,6 @@ side profile. Tread, suspension, liner and panel details remain blockout forms.
 [Hood / grille](stage_a_nose_top.png) · [Bed interior](stage_a_bed.png) ·
 [Suspension clearance](stage_a_clearance.png) · [Front](stage_a_front.png) · [Rear](stage_a_rear.png)
 
-These files remain available while Checkpoint A is pending. Temporary review
-images will be cleaned after approval when comparison baselines are no longer needed.
+These files remain available while Checkpoint A is pending. Once approved, the
+approved checkpoint images and comparisons will be kept for later review, including
+after completion and merge. Final cleanup removes only unapproved drafts.

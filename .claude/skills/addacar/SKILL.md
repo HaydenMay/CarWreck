@@ -44,8 +44,9 @@ measured from the geometry, a feature checklist, discrepancies fixed or listed b
 match without evidence.
 
 At each checkpoint, commit and push the review images/report to the feature branch and provide hosted gallery links.
-After approval, clean temporary review images when they are no longer needed, preserving comparison baselines and
-final evidence as specified in the canonical workflow's "Checkpoint image delivery and cleanup" section.
+Keep all approved checkpoint renders and comparisons for later review, including A, B and C after completion/merge.
+At the end, clean only unapproved drafts; preserve pending reviews and approved images/links as specified in the
+canonical workflow's "Checkpoint image delivery and cleanup" section.
 
 Rules that always apply:
 - Never merge a vehicle into `main` without the user's approval.
