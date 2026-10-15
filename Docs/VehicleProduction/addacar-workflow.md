@@ -1,10 +1,19 @@
 # addacar — vehicle production workflow (canonical)
 
 The single source of truth for adding a destructible vehicle to CarWreck. The Claude Code skill
-(`.claude/skills/addacar/SKILL.md`, invoked as `/addacar`) and the Codex skill (`.agents/skills/addacar/SKILL.md`,
-invoked as `$addacar`) are thin entry points onto this document; change the process here, not in the skills.
+(`.claude/skills/addacar/SKILL.md`) and the Codex skill (`.agents/skills/addacar/SKILL.md`) are thin entry points onto
+this document; change the process here, not in the skills.
 
 Technical standard: [vehicle-asset-spec.md](vehicle-asset-spec.md). Checks: [vehicle-qa-checklist.md](vehicle-qa-checklist.md).
+
+**How it starts.** `/addacar` (Claude Code), `$addacar` (Codex), or an explicit request in plain language to use this
+workflow, for example "Follow the addacar skill from the repository", "Use the CarWreck vehicle creation workflow",
+"Start the addacar process". It never starts on its own from a conversation that did not ask for it: questions about
+the existing cars, the damage engine, or musing about future vehicles are answered normally.
+
+**The agent is the first visual reviewer; the user keeps final creative approval.** Three approval checkpoints
+(A blockout, B detailed model, C final validation) each present renders compared against the references, with
+measured proportions and an honest list of differences, and then wait for the user.
 
 ---
 
@@ -26,25 +35,65 @@ Technical standard: [vehicle-asset-spec.md](vehicle-asset-spec.md). Checks: [veh
 5. **Stop and wait for the answer.** Do not create a branch, a script, a Blender scene or any file before the user
    replies. Do not ask the user about topology, Unity import settings or damage configuration — this workflow owns them.
 
-## Phase 1 — Visual direction (after the answer)
+## Phase 1 — Visual direction and reference intake (after the answer)
 
-- Restate the vehicle in a few lines: type, era/style, proportions (length, width, height, wheelbase in metres),
-  silhouette features, colours and stripe treatment. Any shape and size is fine; never default to muscle-car proportions.
-- Use the reference images for proportions and features only; never copy logos, badges or trademarks.
-- Confirm the direction with the user if anything material is ambiguous.
+1. **Catalogue every reference image**: its view (front, rear, side, top, front ¾, rear ¾, detail), whether it is
+   close to orthographic or has strong perspective, and which features it shows clearly.
+2. **Use all relevant views, ranked for proportions**: side and top (or plan) views first, then front and rear, then
+   ¾ views. A ¾ view shows character and surfacing but distorts lengths; never let a good-looking ¾ render override
+   the side and top proportions.
+3. **Measure proportions from the references** wherever a near-orthographic view exists, as ratios to overall length
+   (side/top) or overall width (front/rear), from pixel positions on the image:
+   wheelbase, front and rear overhang, overall height, wheel diameter and wheel-centre height, beltline height,
+   hood length (nose to windscreen base), cabin/glasshouse length and roof length, windscreen and rear-glass rake,
+   track and body width (front/top), and the positions of distinctive features. Record each value with its source
+   image and an uncertainty (perspective, lens, partial view). Estimates from ¾ views are marked as estimates.
+4. **Ask instead of inventing** when a design-critical feature is obscured or missing from every reference (for
+   example no rear view, an unclear roofline or door count, a hidden front end). State what is unknown, propose an
+   option, and wait. Small details may be designed in the house style and listed as assumptions.
+5. **Restate the direction**: type, era/style, overall dimensions in metres (length, width, height, wheelbase),
+   the measured proportion table, silhouette features, colours and stripe treatment, and the list of assumptions.
+   Any shape and size is fine; never default to muscle-car proportions. Use references for proportions and
+   features only; never copy logos, badges or trademarks.
+
+Without reference images, the proportion table comes from the user's description and typical real vehicles of that
+type (marked as targets, not measurements), and the comparisons below are against that table.
 
 ## Phase 2 — Isolated branch
 
 - Create `feature/vehicle-<slug>` from the current `main` (a separate worktree if the environment supports it).
 - Never work on `main`. Never merge a vehicle into `main` without the user's explicit approval.
 
-## Phase 3 — Blockout and approval gate
+## Reference self-review (used at every checkpoint)
 
-- Write `Blender/Scripts/build_<slug>.py` following the hatchback generator's structure.
-- Produce a blockout and render `Previews/<Vehicle>/StageA/` (front ¾, side, rear ¾).
-- Present the renders. **Wait for approval** before detailed modelling. Iterate on feedback.
+Before presenting anything, the agent reviews its own renders against the references and fixes what it can.
 
-## Phase 4 — Production geometry
+1. **Matched views.** Render the model from cameras that match the references: orthographic side, front, rear and
+   top for the near-orthographic references; for ¾ and perspective references, a perspective camera at a similar
+   height, angle and focal length. Use the same framing for model and reference.
+2. **Comparison sheet.** Put each reference beside (or overlaid on, at matched scale) its matching render, in
+   `Previews/<Vehicle>/<Stage>/comparison_*.png`.
+3. **Proportion table.** For every ratio measured in Phase 1, list reference value, model value (measured from the
+   generator's geometry, not eyeballed from the render) and the difference in %. Flag differences above 5 % (and any
+   wheel placement or wheelbase difference above 3 %).
+4. **Feature checklist.** Evaluate and write one line each for: overall silhouette, vehicle proportions, hood and
+   cabin dimensions, wheelbase and wheel placement, front design, rear design, fenders and body curvature, and every
+   major distinctive feature from Phase 1.
+5. **Fix, then report.** Fix significant discrepancies before asking for approval and re-run the review. Report the
+   differences that remain, deliberate stylisation, and what could not be judged (no reference for that view).
+6. **Evidence only.** Never claim a perfect or exact match. Every "matches" needs a measurement or a side-by-side
+   image; otherwise say "not verified". Mark estimates as estimates.
+
+## Phase 3 — Blockout → Checkpoint A (initial blockout)
+
+- Write `Blender/Scripts/build_<slug>.py` following the hatchback generator's structure; produce the blockout.
+- Render `Previews/<Vehicle>/StageA/`: front ¾, side, rear ¾, plus the matched reference views.
+- Run the reference self-review. Present: the three renders, the comparison sheet, the proportion table, the feature
+  checklist and the remaining differences.
+- **CHECKPOINT A — WAIT FOR USER APPROVAL.** Iterate on feedback (re-run the self-review each time). No detailed
+  modelling before approval.
+
+## Phase 4 — Production geometry → Checkpoint B (detailed model)
 
 Meet [the asset spec](vehicle-asset-spec.md) §1–§6:
 - even body quad grid (p90 edge ≤ 6 cm), wheel wells in the grid, no booleans/n-gons on the shell;
@@ -52,6 +101,12 @@ Meet [the asset spec](vehicle-asset-spec.md) §1–§6:
 - four wheel roots at the wheel centres; stable, token-friendly component names;
 - `UVMap` plus `StripeProjection` on painted parts; `palette.json`; stripe mask texture;
 - deformable vertices ≤ 90k recommended.
+
+Then render `Previews/<Vehicle>/StageB/` (same views as Stage A) and run the self-review **against the references and
+against the approved blockout**: the proportion table shows reference, Stage A and Stage B values; any drift from the
+approved blockout above 2 % is called out and explained or corrected.
+
+**CHECKPOINT B — WAIT FOR USER APPROVAL** before configuration, QA and Unity work.
 
 ## Phase 5 — Configuration
 
@@ -68,7 +123,8 @@ Meet [the asset spec](vehicle-asset-spec.md) §1–§6:
   --python Blender/Scripts/vehicle_asset_qa.py -- --manifest Assets/Vehicles/<Vehicle>/vehicle.json --out Previews/<Vehicle>/asset_qa.json
 ```
 
-Fix every mandatory failure; fix or justify every recommendation. Re-run the generator after each fix.
+Fix every mandatory failure; fix or justify every recommendation. Re-run the generator after each fix. If a fix
+changes the visible shape, re-run the self-review.
 
 ## Phase 7 — Export and Unity
 
@@ -87,16 +143,20 @@ committing.
 
 If the environment cannot run Unity or Blender, say so plainly and list which phases were not performed.
 
-## Phase 8 — Report and commit
+## Phase 8 — Checkpoint C (final validation), commit
 
-Present the vehicle (renders, damaged screenshots) and a report with these sections:
+Present the finished vehicle and a report:
 
-1. **Vehicle** — description, dimensions, mass, component count, deformable vertices.
-2. **Asset QA (Blender)** — mandatory results, recommendations and how each was handled.
-3. **Configuration** — `vehicle-import` result, warnings.
-4. **Destruction tests (Unity)** — which commands ran, key numbers, fold outliers. If none ran, write
-   "Destruction tests: NOT RUN" — never infer them from asset QA.
-5. **Sockets** — groups provided (metadata only, not runtime-validated).
-6. **Known issues and what was not done.**
+1. **Vehicle** — description, dimensions, mass, component count, deformable vertices; final renders (Stage C).
+2. **Reference comparison** — final comparison sheet and proportion table (reference, approved Stage B, final),
+   feature checklist, remaining differences and deliberate stylisation.
+3. **Asset QA (Blender)** — mandatory results, recommendations and how each was handled.
+4. **Configuration** — `vehicle-import` result, warnings.
+5. **Destruction tests (Unity)** — which commands ran, key numbers, fold outliers, damaged screenshots. If none ran,
+   write "Destruction tests: NOT RUN" — never infer them from asset QA.
+6. **Sockets** — groups provided (metadata only, not runtime-validated).
+7. **Known limitations and what was not done.**
 
-Commit and push `feature/vehicle-<slug>` (Git LFS for binaries). Ask before any merge into `main`.
+Commit and push `feature/vehicle-<slug>` (Git LFS for binaries).
+
+**CHECKPOINT C — WAIT FOR USER APPROVAL.** Never merge into `main` without the user's explicit approval.

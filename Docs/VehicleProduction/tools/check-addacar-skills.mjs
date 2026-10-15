@@ -1,4 +1,5 @@
-// Consistency check for the two addacar entry points (Claude Code + Codex).
+// Consistency check for the two addacar entry points (Claude Code + Codex): same description and body, explicit-request
+// policy (plain-language requests allowed, nothing else), referenced docs present, workflow checkpoints present.
 // Run from the repository root:  node Docs/VehicleProduction/tools/check-addacar-skills.mjs
 import { readFileSync, existsSync } from "node:fs";
 
@@ -20,9 +21,18 @@ for (const [agent, path] of Object.entries(files)) {
   }
 }
 if (parsed.claude && parsed.codex && parsed.claude.body !== parsed.codex.body) errors.push("SKILL.md bodies differ between Claude Code and Codex");
-if (parsed.claude && parsed.claude.front["disable-model-invocation"] !== "true") errors.push("claude: disable-model-invocation should be true (explicit /addacar only)");
+if (parsed.claude && parsed.codex && parsed.claude.front.description !== parsed.codex.front.description) errors.push("descriptions differ between Claude Code and Codex");
+for (const [agent, p] of Object.entries(parsed)) {
+  const d = p.front.description ?? "";
+  if (!/ONLY when the user explicitly asks/.test(d)) errors.push(agent + ": description must limit the skill to explicit requests");
+  if (!/vehicle creation/.test(d)) errors.push(agent + ": description must name the CarWreck vehicle creation workflow (plain-language trigger)");
+  if (p.front["disable-model-invocation"] === "true") errors.push(agent + ": disable-model-invocation blocks plain-language requests");
+}
 const yaml = ".agents/skills/addacar/agents/openai.yaml";
-if (!existsSync(yaml) || !/allow_implicit_invocation:\s*false/.test(readFileSync(yaml, "utf8"))) errors.push(`codex: ${yaml} should set policy.allow_implicit_invocation: false`);
+if (!existsSync(yaml) || !/allow_implicit_invocation:\s*true/.test(readFileSync(yaml, "utf8"))) errors.push(`codex: ${yaml} should set policy.allow_implicit_invocation: true (plain-language requests)`);
+const wfPath = "Docs/VehicleProduction/addacar-workflow.md";
+const wf = existsSync(wfPath) ? readFileSync(wfPath, "utf8") : "";
+for (const cp of ["CHECKPOINT A", "CHECKPOINT B", "CHECKPOINT C", "Reference self-review"]) if (!wf.includes(cp)) errors.push(`workflow is missing ${cp}`);
 for (const doc of ["Docs/VehicleProduction/addacar-workflow.md", "Docs/VehicleProduction/vehicle-asset-spec.md", "Docs/VehicleProduction/vehicle-qa-checklist.md"])
   if (!existsSync(doc)) errors.push(`${doc} missing`);
 console.log(errors.length ? "ADDACAR_SKILLS FAIL\n- " + errors.join("\n- ") : "ADDACAR_SKILLS PASS (both entry points consistent, all referenced docs present)");

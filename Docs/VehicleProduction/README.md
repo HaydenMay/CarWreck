@@ -14,12 +14,19 @@ How new destructible vehicles are made for CarWreck. Shared by people and by bot
 
 | Agent | Skill file | Invoke |
 |---|---|---|
-| Claude Code | `.claude/skills/addacar/SKILL.md` | `/addacar` (explicit only: `disable-model-invocation: true`) |
-| OpenAI Codex | `.agents/skills/addacar/SKILL.md` (+ `agents/openai.yaml`) | `$addacar` or `/skills` (explicit only: `allow_implicit_invocation: false`) |
+| Claude Code | `.claude/skills/addacar/SKILL.md` | `/addacar`, or a plain-language request |
+| OpenAI Codex | `.agents/skills/addacar/SKILL.md` (+ `agents/openai.yaml`) | `$addacar`, `/skills`, or a plain-language request |
 
-Both bodies are identical and defer to `addacar-workflow.md`. On invocation the agent reads the spec, the checklist and
-the workflow, reviews the existing generators, asks *"What kind of vehicle would you like to create?"* and *"Do you
-have any reference images?"*, and waits.
+Plain-language requests work in both agents, for example *"Follow the addacar skill from the repository"*, *"Use the
+CarWreck vehicle creation workflow"*, *"Start the addacar process"*. The skill description restricts automatic use to
+explicit requests for this workflow; questions about the existing cars or casual talk about future vehicles do not
+start it. Both entry points have the same description and body and defer to `addacar-workflow.md`. On invocation the
+agent reads the spec, the checklist and the workflow, reviews the existing generators, asks *"What kind of vehicle
+would you like to create?"* and *"Do you have any reference images?"*, and waits.
+
+The workflow makes the agent the first visual reviewer: at three checkpoints (A blockout, B detailed model, C final
+validation) it compares matched-angle renders and measured proportions against the references, fixes or lists the
+differences, and waits for the user's approval.
 
 ## Tools
 

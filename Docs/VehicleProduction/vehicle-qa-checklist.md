@@ -115,7 +115,15 @@ way (a ±1.1° yaw bifurcation on a square rear hit is documented). Replays of r
 
 | | Check | Tags |
 |---|---|---|
-| ☐ | Preview renders (front ¾, side, rear ¾, wireframe) approved by the user **before** detailed modelling | M · VISUAL |
+| ☐ | Every reference image catalogued (view, perspective, features shown); side/top views used for proportions ahead of ¾ views | M · VISUAL |
+| ☐ | Design-critical features missing from all references asked about, not invented; assumptions listed | M · VISUAL |
+| ☐ | Matched-angle renders (orthographic side/front/rear/top for near-orthographic references; matched perspective for ¾) and a side-by-side or overlay comparison sheet at each checkpoint | M · VISUAL |
+| ☐ | Proportion table at each checkpoint: reference vs model ratios (wheelbase, overhangs, height, wheel size and centre height, beltline, hood, cabin/roof length, glass rake, track/width, feature positions), model values measured from the geometry; > 5 % (wheelbase / wheel placement > 3 %) flagged | M · VISUAL (model values from the generator) |
+| ☐ | Feature checklist at each checkpoint: silhouette, proportions, hood and cabin, wheelbase and wheels, front design, rear design, fenders and body curvature, distinctive features | M · VISUAL |
+| ☐ | Discrepancies fixed or listed **before** asking for approval; no "perfect match" claim without a measurement or side-by-side image; estimates marked | M · VISUAL |
+| ☐ | **Checkpoint A** (blockout: front ¾, side, rear ¾ + comparison) approved by the user before detailed modelling | M · VISUAL |
+| ☐ | **Checkpoint B** (detailed model vs references **and** the approved blockout; drift > 2 % explained) approved before configuration and Unity work | M · VISUAL |
+| ☐ | **Checkpoint C** (final renders, comparison, QA results, Unity destruction screenshots when available, known limitations) approved before any merge | M · VISUAL |
 | ☐ | Damaged screenshots from `vehicle <i>` (front, side, corner, 9 cumulative, sliders 100) look like crushed metal: no spikes, torn seams, floating trim | M · VISUAL |
 | ☐ | Close-ups of any fold outliers | M · VISUAL |
 
