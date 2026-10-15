@@ -167,6 +167,9 @@ namespace DamageLab.EditorTools
                 case "vehicle":   // "vehicle 2": integration run for any vehicle by index
                     Debug.Log(CollisionPersistenceValidation.RunVehicle(int.Parse(a[1])));
                     break;
+                case "tube-prototype":   // "tube-prototype <vehicle> <part name filter>"
+                    Debug.Log(CollisionPersistenceValidation.RunTubePrototype(int.Parse(a[1]), a.Length > 2 ? a[2] : "Suspension"));
+                    break;
                 case "vehicle-muscle":
                     Debug.Log(CollisionPersistenceValidation.RunVehicle(0));
                     break;

@@ -1,0 +1,55 @@
+[CollisionLab] Impact-history overflow regression: 33 hits at 30 m/s, 4000 kg, anchored (real PhysX)
+  model: maxImpacts 24 records, overflow MergeOldest
+   #  target                               applied  strength  this hit moved  total max disp  stored/merged/total  hitbox faces L/C/R       deform ms  diagnostics
+   1  front centre narrow                    yes    100.0       0.389 m       0.389 m       1/ 0/ 1       1.946/1.675/1.943    110.6   ok
+   2  left side wide                         yes    100.0       0.262 m       0.389 m       2/ 0/ 2       1.946/1.675/1.943     74.4   ok
+   3  front centre narrow                    yes    100.0       0.223 m       0.475 m       3/ 0/ 3       1.944/1.636/1.941    101.5   ok
+  23  front centre narrow                    yes    100.0       0.012 m       0.495 m      23/ 0/23       1.942/1.633/1.941     99.7   ok
+  24  left side wide                         yes    100.0       0.012 m       0.495 m      24/ 0/24       1.942/1.633/1.941     70.9   ok
+  25  front centre narrow                    yes    100.0       0.016 m       0.495 m      24/ 1/25       1.942/1.633/1.939    102.3   ok
+  26  front-left narrow (unhit section)      yes    100.0       0.434 m       0.496 m      24/ 2/26       1.661/1.633/1.939     90.4   ok
+  27  right side wide (undamaged)            yes    100.0       0.255 m       0.496 m      24/ 3/27       1.661/1.633/1.939     72.4   ok
+  28  rear wide (undamaged)                  yes    100.0       0.285 m       0.496 m      24/ 4/28       1.661/1.633/1.939    122.6   ok
+  29  front centre narrow (saturated)        yes    100.0       0.024 m       0.496 m      24/ 5/29       1.661/1.633/1.939    114.9   ok
+  30  front-right narrow (unhit section)     yes    100.0       0.410 m       0.496 m      24/ 6/30       1.661/1.633/1.661    105.7   ok
+  31  front centre narrow (saturated)        yes    100.0       0.021 m       0.496 m      24/ 7/31       1.661/1.633/1.661     94.1   ok
+  32  front centre narrow (saturated)        yes    100.0       0.019 m       0.496 m      24/ 8/32       1.661/1.633/1.661     93.4   ok
+  33  front centre narrow (saturated)        yes    100.0       0.016 m       0.496 m      24/ 9/33       1.661/1.633/1.661     90.6   ok
+  Every hit 1-33 applied (incl. 24, 25, 26, 30) PASS; diagnostics show each hit PASS; records stay bounded at 24 (+9 merged) PASS
+  Undamaged regions after 25 impacts (right side, rear) deform normally (at least 70 % of the same hit on an undamaged car: right side wide (undamaged): 0.255 m vs 0.256 m on an undamaged car; rear wide (undamaged): 0.285 m vs 0.271 m on an undamaged car; ) PASS; front-left/right hitbox sections still retract after hit 25 PASS
+  Saturated front centre (hits 29, 31, 32, 33): mesh moved 0.024 / 0.021 / 0.019 / 0.016 m (saturation caps it; the hit still registers)
+  Deformation cost per hit: 83.7 ms avg for hits 1-24, 98.5 ms avg for hits 25+ (merging is O(1); per-hit cost does not grow)
+  Shutdown + Initialize with 9 merged impacts: mesh difference 1.8E-007 m PASS
+  Replaying the 33 recorded impacts (incl. 9 merges) into a repaired car: mesh difference 9.1E-007 m PASS
+  Repeatability investigation (replays of the recorded impacts; differences are max vertex distance):
+    A  stored footprints, all optimisations on vs off: final 0.000 mm, worst 0.000 mm at impact 1 (-), first >1 mm: none, first >1 cm: none
+    A' re-resolved footprints, all on vs all off: final 0.000 mm, worst 0.000 mm at impact 1 (-), first >1 mm: none, first >1 cm: none; footprints differing: 0/33
+       (re-resolving vs the footprints recorded in the physics run: final 0.001 mm)
+    C  only affected-part culling  vs all off: final 0.000 mm, worst 0.000 mm at impact 1 (-), first >1 mm: none, first >1 cm: none
+    C  only selective rebuild      vs all off: final 0.000 mm, worst 0.000 mm at impact 1 (-), first >1 mm: none, first >1 cm: none
+    C  only sweep part filter      vs all off: final 0.000 mm, worst 0.000 mm at impact 1 (-), first >1 mm: none, first >1 cm: none
+    C  only silhouette prefilter   vs all off: final 0.000 mm, worst 0.000 mm at impact 1 (-), first >1 mm: none, first >1 cm: none
+    C  only AccumulateRange        vs all off: final 0.000 mm, worst 0.000 mm at impact 1 (-), first >1 mm: none, first >1 cm: none
+    B  shift (0.10, 0.00, 0.00) mm, optimisations off: final 3.639 mm, worst 3.639 mm at impact 33 (Body), first >1 mm: 26 (Body), first >1 cm: none
+       D  impact 26 first diverges (3.638 mm, part Body); dir (0.000, 0.000, -1.000)
+          footprint ref : Face gap 0.0000 travel 0.5039 area 0.3174 half 0.346x0.258 centre (-0.5977, 0.5260, 1.9433)
+          footprint +0.1: Face gap 0.0000 travel 0.5012 area 0.3177 half 0.346x0.258 centre (-0.5976, 0.5260, 1.9433)
+          previous impact 25 diff 0.731 mm
+    B  shift (0.00, 0.10, 0.00) mm, optimisations off: final 0.143 mm, worst 0.160 mm at impact 26 (Body), first >1 mm: none, first >1 cm: none
+    B  shift (0.00, 0.00, 0.10) mm, optimisations off: final 0.325 mm, worst 0.325 mm at impact 28 (Body), first >1 mm: none, first >1 cm: none
+    B  shift (-0.10, 0.00, -0.10) mm, optimisations off: final 0.502 mm, worst 0.719 mm at impact 29 (Body), first >1 mm: none, first >1 cm: none
+    B  shift (0.10, 0.00, 0.00) mm, optimisations on : final 3.639 mm, worst 3.639 mm at impact 33 (Body), first >1 mm: 26 (Body), first >1 cm: none
+    B  shift (0.00, 0.10, 0.00) mm, optimisations on : final 0.143 mm, worst 0.160 mm at impact 26 (Body), first >1 mm: none, first >1 cm: none
+    B  shift (0.00, 0.00, 0.10) mm, optimisations on : final 0.325 mm, worst 0.325 mm at impact 28 (Body), first >1 mm: none, first >1 cm: none
+    B  shift (-0.10, 0.00, -0.10) mm, optimisations on : final 0.502 mm, worst 0.719 mm at impact 29 (Body), first >1 mm: none, first >1 cm: none
+    E  pre-fix function, 0.1 mm x shift (same session): final 41.718 mm, worst 41.718 mm at impact 30 (Body), first >1 mm: 1 (Body), first >1 cm: 1 (Body)
+    E  fixed vs pre-fix function on the same impacts: impact 1 max 75.1 mm (Body), 513 of 97,188 vertices differ by > 1 cm; after all 33: final 175.787 mm, worst 175.787 mm at impact 33 (Body), first >1 mm: 1 (Body), first >1 cm: 1 (Body); folded triangles after all 5389 vs 5448 pre-fix (4.06% vs 4.11%)
+  Same 33 launches again (physics re-run): mesh difference 2.7E-004 m PASS; all launches matched; launches with a 2nd damaging contact: run 1 0, run 2 0 (of 33 each); second contacts with impact strength suppressed by one-impact-per-launch over both runs: 7
+    largest per-launch input difference between the two runs: launch 26 (front-left narrow (unhit section)): centre (-0.5977, 0.5260, 1.9433) vs (-0.5973, 0.5256, 1.9433), crush 0.5039 vs 0.5039, area 0.3174 vs 0.3174, contact (-0.5978, 0.5269, 1.9421) vs (-0.5978, 0.5269, 1.9421), strength 1.0000 vs 1.0000
+    per launch (input deviation mm / mesh difference mm after that launch): 1:0.0/0 2:0.0/0 3:0.0/0 4:0.0/0 5:0.0/0 6:0.0/0 7:0.0/0 8:0.0/0 9:0.0/0 10:0.0/0 11:0.0/0 12:0.0/0 13:0.0/0 14:0.0/0 15:0.0/0 16:0.0/0 17:0.5/0 18:0.0/0 19:0.0/0 20:0.0/0 21:0.0/0 22:0.0/0 23:0.0/0 24:0.0/0 25:0.0/0 26:0.6/0 27:0.0/0 28:0.1/0 29:0.4/0 30:0.1/0 31:0.1/0 32:0.1/0 33:0.5/0
+    first launch whose mesh differs by more than 1 cm: none
+    largest single-launch increase: launch 26 (front-left narrow (unhit section)) adds 0 mm of mesh difference:
+      run 1: Face 0.692x0.516 m, gap 0.0000, crush 0.5039, centre (-0.598, 0.526, 1.943), dir (0.000, 0.000, -1.000), collider FrontLeftBox; impactor centre (-0.600, 0.601, 3.843) rotation (0.00, 180.00, 0.00)
+      run 2: Face 0.694x0.519 m, gap 0.0000, crush 0.5039, centre (-0.597, 0.526, 1.943), dir (0.000, 0.000, -1.000), collider FrontLeftBox; impactor centre (-0.600, 0.601, 3.843) rotation (0.00, 180.00, 0.00)
+  Repair Car after 33 hits: mesh error 0.0E+000/0.0E+000, impacts 0, hitbox original True PASS
+  Reset All after 26 hits: mesh error 0.0E+000/0.0E+000 PASS; next hit applied True (impacts 1) PASS

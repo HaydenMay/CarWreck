@@ -23,7 +23,7 @@ namespace DamageLab.EditorTools
         public const string Format = "carwreck.vehicle.v1";
         const string PaintShader = "CarWreck/CompactHatchback/Two Color Paint";   // the shared two-colour paint (UV1 stripe mask)
 
-        [Serializable] public class Component { public string pattern, match = "Token", role, mode = "Deform"; public float crumple = 1f; }
+        [Serializable] public class Component { public string pattern, match = "Token", role, mode = "Deform"; public float crumple = 1f; public bool coherentTubeSections; }
         [Serializable] public class CabinLine { public float start, end; }
         [Serializable] public class Shell { public float frontDepth, rearDepth, sideDepth, impactHeight; }
         [Serializable] public class Paint { public string material, stripeMask; }
@@ -73,7 +73,7 @@ namespace DamageLab.EditorTools
                 if (!Enum.TryParse(c.mode, out PartMode mode)) { errors.Add($"component '{c.pattern}': unknown mode '{c.mode}'"); continue; }
                 if (!Enum.TryParse(c.match, out NameMatch match)) { errors.Add($"component '{c.pattern}': unknown match '{c.match}'"); continue; }
                 if (match == NameMatch.Contains) errors.Add($"component '{c.pattern}': 'Contains' matching is legacy-only; use Token or Exact");
-                rules.Add(new VehiclePartRule(c.pattern, mode, c.crumple, false, 0.75f, role, match));
+                rules.Add(new VehiclePartRule(c.pattern, mode, c.crumple, false, 0.75f, role, match) { coherentTubeSections = c.coherentTubeSections });
             }
             if (!rules.Any(r => r.role == VehicleComponentRole.Body)) errors.Add("no component has role Body");
             if (!rules.Any(r => r.role == VehicleComponentRole.Wheel)) errors.Add("no component has role Wheel");
@@ -285,7 +285,7 @@ namespace DamageLab.EditorTools
             var b = existing.components.Where(r => r.mode != PartMode.Ignore).ToList();
             int same = 0;
             for (int i = 0; i < Mathf.Min(a.Count, b.Count); i++)
-                if (a[i].nameContains == b[i].nameContains && a[i].role == b[i].role && a[i].mode == b[i].mode && a[i].match == b[i].match && Mathf.Approximately(a[i].crumple, b[i].crumple)) same++;
+                if (a[i].nameContains == b[i].nameContains && a[i].role == b[i].role && a[i].mode == b[i].mode && a[i].match == b[i].match && Mathf.Approximately(a[i].crumple, b[i].crumple) && a[i].coherentTubeSections == b[i].coherentTubeSections) same++;
             bool rulesSame = a.Count == b.Count && same == a.Count;
             bool rest = Mathf.Approximately(def.mass, existing.mass) && def.model == existing.model
                         && Mathf.Approximately(def.profile.roofLineStart, existing.profile.roofLineStart) && Mathf.Approximately(def.profile.roofLineEnd, existing.profile.roofLineEnd);

@@ -1,0 +1,70 @@
+Grazing-contact draft probe: recorded seed-2026 Chaos Run impacts replayed; no new PhysX sampling.
+
+== vehicle 1 full recorded run (50 impacts)
+  exact surface: 0/50 impacts have a face within the draft of their direction
+    shift (0.10, 0.00, 0.00) mm: final 2.010 mm, worst 3.223 mm at impact 26 (Bumper_Front), first >1 mm: 6 (Sill), first >1 cm: none
+    shift (0.00, 0.00, 0.10) mm: final 3.713 mm, worst 6.647 mm at impact 30 (Body), first >1 mm: 1 (Body), first >1 cm: none
+    shift (0.00, 0.10, 0.00) mm: final 0.962 mm, worst 1.250 mm at impact 43 (Body), first >1 mm: 5 (Body), first >1 cm: none
+    shift (-0.10, 0.00, -0.10) mm: final 4.506 mm, worst 7.776 mm at impact 6 (Sill), first >1 mm: 2 (Body), first >1 cm: none
+    worst 0.1 mm perturbation: 7.776 mm PASS (limit 20 mm)
+  draft 2°: 16/50 impacts have a face within the draft of their direction
+    change vs exact surface (unshifted): final 33.307 mm, worst 161.201 mm at impact 30 (Body), first >1 mm: 5 (FrontSplitter), first >1 cm: 5 (FrontSplitter)
+    shift (0.10, 0.00, 0.00) mm: final 0.890 mm, worst 1.749 mm at impact 26 (Body), first >1 mm: 26 (Body), first >1 cm: none
+    shift (0.00, 0.00, 0.10) mm: final 2.284 mm, worst 2.495 mm at impact 30 (Sill), first >1 mm: 1 (Body), first >1 cm: none
+    shift (0.00, 0.10, 0.00) mm: final 0.954 mm, worst 1.266 mm at impact 43 (Body), first >1 mm: 5 (Body), first >1 cm: none
+    shift (-0.10, 0.00, -0.10) mm: final 2.543 mm, worst 2.916 mm at impact 30 (Sill), first >1 mm: 2 (Body), first >1 cm: none
+    worst 0.1 mm perturbation: 2.916 mm PASS (limit 20 mm)
+
+== pickup saved 8-impact counterexample (Sol: 26.582 mm z shift)
+  exact surface: 0/8 impacts have a face within the draft of their direction
+    shift (0.10, 0.00, 0.00) mm: final 15.613 mm, worst 15.613 mm at impact 8 (BedRail_L), first >1 mm: 3 (BedSide_L), first >1 cm: 8 (BedRail_L)
+    shift (0.00, 0.00, 0.10) mm: final 26.582 mm, worst 26.582 mm at impact 8 (BedRail_L), first >1 mm: 1 (Body_Hood), first >1 cm: 3 (BedRail_L)
+    shift (0.00, 0.10, 0.00) mm: final 0.111 mm, worst 0.111 mm at impact 6 (Cabin_SideGlass_L), first >1 mm: none, first >1 cm: none
+    shift (-0.10, 0.00, -0.10) mm: final 9.338 mm, worst 9.338 mm at impact 8 (BedRail_L), first >1 mm: 1 (Body_Hood), first >1 cm: none
+    worst 0.1 mm perturbation: 26.582 mm FAIL (limit 20 mm)
+    diagnostic, z shift with footprints frozen: final 26.170 mm, worst 26.170 mm at impact 8 (BedRail_L), first >1 mm: 1 (Body_Hood), first >1 cm: 3 (BedRail_L)
+    diagnostic, z shift with the fold term off: final 24.156 mm, worst 24.156 mm at impact 8 (BedRail_L), first >1 mm: 1 (Body_Hood), first >1 cm: 3 (BedLiner_WheelTub_L)
+    probe: impact 8 with every impactor shifted (0.00, 0.00, 0.10) mm: worst vertex BedRail_L[339] differs 26.582 mm; vertices differing > 1 cm: 16
+      original: x (-0.9570, 1.3300, -1.1398) n (-0.338, 0.941, 0.000) prior (0.0000, 0.0000, 0.0000) (|0.0000| cap 0.439, along 0.0000) u -0.9444 v 0.4067 sd -0.0113 lead 1.8305 gap 0.1785 lat 1.000 plane 0.2571 over 0.0785 c 0.0785 push 0.0667 tf 1.739 tri 0.046 fold 0.0009 band 0.399 crease 0.0033 align 0.641 radial (-0.406, 0.457, 0.641) -> disp (0.0553, 0.0012, 0.0374); saturated displacement (0.0000, 0.0000, 0.0000) -> (0.0553, 0.0012, 0.0374)
+      shifted : x (-0.9570, 1.3300, -1.1398) n (-0.338, 0.941, 0.000) prior (0.0000, 0.0000, 0.0000) (|0.0000| cap 0.439, along 0.0000) u -0.9444 v 0.4067 sd -0.0114 lead 1.8583 gap 0.1507 lat 1.000 plane 0.2576 over 0.1069 c 0.1069 push 0.0908 tf 1.540 tri 0.841 fold 0.0232 band 0.183 crease 0.0015 align 0.641 radial (-0.406, 0.457, 0.641) -> disp (0.0705, 0.0070, 0.0584); saturated displacement (0.0000, 0.0000, 0.0000) -> (0.0705, 0.0070, 0.0584)
+  draft 1°: 3/8 impacts have a face within the draft of their direction
+    change vs exact surface (unshifted): final 81.258 mm, worst 180.396 mm at impact 3 (BedSide_L), first >1 mm: 3 (BedSide_L), first >1 cm: 3 (BedSide_L)
+    shift (0.10, 0.00, 0.00) mm: final 3.008 mm, worst 3.008 mm at impact 8 (BedRail_L), first >1 mm: 3 (BedSide_L), first >1 cm: none
+    shift (0.00, 0.00, 0.10) mm: final 5.242 mm, worst 5.242 mm at impact 8 (BedRail_L), first >1 mm: 1 (Body_Hood), first >1 cm: none
+    shift (0.00, 0.10, 0.00) mm: final 0.111 mm, worst 0.111 mm at impact 6 (Cabin_SideGlass_L), first >1 mm: none, first >1 cm: none
+    shift (-0.10, 0.00, -0.10) mm: final 5.445 mm, worst 5.445 mm at impact 6 (Cabin_SideGlass_L), first >1 mm: 1 (Body_Hood), first >1 cm: none
+    worst 0.1 mm perturbation: 5.445 mm PASS (limit 20 mm)
+  draft 2°: 4/8 impacts have a face within the draft of their direction
+    change vs exact surface (unshifted): final 140.975 mm, worst 277.032 mm at impact 3 (BedSide_L), first >1 mm: 3 (BedSide_L), first >1 cm: 3 (BedSide_L)
+    shift (0.10, 0.00, 0.00) mm: final 1.507 mm, worst 1.507 mm at impact 8 (BedRail_L), first >1 mm: 8 (BedRail_L), first >1 cm: none
+    shift (0.00, 0.00, 0.10) mm: final 2.906 mm, worst 2.906 mm at impact 8 (BedRail_L), first >1 mm: 1 (Body_Hood), first >1 cm: none
+    shift (0.00, 0.10, 0.00) mm: final 0.111 mm, worst 0.111 mm at impact 6 (Cabin_SideGlass_L), first >1 mm: none, first >1 cm: none
+    shift (-0.10, 0.00, -0.10) mm: final 2.781 mm, worst 2.781 mm at impact 6 (Cabin_SideGlass_L), first >1 mm: 1 (Body_Hood), first >1 cm: none
+    worst 0.1 mm perturbation: 2.906 mm PASS (limit 20 mm)
+    diagnostic, z shift with footprints frozen: final 2.547 mm, worst 2.547 mm at impact 8 (BedRail_L), first >1 mm: 1 (Body_Hood), first >1 cm: none
+    diagnostic, z shift with the fold term off: final 2.623 mm, worst 2.623 mm at impact 8 (BedSide_L), first >1 mm: 1 (Body_Hood), first >1 cm: none
+    probe: impact 8 with every impactor shifted (0.00, 0.00, 0.10) mm: worst vertex BedRail_L[339] differs 2.906 mm; vertices differing > 1 cm: 0
+      original: x (-0.9570, 1.3300, -1.1398) n (-0.338, 0.941, 0.000) prior (0.0000, 0.0000, 0.0000) (|0.0000| cap 0.439, along 0.0000) u -0.9444 v 0.4067 sd -0.0113 lead 1.8966 gap 0.1125 lat 1.000 plane 0.2617 over 0.1492 c 0.1492 push 0.1268 tf 1.267 tri 0.067 fold 0.0024 band 0.040 crease 0.0003 align 0.640 radial (-0.407, 0.458, 0.643) -> disp (0.1064, 0.0008, 0.0690); saturated displacement (0.0000, 0.0000, 0.0000) -> (0.1064, 0.0008, 0.0690)
+      shifted : x (-0.9570, 1.3300, -1.1398) n (-0.338, 0.941, 0.000) prior (0.0000, 0.0000, 0.0000) (|0.0000| cap 0.439, along 0.0000) u -0.9444 v 0.4067 sd -0.0114 lead 1.8990 gap 0.1100 lat 1.000 plane 0.2622 over 0.1521 c 0.1521 push 0.1293 tf 1.249 tri -0.003 fold -0.0001 band 0.035 crease 0.0003 align 0.640 radial (-0.407, 0.458, 0.643) -> disp (0.1092, 0.0000, 0.0693); saturated displacement (0.0000, 0.0000, 0.0000) -> (0.1092, 0.0000, 0.0693)
+  draft 3°: 5/8 impacts have a face within the draft of their direction
+    change vs exact surface (unshifted): final 171.558 mm, worst 301.456 mm at impact 3 (BedSide_L), first >1 mm: 2 (Cabin_SideGlass_R), first >1 cm: 2 (Cabin_SideGlass_R)
+    shift (0.10, 0.00, 0.00) mm: final 0.993 mm, worst 0.993 mm at impact 8 (BedRail_L), first >1 mm: none, first >1 cm: none
+    shift (0.00, 0.00, 0.10) mm: final 2.064 mm, worst 2.064 mm at impact 8 (BedRail_L), first >1 mm: 1 (Body_Hood), first >1 cm: none
+    shift (0.00, 0.10, 0.00) mm: final 0.261 mm, worst 0.269 mm at impact 7 (BedLiner_WheelTub_L), first >1 mm: none, first >1 cm: none
+    shift (-0.10, 0.00, -0.10) mm: final 1.860 mm, worst 1.860 mm at impact 6 (Cabin_SideGlass_L), first >1 mm: 1 (Body_Hood), first >1 cm: none
+    worst 0.1 mm perturbation: 2.064 mm PASS (limit 20 mm)
+
+== vehicle 2 full recorded run (50 impacts)
+  exact surface: 0/50 impacts have a face within the draft of their direction
+    shift (0.10, 0.00, 0.00) mm: final 6.237 mm, worst 15.613 mm at impact 8 (BedRail_L), first >1 mm: 3 (BedSide_L), first >1 cm: 8 (BedRail_L)
+    shift (0.00, 0.00, 0.10) mm: final 14.097 mm, worst 26.582 mm at impact 8 (BedRail_L), first >1 mm: 1 (Body_Hood), first >1 cm: 3 (BedRail_L)
+    shift (0.00, 0.10, 0.00) mm: final 0.463 mm, worst 0.463 mm at impact 41 (Underbody_Frame), first >1 mm: none, first >1 cm: none
+    shift (-0.10, 0.00, -0.10) mm: final 6.333 mm, worst 9.384 mm at impact 9 (BedRail_L), first >1 mm: 1 (Body_Hood), first >1 cm: none
+    worst 0.1 mm perturbation: 26.582 mm FAIL (limit 20 mm)
+  draft 2°: 17/50 impacts have a face within the draft of their direction
+    change vs exact surface (unshifted): final 86.516 mm, worst 277.032 mm at impact 3 (BedSide_L), first >1 mm: 3 (BedSide_L), first >1 cm: 3 (BedSide_L)
+    shift (0.10, 0.00, 0.00) mm: final 1.078 mm, worst 1.507 mm at impact 8 (BedRail_L), first >1 mm: 8 (BedRail_L), first >1 cm: none
+    shift (0.00, 0.00, 0.10) mm: final 2.569 mm, worst 2.906 mm at impact 8 (BedRail_L), first >1 mm: 1 (Body_Hood), first >1 cm: none
+    shift (0.00, 0.10, 0.00) mm: final 0.981 mm, worst 0.984 mm at impact 48 (BedFloor), first >1 mm: none, first >1 cm: none
+    shift (-0.10, 0.00, -0.10) mm: final 3.499 mm, worst 3.598 mm at impact 24 (BedFloor), first >1 mm: 1 (Body_Hood), first >1 cm: none
+    worst 0.1 mm perturbation: 3.598 mm PASS (limit 20 mm)

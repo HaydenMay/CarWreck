@@ -1,8 +1,8 @@
-**Latest focused extension: [Revision 2 report and images](Revision2/README.md). Mandatory failures remain; shared-engine design review required.**
+**Latest: [Revision 3 report and images](Revision3/README.md). Mandatory Checkpoint C suites pass on all three vehicles; awaiting review. Revision 3 changes shared runtime behaviour (grazing-contact draft), so merging needs explicit approval.**
 
 # Compact Pickup — Checkpoint C
 
-**Review package; NOT ACCEPTED.** Mandatory adaptive-contact coverage, part-fold criteria and damaged-lamp appearance still fail. Browser loading, impacts, 50-shot Chaos and repair checks pass. No merge or shared destruction-engine changes have been made.
+**Review package; awaiting approval.** As of [Revision 3](Revision3/README.md), adaptive-contact coverage (16/16) and the 0.1 mm perturbation test (≤ 3.9 mm) pass on all three vehicles, and the pickup meets the single-hit part-fold criterion (worst part on the standard front hit 25/816 = 3.1%; Suspension_Front 0.44%). Browser loading, impacts, 50-shot Chaos and repair checks passed in Revision 2; Revision 3 rebuilt WebGL but did not retest it in a browser. No merge has been made.
 
 [Full validation report](checkpoint-c-report.md) · [Measured reference/B/final proportions](proportion_comparison.md) · [Machine-readable results](Validation/validation_summary.json)
 
@@ -22,7 +22,7 @@ Individual final renders: [front three-quarter](stage_c_front34.png), [side](sta
 
 ![Independent Color A/Color B edits and paint on deformed metal](unity_paint_comparison.png)
 
-- Remaining defects: [front close-up](Unity/front_15ms_no_overlay.png), [front suspension](Unity/front_suspension_close.png), [undamaged lamp depth](Unity/lamps_undamaged_oblique.png).
+- Front close-ups: [front close-up](Unity/front_15ms_no_overlay.png), [front suspension, Revision 3 sections off vs on](Revision3/Unity/Suspension/suspension_front_zoom_off_vs_on.png), [undamaged lamp depth](Unity/lamps_undamaged_oblique.png).
 - Local deformation: [hood](Unity/hood_dent.png), [bed side](Unity/bed_side_dent.png), [tailgate](Unity/tailgate_dent.png), [liner](Unity/liner_dent.png).
 - Extreme damage: [50-impact front](Unity/chaos_50_front.png), [50-impact bed](Unity/chaos_50_bed.png), [84-hit top](Unity/CompactPickup_66_P4_LongRun_84_Top.png).
 - Physics overlays: [undamaged](Unity/CompactPickup_60_P4_Hitbox_Undamaged_FrontLeft.png), [25 repeated front hits](Unity/CompactPickup_62_P4_FrontCentre_x25_Hitbox.png), [84 hits](Unity/CompactPickup_64_P4_LongRun_84_FrontLeft.png).

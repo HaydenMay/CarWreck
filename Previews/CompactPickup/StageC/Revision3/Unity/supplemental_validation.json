@@ -1,0 +1,1946 @@
+{
+    "vehicle": "Compact Pickup",
+    "scope": "Editor-only supplemental observations; standard bridge suites reported separately",
+    "colorSpace": "Linear",
+    "primaryLinear": {
+        "r": 0.0071944077499210835,
+        "g": 0.03968191519379616,
+        "b": 0.01847846806049347,
+        "a": 1.0
+    },
+    "secondaryLinear": {
+        "r": 0.570481538772583,
+        "g": 0.47699975967407227,
+        "b": 0.3185468018054962,
+        "a": 1.0
+    },
+    "independentPrimary": true,
+    "independentSecondary": true,
+    "maskLinearUncompressedClamped": true,
+    "switchFresh": true,
+    "bedColliderHeight": 1.3445912599563599,
+    "linerHeight": 0.9231059551239014,
+    "cargoBottomHeight": 1.3425512313842773,
+    "collisionAboveLiner": 0.4214853048324585,
+    "bedCollider": "BodyCoreBox",
+    "chaosSeed": 2026,
+    "chaosAttempted": 50,
+    "chaosImpacts": 50,
+    "chaosMisses": 0,
+    "states": [
+        {
+            "name": "front_wide",
+            "applied": true,
+            "uvUnchanged": true,
+            "parts": [
+                {
+                    "name": "BedFloor",
+                    "triangles": 4748,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "BedFrontWall",
+                    "triangles": 5532,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "BedLiner_Floor",
+                    "triangles": 10944,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "BedLiner_FrontWall",
+                    "triangles": 3408,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "BedLiner_Side_L",
+                    "triangles": 4082,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "BedLiner_Side_R",
+                    "triangles": 4082,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "BedLiner_Tailgate",
+                    "triangles": 3408,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "BedLiner_WheelTub_L",
+                    "triangles": 2964,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "BedLiner_WheelTub_R",
+                    "triangles": 2964,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "BedRail_L",
+                    "triangles": 1168,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "BedRail_R",
+                    "triangles": 1168,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "BedRail_Rear",
+                    "triangles": 1046,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "BedSide_L",
+                    "triangles": 6102,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "BedSide_R",
+                    "triangles": 6102,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Body_CabRear",
+                    "triangles": 2804,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Body_Hood",
+                    "triangles": 8428,
+                    "folded": 24,
+                    "maxDisplacement": 0.17890264093875885
+                },
+                {
+                    "name": "Body_Nose",
+                    "triangles": 5384,
+                    "folded": 14,
+                    "maxDisplacement": 0.1809096783399582
+                },
+                {
+                    "name": "Bumper_Front",
+                    "triangles": 3132,
+                    "folded": 2,
+                    "maxDisplacement": 0.23636102676391602
+                },
+                {
+                    "name": "Bumper_Rear",
+                    "triangles": 2628,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "BumperMarker_L",
+                    "triangles": 1528,
+                    "folded": 0,
+                    "maxDisplacement": 0.24495185911655426
+                },
+                {
+                    "name": "BumperMarker_R",
+                    "triangles": 1528,
+                    "folded": 0,
+                    "maxDisplacement": 0.25034481287002563
+                },
+                {
+                    "name": "Cabin_RearDivider",
+                    "triangles": 384,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Cabin_RearGlass",
+                    "triangles": 2024,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Cabin_Roof",
+                    "triangles": 3584,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Cabin_RoofEdges",
+                    "triangles": 928,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Cabin_SideGlass_L",
+                    "triangles": 2024,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Cabin_SideGlass_R",
+                    "triangles": 2024,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Cabin_Windshield",
+                    "triangles": 2024,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "CabTrim_MirrorsHandles",
+                    "triangles": 3344,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Door_L",
+                    "triangles": 1920,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Door_R",
+                    "triangles": 1920,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "FrontFender_L",
+                    "triangles": 5130,
+                    "folded": 39,
+                    "maxDisplacement": 0.1475420743227005
+                },
+                {
+                    "name": "FrontFender_R",
+                    "triangles": 5130,
+                    "folded": 53,
+                    "maxDisplacement": 0.15216830372810364
+                },
+                {
+                    "name": "FrontIndicator_L",
+                    "triangles": 1324,
+                    "folded": 50,
+                    "maxDisplacement": 0.19035746157169342
+                },
+                {
+                    "name": "FrontIndicator_R",
+                    "triangles": 1324,
+                    "folded": 2,
+                    "maxDisplacement": 0.19252881407737732
+                },
+                {
+                    "name": "FrontPlate",
+                    "triangles": 876,
+                    "folded": 0,
+                    "maxDisplacement": 0.24652284383773804
+                },
+                {
+                    "name": "Grille_Frame",
+                    "triangles": 1728,
+                    "folded": 0,
+                    "maxDisplacement": 0.19530808925628662
+                },
+                {
+                    "name": "Grille_Inset",
+                    "triangles": 4428,
+                    "folded": 0,
+                    "maxDisplacement": 0.15563219785690308
+                },
+                {
+                    "name": "Headlight_L",
+                    "triangles": 2140,
+                    "folded": 33,
+                    "maxDisplacement": 0.1894325464963913
+                },
+                {
+                    "name": "Headlight_R",
+                    "triangles": 2140,
+                    "folded": 32,
+                    "maxDisplacement": 0.2290646880865097
+                },
+                {
+                    "name": "HeadlightHousing_L",
+                    "triangles": 816,
+                    "folded": 37,
+                    "maxDisplacement": 0.16808359324932098
+                },
+                {
+                    "name": "HeadlightHousing_R",
+                    "triangles": 816,
+                    "folded": 5,
+                    "maxDisplacement": 0.20604099333286285
+                },
+                {
+                    "name": "RearPlate",
+                    "triangles": 824,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Suspension_Front",
+                    "triangles": 8832,
+                    "folded": 39,
+                    "maxDisplacement": 0.027880948036909103
+                },
+                {
+                    "name": "Suspension_Rear",
+                    "triangles": 5280,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Tailgate",
+                    "triangles": 2784,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "TailgateHandle",
+                    "triangles": 244,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Taillight_L",
+                    "triangles": 3708,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Taillight_R",
+                    "triangles": 3708,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Underbody_Frame",
+                    "triangles": 9000,
+                    "folded": 0,
+                    "maxDisplacement": 0.030644936487078667
+                },
+                {
+                    "name": "Wheelhouse_Inner",
+                    "triangles": 3200,
+                    "folded": 0,
+                    "maxDisplacement": 0.06957710534334183
+                },
+                {
+                    "name": "Wipers",
+                    "triangles": 420,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                }
+            ]
+        },
+        {
+            "name": "hood_dent",
+            "applied": true,
+            "uvUnchanged": true,
+            "parts": [
+                {
+                    "name": "BedFloor",
+                    "triangles": 4748,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "BedFrontWall",
+                    "triangles": 5532,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "BedLiner_Floor",
+                    "triangles": 10944,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "BedLiner_FrontWall",
+                    "triangles": 3408,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "BedLiner_Side_L",
+                    "triangles": 4082,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "BedLiner_Side_R",
+                    "triangles": 4082,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "BedLiner_Tailgate",
+                    "triangles": 3408,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "BedLiner_WheelTub_L",
+                    "triangles": 2964,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "BedLiner_WheelTub_R",
+                    "triangles": 2964,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "BedRail_L",
+                    "triangles": 1168,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "BedRail_R",
+                    "triangles": 1168,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "BedRail_Rear",
+                    "triangles": 1046,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "BedSide_L",
+                    "triangles": 6102,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "BedSide_R",
+                    "triangles": 6102,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Body_CabRear",
+                    "triangles": 2804,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Body_Hood",
+                    "triangles": 8428,
+                    "folded": 0,
+                    "maxDisplacement": 0.32723215222358704
+                },
+                {
+                    "name": "Body_Nose",
+                    "triangles": 5384,
+                    "folded": 0,
+                    "maxDisplacement": 0.09269864112138748
+                },
+                {
+                    "name": "Bumper_Front",
+                    "triangles": 3132,
+                    "folded": 0,
+                    "maxDisplacement": 0.018939269706606865
+                },
+                {
+                    "name": "Bumper_Rear",
+                    "triangles": 2628,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "BumperMarker_L",
+                    "triangles": 1528,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "BumperMarker_R",
+                    "triangles": 1528,
+                    "folded": 0,
+                    "maxDisplacement": 0.0011533270590007305
+                },
+                {
+                    "name": "Cabin_RearDivider",
+                    "triangles": 384,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Cabin_RearGlass",
+                    "triangles": 2024,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Cabin_Roof",
+                    "triangles": 3584,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Cabin_RoofEdges",
+                    "triangles": 928,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Cabin_SideGlass_L",
+                    "triangles": 2024,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Cabin_SideGlass_R",
+                    "triangles": 2024,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Cabin_Windshield",
+                    "triangles": 2024,
+                    "folded": 0,
+                    "maxDisplacement": 0.06323383003473282
+                },
+                {
+                    "name": "CabTrim_MirrorsHandles",
+                    "triangles": 3344,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Door_L",
+                    "triangles": 1920,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Door_R",
+                    "triangles": 1920,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "FrontFender_L",
+                    "triangles": 5130,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "FrontFender_R",
+                    "triangles": 5130,
+                    "folded": 0,
+                    "maxDisplacement": 0.03128569945693016
+                },
+                {
+                    "name": "FrontIndicator_L",
+                    "triangles": 1324,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "FrontIndicator_R",
+                    "triangles": 1324,
+                    "folded": 0,
+                    "maxDisplacement": 0.0029399527702480555
+                },
+                {
+                    "name": "FrontPlate",
+                    "triangles": 876,
+                    "folded": 0,
+                    "maxDisplacement": 0.0010910426499322057
+                },
+                {
+                    "name": "Grille_Frame",
+                    "triangles": 1728,
+                    "folded": 0,
+                    "maxDisplacement": 0.05169922113418579
+                },
+                {
+                    "name": "Grille_Inset",
+                    "triangles": 4428,
+                    "folded": 0,
+                    "maxDisplacement": 0.09097443521022797
+                },
+                {
+                    "name": "Headlight_L",
+                    "triangles": 2140,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Headlight_R",
+                    "triangles": 2140,
+                    "folded": 0,
+                    "maxDisplacement": 0.007729016710072756
+                },
+                {
+                    "name": "HeadlightHousing_L",
+                    "triangles": 816,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "HeadlightHousing_R",
+                    "triangles": 816,
+                    "folded": 0,
+                    "maxDisplacement": 0.013116435147821903
+                },
+                {
+                    "name": "RearPlate",
+                    "triangles": 824,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Suspension_Front",
+                    "triangles": 8832,
+                    "folded": 0,
+                    "maxDisplacement": 0.04845050349831581
+                },
+                {
+                    "name": "Suspension_Rear",
+                    "triangles": 5280,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Tailgate",
+                    "triangles": 2784,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "TailgateHandle",
+                    "triangles": 244,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Taillight_L",
+                    "triangles": 3708,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Taillight_R",
+                    "triangles": 3708,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Underbody_Frame",
+                    "triangles": 9000,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Wheelhouse_Inner",
+                    "triangles": 3200,
+                    "folded": 0,
+                    "maxDisplacement": 0.08218912780284882
+                },
+                {
+                    "name": "Wipers",
+                    "triangles": 420,
+                    "folded": 0,
+                    "maxDisplacement": 0.06779985129833221
+                }
+            ]
+        },
+        {
+            "name": "bed_side_dent",
+            "applied": true,
+            "uvUnchanged": true,
+            "parts": [
+                {
+                    "name": "BedFloor",
+                    "triangles": 4748,
+                    "folded": 0,
+                    "maxDisplacement": 0.20200340449810028
+                },
+                {
+                    "name": "BedFrontWall",
+                    "triangles": 5532,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "BedLiner_Floor",
+                    "triangles": 10944,
+                    "folded": 0,
+                    "maxDisplacement": 0.08730398118495941
+                },
+                {
+                    "name": "BedLiner_FrontWall",
+                    "triangles": 3408,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "BedLiner_Side_L",
+                    "triangles": 4082,
+                    "folded": 0,
+                    "maxDisplacement": 0.2947773337364197
+                },
+                {
+                    "name": "BedLiner_Side_R",
+                    "triangles": 4082,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "BedLiner_Tailgate",
+                    "triangles": 3408,
+                    "folded": 0,
+                    "maxDisplacement": 0.008796588517725468
+                },
+                {
+                    "name": "BedLiner_WheelTub_L",
+                    "triangles": 2964,
+                    "folded": 4,
+                    "maxDisplacement": 0.27363112568855286
+                },
+                {
+                    "name": "BedLiner_WheelTub_R",
+                    "triangles": 2964,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "BedRail_L",
+                    "triangles": 1168,
+                    "folded": 0,
+                    "maxDisplacement": 0.29056718945503235
+                },
+                {
+                    "name": "BedRail_R",
+                    "triangles": 1168,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "BedRail_Rear",
+                    "triangles": 1046,
+                    "folded": 0,
+                    "maxDisplacement": 0.0054305787198245525
+                },
+                {
+                    "name": "BedSide_L",
+                    "triangles": 6102,
+                    "folded": 31,
+                    "maxDisplacement": 0.3048572838306427
+                },
+                {
+                    "name": "BedSide_R",
+                    "triangles": 6102,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Body_CabRear",
+                    "triangles": 2804,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Body_Hood",
+                    "triangles": 8428,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Body_Nose",
+                    "triangles": 5384,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Bumper_Front",
+                    "triangles": 3132,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Bumper_Rear",
+                    "triangles": 2628,
+                    "folded": 0,
+                    "maxDisplacement": 0.009985702112317085
+                },
+                {
+                    "name": "BumperMarker_L",
+                    "triangles": 1528,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "BumperMarker_R",
+                    "triangles": 1528,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Cabin_RearDivider",
+                    "triangles": 384,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Cabin_RearGlass",
+                    "triangles": 2024,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Cabin_Roof",
+                    "triangles": 3584,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Cabin_RoofEdges",
+                    "triangles": 928,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Cabin_SideGlass_L",
+                    "triangles": 2024,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Cabin_SideGlass_R",
+                    "triangles": 2024,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Cabin_Windshield",
+                    "triangles": 2024,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "CabTrim_MirrorsHandles",
+                    "triangles": 3344,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Door_L",
+                    "triangles": 1920,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Door_R",
+                    "triangles": 1920,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "FrontFender_L",
+                    "triangles": 5130,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "FrontFender_R",
+                    "triangles": 5130,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "FrontIndicator_L",
+                    "triangles": 1324,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "FrontIndicator_R",
+                    "triangles": 1324,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "FrontPlate",
+                    "triangles": 876,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Grille_Frame",
+                    "triangles": 1728,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Grille_Inset",
+                    "triangles": 4428,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Headlight_L",
+                    "triangles": 2140,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Headlight_R",
+                    "triangles": 2140,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "HeadlightHousing_L",
+                    "triangles": 816,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "HeadlightHousing_R",
+                    "triangles": 816,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "RearPlate",
+                    "triangles": 824,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Suspension_Front",
+                    "triangles": 8832,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Suspension_Rear",
+                    "triangles": 5280,
+                    "folded": 5,
+                    "maxDisplacement": 0.12198083102703094
+                },
+                {
+                    "name": "Tailgate",
+                    "triangles": 2784,
+                    "folded": 0,
+                    "maxDisplacement": 0.009985036216676235
+                },
+                {
+                    "name": "TailgateHandle",
+                    "triangles": 244,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Taillight_L",
+                    "triangles": 3708,
+                    "folded": 0,
+                    "maxDisplacement": 0.009186973795294762
+                },
+                {
+                    "name": "Taillight_R",
+                    "triangles": 3708,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Underbody_Frame",
+                    "triangles": 9000,
+                    "folded": 0,
+                    "maxDisplacement": 0.06364449113607407
+                },
+                {
+                    "name": "Wheelhouse_Inner",
+                    "triangles": 3200,
+                    "folded": 0,
+                    "maxDisplacement": 0.23867854475975037
+                },
+                {
+                    "name": "Wipers",
+                    "triangles": 420,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                }
+            ]
+        },
+        {
+            "name": "tailgate_dent",
+            "applied": true,
+            "uvUnchanged": true,
+            "parts": [
+                {
+                    "name": "BedFloor",
+                    "triangles": 4748,
+                    "folded": 0,
+                    "maxDisplacement": 0.3235703110694885
+                },
+                {
+                    "name": "BedFrontWall",
+                    "triangles": 5532,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "BedLiner_Floor",
+                    "triangles": 10944,
+                    "folded": 0,
+                    "maxDisplacement": 0.31892743706703186
+                },
+                {
+                    "name": "BedLiner_FrontWall",
+                    "triangles": 3408,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "BedLiner_Side_L",
+                    "triangles": 4082,
+                    "folded": 0,
+                    "maxDisplacement": 0.017687732353806496
+                },
+                {
+                    "name": "BedLiner_Side_R",
+                    "triangles": 4082,
+                    "folded": 0,
+                    "maxDisplacement": 0.011445767246186733
+                },
+                {
+                    "name": "BedLiner_Tailgate",
+                    "triangles": 3408,
+                    "folded": 0,
+                    "maxDisplacement": 0.325858473777771
+                },
+                {
+                    "name": "BedLiner_WheelTub_L",
+                    "triangles": 2964,
+                    "folded": 0,
+                    "maxDisplacement": 0.13587592542171478
+                },
+                {
+                    "name": "BedLiner_WheelTub_R",
+                    "triangles": 2964,
+                    "folded": 0,
+                    "maxDisplacement": 0.06840405613183975
+                },
+                {
+                    "name": "BedRail_L",
+                    "triangles": 1168,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "BedRail_R",
+                    "triangles": 1168,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "BedRail_Rear",
+                    "triangles": 1046,
+                    "folded": 0,
+                    "maxDisplacement": 0.19185298681259155
+                },
+                {
+                    "name": "BedSide_L",
+                    "triangles": 6102,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "BedSide_R",
+                    "triangles": 6102,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Body_CabRear",
+                    "triangles": 2804,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Body_Hood",
+                    "triangles": 8428,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Body_Nose",
+                    "triangles": 5384,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Bumper_Front",
+                    "triangles": 3132,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Bumper_Rear",
+                    "triangles": 2628,
+                    "folded": 0,
+                    "maxDisplacement": 0.29560983180999756
+                },
+                {
+                    "name": "BumperMarker_L",
+                    "triangles": 1528,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "BumperMarker_R",
+                    "triangles": 1528,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Cabin_RearDivider",
+                    "triangles": 384,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Cabin_RearGlass",
+                    "triangles": 2024,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Cabin_Roof",
+                    "triangles": 3584,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Cabin_RoofEdges",
+                    "triangles": 928,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Cabin_SideGlass_L",
+                    "triangles": 2024,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Cabin_SideGlass_R",
+                    "triangles": 2024,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Cabin_Windshield",
+                    "triangles": 2024,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "CabTrim_MirrorsHandles",
+                    "triangles": 3344,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Door_L",
+                    "triangles": 1920,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Door_R",
+                    "triangles": 1920,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "FrontFender_L",
+                    "triangles": 5130,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "FrontFender_R",
+                    "triangles": 5130,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "FrontIndicator_L",
+                    "triangles": 1324,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "FrontIndicator_R",
+                    "triangles": 1324,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "FrontPlate",
+                    "triangles": 876,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Grille_Frame",
+                    "triangles": 1728,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Grille_Inset",
+                    "triangles": 4428,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Headlight_L",
+                    "triangles": 2140,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Headlight_R",
+                    "triangles": 2140,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "HeadlightHousing_L",
+                    "triangles": 816,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "HeadlightHousing_R",
+                    "triangles": 816,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "RearPlate",
+                    "triangles": 824,
+                    "folded": 4,
+                    "maxDisplacement": 0.31864577531814575
+                },
+                {
+                    "name": "Suspension_Front",
+                    "triangles": 8832,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Suspension_Rear",
+                    "triangles": 5280,
+                    "folded": 0,
+                    "maxDisplacement": 0.010065053589642048
+                },
+                {
+                    "name": "Tailgate",
+                    "triangles": 2784,
+                    "folded": 0,
+                    "maxDisplacement": 0.3263581693172455
+                },
+                {
+                    "name": "TailgateHandle",
+                    "triangles": 244,
+                    "folded": 0,
+                    "maxDisplacement": 0.28622469305992126
+                },
+                {
+                    "name": "Taillight_L",
+                    "triangles": 3708,
+                    "folded": 0,
+                    "maxDisplacement": 0.01912686973810196
+                },
+                {
+                    "name": "Taillight_R",
+                    "triangles": 3708,
+                    "folded": 0,
+                    "maxDisplacement": 0.012608770281076431
+                },
+                {
+                    "name": "Underbody_Frame",
+                    "triangles": 9000,
+                    "folded": 0,
+                    "maxDisplacement": 0.037725817412137985
+                },
+                {
+                    "name": "Wheelhouse_Inner",
+                    "triangles": 3200,
+                    "folded": 0,
+                    "maxDisplacement": 0.006176554597914219
+                },
+                {
+                    "name": "Wipers",
+                    "triangles": 420,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                }
+            ]
+        },
+        {
+            "name": "liner_dent",
+            "applied": true,
+            "uvUnchanged": true,
+            "parts": [
+                {
+                    "name": "BedFloor",
+                    "triangles": 4748,
+                    "folded": 0,
+                    "maxDisplacement": 0.3277994692325592
+                },
+                {
+                    "name": "BedFrontWall",
+                    "triangles": 5532,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "BedLiner_Floor",
+                    "triangles": 10944,
+                    "folded": 0,
+                    "maxDisplacement": 0.32987481355667114
+                },
+                {
+                    "name": "BedLiner_FrontWall",
+                    "triangles": 3408,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "BedLiner_Side_L",
+                    "triangles": 4082,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "BedLiner_Side_R",
+                    "triangles": 4082,
+                    "folded": 0,
+                    "maxDisplacement": 0.029888974502682686
+                },
+                {
+                    "name": "BedLiner_Tailgate",
+                    "triangles": 3408,
+                    "folded": 0,
+                    "maxDisplacement": 0.01119024958461523
+                },
+                {
+                    "name": "BedLiner_WheelTub_L",
+                    "triangles": 2964,
+                    "folded": 0,
+                    "maxDisplacement": 0.04449306055903435
+                },
+                {
+                    "name": "BedLiner_WheelTub_R",
+                    "triangles": 2964,
+                    "folded": 0,
+                    "maxDisplacement": 0.1721464991569519
+                },
+                {
+                    "name": "BedRail_L",
+                    "triangles": 1168,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "BedRail_R",
+                    "triangles": 1168,
+                    "folded": 0,
+                    "maxDisplacement": 0.018651211634278297
+                },
+                {
+                    "name": "BedRail_Rear",
+                    "triangles": 1046,
+                    "folded": 0,
+                    "maxDisplacement": 0.009474655613303185
+                },
+                {
+                    "name": "BedSide_L",
+                    "triangles": 6102,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "BedSide_R",
+                    "triangles": 6102,
+                    "folded": 0,
+                    "maxDisplacement": 0.02077440731227398
+                },
+                {
+                    "name": "Body_CabRear",
+                    "triangles": 2804,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Body_Hood",
+                    "triangles": 8428,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Body_Nose",
+                    "triangles": 5384,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Bumper_Front",
+                    "triangles": 3132,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Bumper_Rear",
+                    "triangles": 2628,
+                    "folded": 0,
+                    "maxDisplacement": 0.004484144505113363
+                },
+                {
+                    "name": "BumperMarker_L",
+                    "triangles": 1528,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "BumperMarker_R",
+                    "triangles": 1528,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Cabin_RearDivider",
+                    "triangles": 384,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Cabin_RearGlass",
+                    "triangles": 2024,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Cabin_Roof",
+                    "triangles": 3584,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Cabin_RoofEdges",
+                    "triangles": 928,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Cabin_SideGlass_L",
+                    "triangles": 2024,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Cabin_SideGlass_R",
+                    "triangles": 2024,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Cabin_Windshield",
+                    "triangles": 2024,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "CabTrim_MirrorsHandles",
+                    "triangles": 3344,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Door_L",
+                    "triangles": 1920,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Door_R",
+                    "triangles": 1920,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "FrontFender_L",
+                    "triangles": 5130,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "FrontFender_R",
+                    "triangles": 5130,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "FrontIndicator_L",
+                    "triangles": 1324,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "FrontIndicator_R",
+                    "triangles": 1324,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "FrontPlate",
+                    "triangles": 876,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Grille_Frame",
+                    "triangles": 1728,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Grille_Inset",
+                    "triangles": 4428,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Headlight_L",
+                    "triangles": 2140,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Headlight_R",
+                    "triangles": 2140,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "HeadlightHousing_L",
+                    "triangles": 816,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "HeadlightHousing_R",
+                    "triangles": 816,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "RearPlate",
+                    "triangles": 824,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Suspension_Front",
+                    "triangles": 8832,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Suspension_Rear",
+                    "triangles": 5280,
+                    "folded": 0,
+                    "maxDisplacement": 0.15162751078605652
+                },
+                {
+                    "name": "Tailgate",
+                    "triangles": 2784,
+                    "folded": 0,
+                    "maxDisplacement": 0.010586925782263279
+                },
+                {
+                    "name": "TailgateHandle",
+                    "triangles": 244,
+                    "folded": 0,
+                    "maxDisplacement": 0.00810417253524065
+                },
+                {
+                    "name": "Taillight_L",
+                    "triangles": 3708,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Taillight_R",
+                    "triangles": 3708,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                },
+                {
+                    "name": "Underbody_Frame",
+                    "triangles": 9000,
+                    "folded": 0,
+                    "maxDisplacement": 0.06079652160406113
+                },
+                {
+                    "name": "Wheelhouse_Inner",
+                    "triangles": 3200,
+                    "folded": 0,
+                    "maxDisplacement": 0.08112218976020813
+                },
+                {
+                    "name": "Wipers",
+                    "triangles": 420,
+                    "folded": 0,
+                    "maxDisplacement": 0.0
+                }
+            ]
+        },
+        {
+            "name": "chaos_50",
+            "applied": true,
+            "uvUnchanged": true,
+            "parts": [
+                {
+                    "name": "BedFloor",
+                    "triangles": 4748,
+                    "folded": 392,
+                    "maxDisplacement": 0.4999995231628418
+                },
+                {
+                    "name": "BedFrontWall",
+                    "triangles": 5532,
+                    "folded": 190,
+                    "maxDisplacement": 0.27728477120399475
+                },
+                {
+                    "name": "BedLiner_Floor",
+                    "triangles": 10944,
+                    "folded": 1711,
+                    "maxDisplacement": 0.494388222694397
+                },
+                {
+                    "name": "BedLiner_FrontWall",
+                    "triangles": 3408,
+                    "folded": 142,
+                    "maxDisplacement": 0.22085155546665192
+                },
+                {
+                    "name": "BedLiner_Side_L",
+                    "triangles": 4082,
+                    "folded": 63,
+                    "maxDisplacement": 0.49999889731407166
+                },
+                {
+                    "name": "BedLiner_Side_R",
+                    "triangles": 4082,
+                    "folded": 192,
+                    "maxDisplacement": 0.49641433358192444
+                },
+                {
+                    "name": "BedLiner_Tailgate",
+                    "triangles": 3408,
+                    "folded": 311,
+                    "maxDisplacement": 0.499996155500412
+                },
+                {
+                    "name": "BedLiner_WheelTub_L",
+                    "triangles": 2964,
+                    "folded": 274,
+                    "maxDisplacement": 0.499999076128006
+                },
+                {
+                    "name": "BedLiner_WheelTub_R",
+                    "triangles": 2964,
+                    "folded": 365,
+                    "maxDisplacement": 0.49857133626937866
+                },
+                {
+                    "name": "BedRail_L",
+                    "triangles": 1168,
+                    "folded": 95,
+                    "maxDisplacement": 0.4847617447376251
+                },
+                {
+                    "name": "BedRail_R",
+                    "triangles": 1168,
+                    "folded": 87,
+                    "maxDisplacement": 0.48387542366981506
+                },
+                {
+                    "name": "BedRail_Rear",
+                    "triangles": 1046,
+                    "folded": 92,
+                    "maxDisplacement": 0.47485169768333435
+                },
+                {
+                    "name": "BedSide_L",
+                    "triangles": 6102,
+                    "folded": 102,
+                    "maxDisplacement": 0.5000000596046448
+                },
+                {
+                    "name": "BedSide_R",
+                    "triangles": 6102,
+                    "folded": 73,
+                    "maxDisplacement": 0.4993513822555542
+                },
+                {
+                    "name": "Body_CabRear",
+                    "triangles": 2804,
+                    "folded": 0,
+                    "maxDisplacement": 0.22962209582328796
+                },
+                {
+                    "name": "Body_Hood",
+                    "triangles": 8428,
+                    "folded": 1697,
+                    "maxDisplacement": 0.4999947249889374
+                },
+                {
+                    "name": "Body_Nose",
+                    "triangles": 5384,
+                    "folded": 248,
+                    "maxDisplacement": 0.49999505281448364
+                },
+                {
+                    "name": "Bumper_Front",
+                    "triangles": 3132,
+                    "folded": 47,
+                    "maxDisplacement": 0.35000017285346985
+                },
+                {
+                    "name": "Bumper_Rear",
+                    "triangles": 2628,
+                    "folded": 20,
+                    "maxDisplacement": 0.35000014305114746
+                },
+                {
+                    "name": "BumperMarker_L",
+                    "triangles": 1528,
+                    "folded": 0,
+                    "maxDisplacement": 0.3383031487464905
+                },
+                {
+                    "name": "BumperMarker_R",
+                    "triangles": 1528,
+                    "folded": 0,
+                    "maxDisplacement": 0.3383028507232666
+                },
+                {
+                    "name": "Cabin_RearDivider",
+                    "triangles": 384,
+                    "folded": 0,
+                    "maxDisplacement": 0.004961311351507902
+                },
+                {
+                    "name": "Cabin_RearGlass",
+                    "triangles": 2024,
+                    "folded": 8,
+                    "maxDisplacement": 0.2996073365211487
+                },
+                {
+                    "name": "Cabin_Roof",
+                    "triangles": 3584,
+                    "folded": 0,
+                    "maxDisplacement": 0.09205832332372665
+                },
+                {
+                    "name": "Cabin_RoofEdges",
+                    "triangles": 928,
+                    "folded": 88,
+                    "maxDisplacement": 0.08452092111110687
+                },
+                {
+                    "name": "Cabin_SideGlass_L",
+                    "triangles": 2024,
+                    "folded": 91,
+                    "maxDisplacement": 0.45171883702278137
+                },
+                {
+                    "name": "Cabin_SideGlass_R",
+                    "triangles": 2024,
+                    "folded": 4,
+                    "maxDisplacement": 0.4236116111278534
+                },
+                {
+                    "name": "Cabin_Windshield",
+                    "triangles": 2024,
+                    "folded": 100,
+                    "maxDisplacement": 0.45175912976264954
+                },
+                {
+                    "name": "CabTrim_MirrorsHandles",
+                    "triangles": 3344,
+                    "folded": 392,
+                    "maxDisplacement": 0.4290929138660431
+                },
+                {
+                    "name": "Door_L",
+                    "triangles": 1920,
+                    "folded": 103,
+                    "maxDisplacement": 0.49697667360305786
+                },
+                {
+                    "name": "Door_R",
+                    "triangles": 1920,
+                    "folded": 14,
+                    "maxDisplacement": 0.46068209409713745
+                },
+                {
+                    "name": "FrontFender_L",
+                    "triangles": 5130,
+                    "folded": 6,
+                    "maxDisplacement": 0.49999529123306274
+                },
+                {
+                    "name": "FrontFender_R",
+                    "triangles": 5130,
+                    "folded": 203,
+                    "maxDisplacement": 0.49974557757377625
+                },
+                {
+                    "name": "FrontIndicator_L",
+                    "triangles": 1324,
+                    "folded": 0,
+                    "maxDisplacement": 0.3900000751018524
+                },
+                {
+                    "name": "FrontIndicator_R",
+                    "triangles": 1324,
+                    "folded": 278,
+                    "maxDisplacement": 0.38994765281677246
+                },
+                {
+                    "name": "FrontPlate",
+                    "triangles": 876,
+                    "folded": 1,
+                    "maxDisplacement": 0.49997031688690186
+                },
+                {
+                    "name": "Grille_Frame",
+                    "triangles": 1728,
+                    "folded": 0,
+                    "maxDisplacement": 0.40999868512153625
+                },
+                {
+                    "name": "Grille_Inset",
+                    "triangles": 4428,
+                    "folded": 53,
+                    "maxDisplacement": 0.40998658537864685
+                },
+                {
+                    "name": "Headlight_L",
+                    "triangles": 2140,
+                    "folded": 0,
+                    "maxDisplacement": 0.38999998569488525
+                },
+                {
+                    "name": "Headlight_R",
+                    "triangles": 2140,
+                    "folded": 0,
+                    "maxDisplacement": 0.3899957537651062
+                },
+                {
+                    "name": "HeadlightHousing_L",
+                    "triangles": 816,
+                    "folded": 0,
+                    "maxDisplacement": 0.39000004529953003
+                },
+                {
+                    "name": "HeadlightHousing_R",
+                    "triangles": 816,
+                    "folded": 87,
+                    "maxDisplacement": 0.38999634981155396
+                },
+                {
+                    "name": "RearPlate",
+                    "triangles": 824,
+                    "folded": 48,
+                    "maxDisplacement": 0.4980489909648895
+                },
+                {
+                    "name": "Suspension_Front",
+                    "triangles": 8832,
+                    "folded": 47,
+                    "maxDisplacement": 0.20986521244049072
+                },
+                {
+                    "name": "Suspension_Rear",
+                    "triangles": 5280,
+                    "folded": 475,
+                    "maxDisplacement": 0.28045180439949036
+                },
+                {
+                    "name": "Tailgate",
+                    "triangles": 2784,
+                    "folded": 81,
+                    "maxDisplacement": 0.5
+                },
+                {
+                    "name": "TailgateHandle",
+                    "triangles": 244,
+                    "folded": 37,
+                    "maxDisplacement": 0.48599937558174133
+                },
+                {
+                    "name": "Taillight_L",
+                    "triangles": 3708,
+                    "folded": 0,
+                    "maxDisplacement": 0.3900001645088196
+                },
+                {
+                    "name": "Taillight_R",
+                    "triangles": 3708,
+                    "folded": 323,
+                    "maxDisplacement": 0.3899969458580017
+                },
+                {
+                    "name": "Underbody_Frame",
+                    "triangles": 9000,
+                    "folded": 879,
+                    "maxDisplacement": 0.4861595332622528
+                },
+                {
+                    "name": "Wheelhouse_Inner",
+                    "triangles": 3200,
+                    "folded": 99,
+                    "maxDisplacement": 0.2975977957248688
+                },
+                {
+                    "name": "Wipers",
+                    "triangles": 420,
+                    "folded": 51,
+                    "maxDisplacement": 0.30433470010757446
+                }
+            ]
+        }
+    ]
+}

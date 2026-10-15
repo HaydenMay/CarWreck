@@ -1,0 +1,55 @@
+Grazing-contact draft probe: recorded seed-2026 Chaos Run impacts replayed; no new PhysX sampling.
+
+== vehicle 0 first 8 impacts (diagnostics on the last)
+  exact surface: 0/8 impacts have a face within the draft of their direction
+    shift (0.10, 0.00, 0.00) mm: final 4.414 mm, worst 4.414 mm at impact 8 (Body), first >1 mm: 3 (Body), first >1 cm: none
+    shift (0.00, 0.00, 0.10) mm: final 9.459 mm, worst 11.188 mm at impact 3 (Body), first >1 mm: 1 (Body), first >1 cm: 3 (Body)
+    shift (0.00, 0.10, 0.00) mm: final 0.984 mm, worst 0.984 mm at impact 8 (Body), first >1 mm: none, first >1 cm: none
+    shift (-0.10, 0.00, -0.10) mm: final 7.149 mm, worst 7.149 mm at impact 5 (Body), first >1 mm: 1 (Body), first >1 cm: none
+    worst 0.1 mm perturbation: 11.188 mm PASS (limit 20 mm)
+    diagnostic, z shift with footprints frozen: final 9.459 mm, worst 11.186 mm at impact 3 (Body), first >1 mm: 1 (Body), first >1 cm: 3 (Body)
+    diagnostic, z shift with the fold term off: final 9.531 mm, worst 9.531 mm at impact 8 (Body), first >1 mm: 1 (Body), first >1 cm: none
+    probe: impact 8 with every impactor shifted (0.00, 0.00, 0.10) mm: worst vertex Body[9271] differs 9.459 mm; vertices differing > 1 cm: 0
+      original: x (-0.9676, 0.8678, -1.2115) n (-0.940, 0.338, 0.043) prior (0.0000, 0.0000, 0.0000) (|0.0000| cap 0.202, along 0.0000) u -0.9513 v 0.1677 sd 0.0001 lead 1.2181 gap 0.8843 lat 1.000 plane 0.2993 over -0.5850 c 0.0000 push 0.0000 tf 6.683 tri 0.268 fold 0.0000 band 0.000 crease 0.0000 align 0.597 radial (-0.413, 0.161, 0.651) -> disp (-0.0050, 0.0019, 0.0078); saturated displacement (0.0000, 0.0000, 0.0000) -> (-0.0050, 0.0019, 0.0078)
+      shifted : x (-0.9676, 0.8678, -1.2115) n (-0.940, 0.338, 0.043) prior (0.0000, 0.0000, 0.0000) (|0.0000| cap 0.202, along 0.0000) u -0.9512 v 0.1677 sd 0.0000 lead -1.8552 gap 3.9576 lat 1.000 plane 0.2991 over -3.6584 c 0.0000 push 0.0000 tf 28.635 tri 0.461 fold 0.0000 band 0.000 crease 0.0000 align 0.597 radial (-0.413, 0.161, 0.651) -> disp (0.0000, 0.0000, 0.0000); saturated displacement (0.0000, 0.0000, 0.0000) -> (0.0000, 0.0000, 0.0000)
+  draft 1°: 3/8 impacts have a face within the draft of their direction
+    change vs exact surface (unshifted): final 72.533 mm, worst 189.215 mm at impact 3 (Bumper_Rear), first >1 mm: 3 (Bumper_Rear), first >1 cm: 3 (Bumper_Rear)
+    shift (0.10, 0.00, 0.00) mm: final 3.332 mm, worst 3.332 mm at impact 8 (Body), first >1 mm: 3 (Body), first >1 cm: none
+    shift (0.00, 0.00, 0.10) mm: final 5.683 mm, worst 5.683 mm at impact 6 (Body), first >1 mm: 1 (Body), first >1 cm: none
+    shift (0.00, 0.10, 0.00) mm: final 0.441 mm, worst 0.441 mm at impact 8 (Body), first >1 mm: none, first >1 cm: none
+    shift (-0.10, 0.00, -0.10) mm: final 4.901 mm, worst 4.901 mm at impact 6 (Body), first >1 mm: 1 (Body), first >1 cm: none
+    worst 0.1 mm perturbation: 5.683 mm PASS (limit 20 mm)
+  draft 2°: 4/8 impacts have a face within the draft of their direction
+    change vs exact surface (unshifted): final 103.290 mm, worst 265.187 mm at impact 3 (Body), first >1 mm: 3 (Body), first >1 cm: 3 (Body)
+    shift (0.10, 0.00, 0.00) mm: final 1.617 mm, worst 1.617 mm at impact 8 (Body), first >1 mm: 8 (Body), first >1 cm: none
+    shift (0.00, 0.00, 0.10) mm: final 3.916 mm, worst 3.916 mm at impact 6 (Body), first >1 mm: 1 (Body), first >1 cm: none
+    shift (0.00, 0.10, 0.00) mm: final 0.426 mm, worst 0.431 mm at impact 7 (Spoiler), first >1 mm: none, first >1 cm: none
+    shift (-0.10, 0.00, -0.10) mm: final 2.813 mm, worst 2.813 mm at impact 6 (Body), first >1 mm: 1 (Body), first >1 cm: none
+    worst 0.1 mm perturbation: 3.916 mm PASS (limit 20 mm)
+    diagnostic, z shift with footprints frozen: final 2.460 mm, worst 2.771 mm at impact 7 (Body), first >1 mm: 1 (Body), first >1 cm: none
+    diagnostic, z shift with the fold term off: final 3.841 mm, worst 3.841 mm at impact 6 (Body), first >1 mm: 1 (Body), first >1 cm: none
+    probe: impact 8 with every impactor shifted (0.00, 0.00, 0.10) mm: worst vertex Body[18277] differs 3.916 mm; vertices differing > 1 cm: 0
+      original: x (-0.9065, 0.4849, 0.5794) n (-0.973, -0.228, -0.044) prior (0.1818, 0.0007, -0.0285) (|0.1840| cap 0.415, along 0.1383) u -2.4311 v -0.2152 sd 1.4799 lead 1.8319 gap 1.4192 lat 0.000 plane 0.2764 over -1.1428 c 0.0000 push 0.0000 tf 11.014 tri -0.945 fold 0.0000 band 0.000 crease 0.0000 align 0.503 radial (-1.199, -0.218, 1.891) -> disp (0.0000, 0.0000, 0.0000); saturated displacement (0.1818, 0.0007, -0.0285) -> (0.1818, 0.0007, -0.0285)
+      shifted : x (-0.9065, 0.4849, 0.5794) n (-0.973, -0.228, -0.044) prior (0.1780, 0.0008, -0.0274) (|0.1801| cap 0.415, along 0.1357) u -2.4310 v -0.2152 sd 1.4798 lead 1.8319 gap 1.4165 lat 0.000 plane 0.2760 over -1.1405 c 0.0000 push 0.0000 tf 10.995 tri -0.979 fold 0.0000 band 0.000 crease 0.0000 align 0.503 radial (-1.199, -0.218, 1.891) -> disp (0.0000, 0.0000, 0.0000); saturated displacement (0.1780, 0.0008, -0.0274) -> (0.1780, 0.0008, -0.0274)
+  draft 3°: 5/8 impacts have a face within the draft of their direction
+    change vs exact surface (unshifted): final 112.855 mm, worst 305.236 mm at impact 3 (Body), first >1 mm: 2 (Body), first >1 cm: 2 (Body)
+    shift (0.10, 0.00, 0.00) mm: final 1.072 mm, worst 1.072 mm at impact 8 (Body), first >1 mm: 8 (Body), first >1 cm: none
+    shift (0.00, 0.00, 0.10) mm: final 3.080 mm, worst 3.080 mm at impact 6 (Body), first >1 mm: 1 (Body), first >1 cm: none
+    shift (0.00, 0.10, 0.00) mm: final 0.424 mm, worst 0.425 mm at impact 7 (Spoiler), first >1 mm: none, first >1 cm: none
+    shift (-0.10, 0.00, -0.10) mm: final 1.986 mm, worst 1.986 mm at impact 2 (Body), first >1 mm: 1 (Body), first >1 cm: none
+    worst 0.1 mm perturbation: 3.080 mm PASS (limit 20 mm)
+
+== vehicle 0 full recorded run (50 impacts)
+  exact surface: 0/50 impacts have a face within the draft of their direction
+    shift (0.10, 0.00, 0.00) mm: final 2.096 mm, worst 5.257 mm at impact 25 (Body), first >1 mm: 3 (Body), first >1 cm: none
+    shift (0.00, 0.00, 0.10) mm: final 6.991 mm, worst 11.188 mm at impact 3 (Body), first >1 mm: 1 (Body), first >1 cm: 3 (Body)
+    shift (0.00, 0.10, 0.00) mm: final 1.544 mm, worst 1.694 mm at impact 47 (Body), first >1 mm: 10 (Body), first >1 cm: none
+    shift (-0.10, 0.00, -0.10) mm: final 7.639 mm, worst 7.639 mm at impact 46 (Body), first >1 mm: 1 (Body), first >1 cm: none
+    worst 0.1 mm perturbation: 11.188 mm PASS (limit 20 mm)
+  draft 2°: 16/50 impacts have a face within the draft of their direction
+    change vs exact surface (unshifted): final 81.001 mm, worst 265.187 mm at impact 3 (Body), first >1 mm: 3 (Body), first >1 cm: 3 (Body)
+    shift (0.10, 0.00, 0.00) mm: final 1.159 mm, worst 2.900 mm at impact 20 (Body), first >1 mm: 8 (Body), first >1 cm: none
+    shift (0.00, 0.00, 0.10) mm: final 2.455 mm, worst 3.917 mm at impact 30 (Body), first >1 mm: 1 (Body), first >1 cm: none
+    shift (0.00, 0.10, 0.00) mm: final 3.127 mm, worst 3.134 mm at impact 45 (Body), first >1 mm: 12 (Taillights), first >1 cm: none
+    shift (-0.10, 0.00, -0.10) mm: final 3.330 mm, worst 3.332 mm at impact 45 (Body), first >1 mm: 1 (Body), first >1 cm: none
+    worst 0.1 mm perturbation: 3.917 mm PASS (limit 20 mm)

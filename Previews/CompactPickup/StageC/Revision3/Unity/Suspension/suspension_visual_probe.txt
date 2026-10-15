@@ -1,0 +1,3 @@
+Front suspension visual probe: pickup, wide sled 15 m/s 1500 kg front; tube sections off (in memory) vs on.
+  sections_off: Suspension_Front folded 484/8832 (5.48%), max displacement 28 mm
+  sections_on: Suspension_Front folded 39/8832 (0.44%), max displacement 27 mm

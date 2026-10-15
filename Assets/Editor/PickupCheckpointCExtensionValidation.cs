@@ -143,10 +143,18 @@ namespace DamageLab.EditorTools
             }
             if (Arg("-captureChaos", "0") == "1")
             {
-                CollisionPersistenceValidation.ChaosEvidenceDirectory = output;
+                // PhysX launches are not bit-repeatable, so each run records a different impact sequence; -chaosRuns N keeps
+                // every run's recorded JSON and shift reports in its own Run<k> folder for later exact replay.
+                int[] vehicles = Arg("-chaosVehicles", "2,1").Split(',').Select(int.Parse).ToArray();
+                int runs = int.Parse(Arg("-chaosRuns", "1"));
                 try
                 {
-                    for (int v = 2; v >= 1; v--) File.WriteAllText(Path.Combine(output, "capture_vehicle" + v + ".txt"), CollisionPersistenceValidation.RunRandom(v, 2026, 50));
+                    for (int k = 0; k < runs; k++)
+                    {
+                        string runDir = runs > 1 ? Path.Combine(output, "Run" + k) : output; Directory.CreateDirectory(runDir);
+                        CollisionPersistenceValidation.ChaosEvidenceDirectory = runDir;
+                        foreach (int v in vehicles) File.WriteAllText(Path.Combine(runDir, "capture_vehicle" + v + ".txt"), CollisionPersistenceValidation.RunRandom(v, 2026, 50));
+                    }
                 }
                 finally { CollisionPersistenceValidation.ChaosEvidenceDirectory = null; }
                 return;
@@ -160,7 +168,10 @@ namespace DamageLab.EditorTools
                     File.WriteAllText(Path.Combine(folder, "integration.txt"), CollisionPersistenceValidation.RunVehicle(v, false, v == 2));
                     File.WriteAllText(Path.Combine(folder, "phase4.txt"), CollisionPersistenceValidation.RunWholeVehicle(v, v == 2));
                     File.WriteAllText(Path.Combine(folder, "overflow.txt"), CollisionPersistenceValidation.RunOverflow(false, v));
-                    File.WriteAllText(Path.Combine(folder, "chaos.txt"), CollisionPersistenceValidation.RunRandom(v, 2026, 50));
+                    // Keep the recorded impacts and per-impact shift reports so a perturbation failure can be replayed exactly.
+                    CollisionPersistenceValidation.ChaosEvidenceDirectory = folder;
+                    try { File.WriteAllText(Path.Combine(folder, "chaos.txt"), CollisionPersistenceValidation.RunRandom(v, 2026, 50)); }
+                    finally { CollisionPersistenceValidation.ChaosEvidenceDirectory = null; }
                     Debug.Log("[PickupExtension] Completed integration, adaptive, overflow, replay, Chaos suites for vehicle " + v);
                 }
                 File.WriteAllText(Path.Combine(output, "switching.txt"), CollisionPersistenceValidation.RunSwitching());

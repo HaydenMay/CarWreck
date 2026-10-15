@@ -128,6 +128,9 @@ namespace DamageLab.Deformation
         /// measure what the repeatability fix changed against the verified implementation.</summary>
         public static bool LegacyBehaviour = false;
 
+        /// <summary>Validation only: drop the accordion-fold term of box impacts, to measure how much of a difference it carries.</summary>
+        public static bool FoldsOff = false;
+
         /// <summary>
         /// Conservative vehicle-space bounds outside which impact <paramref name="index"/> contributes nothing, so parts
         /// entirely outside need not be evaluated (or rebuilt). Radial: the footprint reach and depth zone. Box: the
@@ -475,7 +478,7 @@ namespace DamageLab.Deformation
             float u = Vector3.Dot(r, pj.e1), v = Vector3.Dot(r, pj.e2);
             float sd = pj.SignedDistance(u, v, out float qu, out float qv);
             if (sd > 3f * st.rho) return Vector3.zero;
-            float lead = pj.Lead(qu, qv);
+            float lead = pj.OutsideLead(u, v, sd, qu, qv);
             if (float.IsNaN(lead)) return Vector3.zero;
             float gap = a - lead - st.gapMin;
             float lat = sd > 0f ? Mathf.Exp(-(sd / st.rho) * (sd / st.rho)) : 1f;
@@ -511,7 +514,7 @@ namespace DamageLab.Deformation
             Vector3 q = x + st.noiseOffset;
             float tf = gap / cfg.foldWavelength + st.phase + 0.45f * noise.Fbm(q * 1.7f, 2);
             float tri = 1f - 4f * Mathf.Abs(tf - Mathf.Floor(tf) - 0.5f);
-            float fold = cfg.foldStrength * Mathf.Min(c, cfg.foldWavelength) * lat * tri * crumple * (0.6f + 0.4f * noise.Perlin(q * 3.1f));
+            float fold = FoldsOff ? 0f : cfg.foldStrength * Mathf.Min(c, cfg.foldWavelength) * lat * tri * crumple * (0.6f + 0.4f * noise.Perlin(q * 3.1f));
 
             // Creases along the boundary of the crushed patch (depth edge and silhouette edge).
             float bw = 0.25f * st.travel + 0.02f;
@@ -546,7 +549,7 @@ namespace DamageLab.Deformation
             float tentLen = cfg.tentLength * st.travel + 0.1f;
             float u = Vector3.Dot(r, pj.e1), v = Vector3.Dot(r, pj.e2);
             float sd = pj.SignedDistance(u, v, out float qu, out float qv);
-            float lead = pj.Lead(qu, qv);
+            float lead = pj.OutsideLead(u, v, sd, qu, qv);
             float gap = a - lead - st.gapMin;
             float lat = sd > 0f ? Mathf.Exp(-(sd / st.rho) * (sd / st.rho)) : 1f;
             Vector3 latPos = pj.e1 * u + pj.e2 * v;
@@ -565,7 +568,7 @@ namespace DamageLab.Deformation
             Vector3 q = x + st.noiseOffset;
             float tf = gap / cfg.foldWavelength + st.phase + 0.45f * noise.Fbm(q * 1.7f, 2);
             float tri = 1f - 4f * Mathf.Abs(tf - Mathf.Floor(tf) - 0.5f);
-            float fold = cfg.foldStrength * Mathf.Min(c, cfg.foldWavelength) * lat * tri * crumple * (0.6f + 0.4f * noise.Perlin(q * 3.1f));
+            float fold = FoldsOff ? 0f : cfg.foldStrength * Mathf.Min(c, cfg.foldWavelength) * lat * tri * crumple * (0.6f + 0.4f * noise.Perlin(q * 3.1f));
             float bw = 0.25f * st.travel + 0.02f;
             float band = Mathf.Max(Mathf.Exp(-(over / bw) * (over / bw)), 4f * lat * (1f - lat));
             float crease = cfg.rimCrease * st.travel * crumple * band * noise.Ridged(q * 3.4f) * (LegacyBehaviour ? 1f : CreaseFade(over, soft, sd, st.rho));

@@ -125,7 +125,7 @@ hand-written hatchback configuration by `vehicle-import-check`) and
 | `model`, `palette` | Project paths of the FBX and `palette.json`. |
 | `paint` | `material` (the palette entry that uses the two-colour paint) and `stripeMask` (texture path). |
 | `massKg` | 300–6000 kg. |
-| `components` | Ordered rules: `pattern`, `match` (`Token`/`Exact`), `role`, `mode` (`Deform`/`Rigid`/`Ignore`), `crumple`. |
+| `components` | Ordered rules: `pattern`, `match` (`Token`/`Exact`), `role`, `mode` (`Deform`/`Rigid`/`Ignore`), `crumple`, and optional `coherentTubeSections` (default `false`). Set it on thin tubes (coil springs, rods, pipes): each cross-section ring detected from the mesh then moves as one unit, so the tube bends and crushes along its length but its round section doesn't turn inside out. The part stays deformable. Strength and capacity limits are unchanged. |
 | `unknownComponentCrumple`, `maxImpactRecords` | Defaults 1 and 24. |
 | `cabinLine` | `start`/`end` in metres, 0 = measured (recommended). |
 | `shell` | `frontDepth`, `rearDepth`, `sideDepth`, `impactHeight`, 0 = automatic (recommended). |

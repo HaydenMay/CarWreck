@@ -1,0 +1,51 @@
+Perturbation sweep replay: recorded seed-2026 Chaos Runs, draft 2°, four 0.1 mm shifts; no new PhysX sampling.
+run     vehicle  impacts  worst mm  at impact (part)          result
+Run0          0       50     3.909         30 (Body          )  PASS
+Run0          1       50    10.250         34 (Body          )  PASS
+Run0          2       50     3.036         49 (BedRail_R     )  PASS
+Run1          0       50     3.917         30 (Body          )  PASS
+Run1          1       50     3.691         49 (DoorHandle.001)  PASS
+Run1          2       50     2.989         49 (BedSide_R     )  PASS
+Run2          0       50     3.915         30 (Body          )  PASS
+Run2          1       50     3.001         40 (Body          )  PASS
+Run2          2       50     3.073         49 (BedRail_R     )  PASS
+Run3          0       50     3.915         30 (Body          )  PASS
+Run3          1       50     3.106         40 (Body          )  PASS
+Run3          2       50     3.033         49 (BedRail_R     )  PASS
+Run4          0       50     3.917         30 (Body          )  PASS
+Run4          1       50     2.910         31 (Body          )  PASS
+Run4          2       50     3.031         49 (BedRail_R     )  PASS
+Run5          0       50     3.915         30 (Body          )  PASS
+Run5          1       50    10.381         34 (Body          )  PASS
+Run5          2       50     2.833         49 (BedSide_R     )  PASS
+Run6          0       50     3.917         30 (Body          )  PASS
+Run6          1       50     3.255         49 (DoorHandle.001)  PASS
+Run6          2       50     2.891         49 (BedRail_R     )  PASS
+Run7          0       50     3.917         30 (Body          )  PASS
+Run7          1       50     3.717         49 (DoorHandle.001)  PASS
+Run7          2       50     3.064         49 (BedRail_R     )  PASS
+Run8          0       50     3.917         30 (Body          )  PASS
+Run8          1       50     9.948         34 (Body          )  PASS
+Run8          2       50     2.965         46 (Body_Hood     )  PASS
+Run9          0       50     3.917         30 (Body          )  PASS
+Run9          1       50     9.925         34 (Body          )  PASS
+Run9          2       50     2.908         46 (Body_Hood     )  PASS
+Run10         0       50     3.915         30 (Body          )  PASS
+Run10         1       50     2.911         30 (Sill          )  PASS
+Run10         2       50     3.056         44 (BedFloor      )  PASS
+Run11         0       50     3.915         30 (Body          )  PASS
+Run11         1       50     2.920         30 (Sill          )  PASS
+Run11         2       50     2.878         38 (BedLiner_Floor)  PASS
+Run12         0       50     3.917         30 (Body          )  PASS
+Run12         1       50     9.980         34 (Body          )  PASS
+Run12         2       50     3.248         49 (BedRail_R     )  PASS
+Run13         0       50     3.917         30 (Body          )  PASS
+Run13         1       50     2.919         30 (Sill          )  PASS
+Run13         2       50     2.819         49 (BedRail_R     )  PASS
+Run14         0       50     3.915         30 (Body          )  PASS
+Run14         1       50     3.635         49 (DoorHandle.001)  PASS
+Run14         2       50     3.115         49 (BedRail_R     )  PASS
+vehicle 0: worst 3.917 mm over all runs
+vehicle 1: worst 10.381 mm over all runs
+vehicle 2: worst 3.248 mm over all runs
+45/45 vehicle runs pass the 20 mm limit

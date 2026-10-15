@@ -325,6 +325,7 @@ MonoBehaviour:
     crumple: 1
     rigidFollow: 0.75
     definesImpactFaces: 0
+    coherentTubeSections: 1
   - nameContains: Suspension_Rear
     match: 1
     role: 9
@@ -332,6 +333,7 @@ MonoBehaviour:
     crumple: 1
     rigidFollow: 0.75
     definesImpactFaces: 0
+    coherentTubeSections: 1
   - nameContains: Tailgate
     match: 1
     role: 1

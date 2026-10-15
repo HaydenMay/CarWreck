@@ -329,14 +329,16 @@
       "match": "Exact",
       "role": "Underbody",
       "mode": "Deform",
-      "crumple": 1
+      "crumple": 1,
+      "coherentTubeSections": true
     },
     {
       "pattern": "Suspension_Rear",
       "match": "Exact",
       "role": "Underbody",
       "mode": "Deform",
-      "crumple": 1
+      "crumple": 1,
+      "coherentTubeSections": true
     },
     {
       "pattern": "Tailgate",
