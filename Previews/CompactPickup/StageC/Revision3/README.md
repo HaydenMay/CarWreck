@@ -82,6 +82,7 @@ The first draft evaluated all 12 edge cones for every vertex, which roughly doub
 - **Exact-surface read.** With the draft set to 0, the exact surface still uses Sol's original 2 mm inward nudge. This only affects the diagnostic failing fixture, not runtime.
 - **Hatch sweep worst** is 10.381 mm across 15 launches. That is within the 20 mm limit but well above the single-run 2.5 mm.
 - **WebGL** was rebuilt but not retested in a browser for this revision. Revision 2's browser evidence predates these changes.
+- **Impact pause (high priority, future).** After approval, one impact in manual testing took about 157.7 ms of deformation processing. The root cause is not established. The concern is recorded in [the DamageLab README](../../../../Assets/DamageLab/README.md#limitations--next-steps) for the playable driving milestone.
 - **URP warning.** The URP FSR warning in batch logs is pre-existing and unrelated.
 - **Unchanged since Revision 2:** cargo resting on BodyCoreBox above the liner, socket seeds not runtime-ready, lamp colour and headlight microfluting differences.
 

@@ -649,6 +649,11 @@ Likely causes (not yet confirmed in the model): recessed panels whose front and 
 
 ## Limitations / next steps
 
+* **HIGH PRIORITY: impact pause (gameplay performance). Root cause not established.** In manual Unity testing after Checkpoint C (2026-10-15), one recorded impact took about 157.7 ms of deformation processing, which shows as a noticeable pause.
+  * Vehicle sizes that may be relevant: muscle car 12 deformable parts / 62,014 vertices; hatchback 72 / 80,108; pickup 52 / 114,694.
+  * The number of separate deformable parts, the total vertex count, or both may contribute. This is a hypothesis only; nothing has been profiled.
+  * Why it matters: at 60 fps a frame lasts about 16.7 ms, so a 157.7 ms impact drops roughly nine frames. Once cars are drivable, collisions and deformation must not freeze gameplay, and several vehicles crashing at the same moment would add their costs together.
+  * By decision, this has not been investigated, profiled or optimised. Revisit it in the playable driving milestone, alongside the Burst/Jobs work below.
 * **Performance.** About 20 ms per rebuild is fine for a lab with eased sliders, but not for gameplay. Next steps: port `Displacement` and the normal pass to Burst + Jobs (`MeshData` API), or move them to a compute/vertex shader using the precomputed per-vertex data.
 * **The model isn't physics.** There's no material thickness, no part-to-part contact, and no plasticity history. Damage is a function of the four slider values, not of impact sequences. For gameplay, collision impulses would feed the same footprint/depth parameters, with accumulated damage stored per region.
 * **Interpenetration.** Inter-part and self-intersection are reduced, but not prevented. At extreme combined values, tyres can poke through crushed fenders, and small details (lights, mirrors) can sink into the body.
