@@ -11,6 +11,8 @@ SRC="Builds/WebGLDrive"
 
 SOURCE_SHA="$(git rev-parse --short HEAD)"
 SOURCE_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+AUTHOR_NAME="$(git log -1 --format=%an)"
+AUTHOR_EMAIL="$(git log -1 --format=%ae)"
 BUILD_ID="$(grep -o 'productVersion[^,]*' "$SRC/index.html" | head -1 || true)"
 WORK="$(mktemp -d)"
 trap 'git worktree remove --force "$WORK" >/dev/null 2>&1 || true; rm -rf "$WORK"' EXIT
@@ -32,7 +34,9 @@ printf '{ "sourceBranch": "%s", "sourceCommit": "%s", "published": "%s" }\n' \
 
 cd "$WORK"
 git add -A
-git -c user.name="$(git -C "$OLDPWD" config user.name)" -c user.email="$(git -C "$OLDPWD" config user.email)" \
-  commit -m "Publish driving prototype preview (source $SOURCE_BRANCH @ $SOURCE_SHA)" >/dev/null
+# Same author as the source commit (the repo may rely on a system-derived identity that a temp worktree does not see).
+export GIT_AUTHOR_NAME="${GIT_AUTHOR_NAME:-$AUTHOR_NAME}" GIT_AUTHOR_EMAIL="${GIT_AUTHOR_EMAIL:-$AUTHOR_EMAIL}"
+export GIT_COMMITTER_NAME="${GIT_COMMITTER_NAME:-$AUTHOR_NAME}" GIT_COMMITTER_EMAIL="${GIT_COMMITTER_EMAIL:-$AUTHOR_EMAIL}"
+git commit -m "Publish driving prototype preview (source $SOURCE_BRANCH @ $SOURCE_SHA)" >/dev/null
 git push origin gh-pages
 echo "Pushed. Live (after Pages rebuilds, ~1 min): https://haydenmay.github.io/CarWreck/"
