@@ -1,0 +1,6 @@
+interface:
+  display_name: "Add a Car"
+  short_description: "Create a new destructible CarWreck vehicle"
+  default_prompt: "Use $addacar to create a new destructible vehicle for CarWreck."
+policy:
+  allow_implicit_invocation: false

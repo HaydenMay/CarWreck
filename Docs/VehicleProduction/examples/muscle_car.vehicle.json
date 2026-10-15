@@ -1,0 +1,159 @@
+{
+  "format": "carwreck.vehicle.v1",
+  "id": "carwreck.muscle_car",
+  "revision": 1,
+  "displayName": "Muscle Car",
+  "model": "Assets/DamageLab/Art/Models/MuscleCar.fbx",
+  "palette": "",
+  "paint": {
+    "material": "",
+    "stripeMask": ""
+  },
+  "note": "Reference only: the muscle car predates manifests. Its materials come from MuscleCarModelPostprocessor and its stripes from a 1D texture on UV0; its definition is written by VehicleDefinitionSetup with explicit shell values.",
+  "massKg": 1400,
+  "unknownComponentCrumple": 1,
+  "maxImpactRecords": 24,
+  "cabinLine": {
+    "start": 1.05,
+    "end": 1.4
+  },
+  "shell": {
+    "frontDepth": 0.7,
+    "rearDepth": 0.7,
+    "sideDepth": 0.45,
+    "impactHeight": 0.7
+  },
+  "components": [
+    {
+      "pattern": "Wheel",
+      "match": "Token",
+      "role": "Wheel",
+      "mode": "Rigid",
+      "crumple": 0
+    },
+    {
+      "pattern": "Body",
+      "match": "Token",
+      "role": "Body",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "Bumper",
+      "match": "Token",
+      "role": "Bumper",
+      "mode": "Deform",
+      "crumple": 0.25
+    },
+    {
+      "pattern": "Cabin",
+      "match": "Token",
+      "role": "Cabin",
+      "mode": "Deform",
+      "crumple": 0.85
+    },
+    {
+      "pattern": "Grille",
+      "match": "Token",
+      "role": "Fascia",
+      "mode": "Deform",
+      "crumple": 0.55
+    },
+    {
+      "pattern": "Headlights",
+      "match": "Token",
+      "role": "Light",
+      "mode": "Deform",
+      "crumple": 0.45
+    },
+    {
+      "pattern": "Taillights",
+      "match": "Token",
+      "role": "Light",
+      "mode": "Deform",
+      "crumple": 0.45
+    },
+    {
+      "pattern": "SidePipes",
+      "match": "Token",
+      "role": "Trim",
+      "mode": "Deform",
+      "crumple": 0.4
+    },
+    {
+      "pattern": "HoodScoop",
+      "match": "Token",
+      "role": "Panel",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "Spoiler",
+      "match": "Token",
+      "role": "Panel",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "Mirrors",
+      "match": "Token",
+      "role": "Trim",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "Trim",
+      "match": "Token",
+      "role": "Trim",
+      "mode": "Deform",
+      "crumple": 1
+    }
+  ],
+  "expected": {
+    "note": "Written by the generator in Blender vehicle space (+X right, +Y forward, +Z up); vehicle-import checks the imported model against it.",
+    "dimensionsM": [
+      2.0528,
+      4.9877,
+      1.486
+    ],
+    "wheels": [
+      {
+        "name": "Wheel_FL",
+        "position": [
+          -0.8,
+          1.36,
+          0.4
+        ]
+      },
+      {
+        "name": "Wheel_FR",
+        "position": [
+          0.8,
+          1.36,
+          0.4
+        ]
+      },
+      {
+        "name": "Wheel_RL",
+        "position": [
+          -0.8,
+          -1.36,
+          0.4
+        ]
+      },
+      {
+        "name": "Wheel_RR",
+        "position": [
+          0.8,
+          -1.36,
+          0.4
+        ]
+      }
+    ]
+  },
+  "sockets": {
+    "coordinates": "Blender vehicle-local metres: +X right, +Y forward, +Z up",
+    "runtime_ready": false,
+    "groups": []
+  }
+}

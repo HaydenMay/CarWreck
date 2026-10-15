@@ -1,0 +1,354 @@
+{
+  "format": "carwreck.vehicle.v1",
+  "id": "carwreck.compact_hatchback",
+  "revision": 1,
+  "displayName": "Compact Hatchback",
+  "model": "Assets/Vehicles/CompactHatchback/Models/CompactHatchback.fbx",
+  "palette": "Assets/Vehicles/CompactHatchback/palette.json",
+  "paint": {
+    "material": "Hatch_Paint",
+    "stripeMask": "Assets/Vehicles/CompactHatchback/Textures/StripeMask.png"
+  },
+  "massKg": 950,
+  "unknownComponentCrumple": 1,
+  "maxImpactRecords": 24,
+  "cabinLine": {
+    "start": 0,
+    "end": 0
+  },
+  "shell": {
+    "frontDepth": 0,
+    "rearDepth": 0,
+    "sideDepth": 0,
+    "impactHeight": 0
+  },
+  "components": [
+    {
+      "pattern": "Wheel",
+      "match": "Token",
+      "role": "Wheel",
+      "mode": "Rigid",
+      "crumple": 0
+    },
+    {
+      "pattern": "Body",
+      "match": "Token",
+      "role": "Body",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "Bumper",
+      "match": "Token",
+      "role": "Bumper",
+      "mode": "Deform",
+      "crumple": 0.25
+    },
+    {
+      "pattern": "Cabin",
+      "match": "Token",
+      "role": "Cabin",
+      "mode": "Deform",
+      "crumple": 0.85
+    },
+    {
+      "pattern": "Underbody",
+      "match": "Token",
+      "role": "Underbody",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "FrontValance",
+      "match": "Token",
+      "role": "Panel",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "RearValance",
+      "match": "Token",
+      "role": "Panel",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "Sill",
+      "match": "Token",
+      "role": "Panel",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "Spoiler",
+      "match": "Token",
+      "role": "Panel",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "Grille",
+      "match": "Token",
+      "role": "Fascia",
+      "mode": "Deform",
+      "crumple": 0.55
+    },
+    {
+      "pattern": "GrilleSlat",
+      "match": "Token",
+      "role": "Fascia",
+      "mode": "Deform",
+      "crumple": 0.55
+    },
+    {
+      "pattern": "GrilleSurround",
+      "match": "Token",
+      "role": "Fascia",
+      "mode": "Deform",
+      "crumple": 0.55
+    },
+    {
+      "pattern": "LowerIntake",
+      "match": "Token",
+      "role": "Fascia",
+      "mode": "Deform",
+      "crumple": 0.55
+    },
+    {
+      "pattern": "LowerSlat",
+      "match": "Token",
+      "role": "Fascia",
+      "mode": "Deform",
+      "crumple": 0.55
+    },
+    {
+      "pattern": "FrontSplitter",
+      "match": "Token",
+      "role": "Fascia",
+      "mode": "Deform",
+      "crumple": 0.55
+    },
+    {
+      "pattern": "Headlight",
+      "match": "Token",
+      "role": "Light",
+      "mode": "Deform",
+      "crumple": 0.45
+    },
+    {
+      "pattern": "HeadlightHousing",
+      "match": "Token",
+      "role": "Light",
+      "mode": "Deform",
+      "crumple": 0.45
+    },
+    {
+      "pattern": "FogLight",
+      "match": "Token",
+      "role": "Light",
+      "mode": "Deform",
+      "crumple": 0.45
+    },
+    {
+      "pattern": "FogHousing",
+      "match": "Token",
+      "role": "Light",
+      "mode": "Deform",
+      "crumple": 0.45
+    },
+    {
+      "pattern": "Taillight",
+      "match": "Token",
+      "role": "Light",
+      "mode": "Deform",
+      "crumple": 0.45
+    },
+    {
+      "pattern": "TaillightHousing",
+      "match": "Token",
+      "role": "Light",
+      "mode": "Deform",
+      "crumple": 0.45
+    },
+    {
+      "pattern": "ReverseLight",
+      "match": "Token",
+      "role": "Light",
+      "mode": "Deform",
+      "crumple": 0.45
+    },
+    {
+      "pattern": "RearIndicator",
+      "match": "Token",
+      "role": "Light",
+      "mode": "Deform",
+      "crumple": 0.45
+    },
+    {
+      "pattern": "FrontIndicator",
+      "match": "Token",
+      "role": "Light",
+      "mode": "Deform",
+      "crumple": 0.45
+    },
+    {
+      "pattern": "SideIndicator",
+      "match": "Token",
+      "role": "Light",
+      "mode": "Deform",
+      "crumple": 0.45
+    },
+    {
+      "pattern": "Exhaust",
+      "match": "Token",
+      "role": "Trim",
+      "mode": "Deform",
+      "crumple": 0.4
+    },
+    {
+      "pattern": "SpoilerMount",
+      "match": "Token",
+      "role": "Trim",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "LicenseRecess",
+      "match": "Token",
+      "role": "Trim",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "BlankPlate",
+      "match": "Token",
+      "role": "Trim",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "HatchLock",
+      "match": "Token",
+      "role": "Trim",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "HatchSeam",
+      "match": "Token",
+      "role": "Trim",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "DoorSeam",
+      "match": "Token",
+      "role": "Trim",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "DoorHandle",
+      "match": "Token",
+      "role": "Trim",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "SideMoulding",
+      "match": "Token",
+      "role": "Trim",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "Mirror",
+      "match": "Token",
+      "role": "Trim",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "MirrorGlass",
+      "match": "Token",
+      "role": "Trim",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "MirrorStem",
+      "match": "Token",
+      "role": "Trim",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "FrontWiper",
+      "match": "Token",
+      "role": "Trim",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "RearWiper",
+      "match": "Token",
+      "role": "Trim",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "RoofGutter",
+      "match": "Token",
+      "role": "Trim",
+      "mode": "Deform",
+      "crumple": 1
+    }
+  ],
+  "expected": {
+    "note": "Written by the generator in Blender vehicle space (+X right, +Y forward, +Z up); vehicle-import checks the imported model against it.",
+    "dimensionsM": [
+      1.892,
+      4.0504,
+      1.425
+    ],
+    "wheels": [
+      {
+        "name": "Wheel_FL",
+        "position": [
+          -0.745,
+          1.16,
+          0.325
+        ]
+      },
+      {
+        "name": "Wheel_FR",
+        "position": [
+          0.745,
+          1.16,
+          0.325
+        ]
+      },
+      {
+        "name": "Wheel_RL",
+        "position": [
+          -0.745,
+          -1.16,
+          0.325
+        ]
+      },
+      {
+        "name": "Wheel_RR",
+        "position": [
+          0.745,
+          -1.16,
+          0.325
+        ]
+      }
+    ]
+  },
+  "sockets": {
+    "coordinates": "Blender vehicle-local metres: +X right, +Y forward, +Z up",
+    "runtime_ready": false,
+    "groups": []
+  }
+}

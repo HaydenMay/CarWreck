@@ -72,6 +72,8 @@ namespace DamageLab.EditorTools
                 // ---------------------------------------------------------------- single impacts from every side
                 sb.AppendLine("  SINGLE IMPACTS (wide sled, 15 m/s, 1500 kg, from a repaired car):");
                 bool allApplied = true;
+                var worstFold = new Dictionary<string, (float frac, int n, int tris, string hit)>();
+                var dentBodyFolds = new List<string>();
                 foreach (var d in new[] { ImpactDirection.Front, ImpactDirection.Rear, ImpactDirection.LeftSide, ImpactDirection.RightSide, ImpactDirection.FrontCornerAngled, ImpactDirection.RearCornerAngled })
                 {
                     lab.RepairCar();
@@ -80,6 +82,8 @@ namespace DamageLab.EditorTools
                     allApplied &= r.applied;
                     sb.AppendLine(HitLine(CollisionLabController.Label(d), r, before));
                     sb.AppendLine($"      folded by part: {PartFlips(filters, baseVerts)}");
+                    foreach (var kv in PartFoldFractions(filters, baseVerts))
+                        if (!worstFold.TryGetValue(kv.Key, out var w0) || kv.Value.frac > w0.frac) worstFold[kv.Key] = (kv.Value.frac, kv.Value.n, kv.Value.tris, CollisionLabController.Label(d));
                     if (screenshots && !legacyConfiguration && (d == ImpactDirection.Front || d == ImpactDirection.LeftSide || d == ImpactDirection.RearCornerAngled))
                         VShots($"{tag}_01_{d}");
                 }
@@ -156,10 +160,18 @@ namespace DamageLab.EditorTools
                     bool ok = hit && model.AddImpact(new LocalImpact { point = sp, direction = c.d, normal = -c.d, strength = 0.8f });
                     DamageLabValidation.CheckSanity(filters, baseVerts, out int nan, out int flip, out int tris);
                     sb.AppendLine($"    dent {c.n,-24} at {(hit ? sp.ToString("F2") : "MISSED")} applied {ok} moved {Disp():0.000} m, NaN {nan}, folded {flip} [{PartFlips(filters, baseVerts)}]");
+                    foreach (var kv in PartFoldFractions(filters, baseVerts))
+                        if (def.components != null && VehiclePartRule.Find(def.components, kv.Key, out _)?.role == VehicleComponentRole.Body && kv.Value.n > 20)
+                            dentBodyFolds.Add($"{kv.Key} {kv.Value.n} under the {c.n} dent");
                 }
                 lab.ResetAll();
                 CollisionLabValidation.Compare(filters, baseVerts, baseNormals, out float ep, out float en);
                 sb.AppendLine($"  Reset All: vertex error {ep:E1}, normal error {en:E1} {P(ep == 0f && en == 0f)}");
+                // Asset QA in Unity: parts that fold far more than their neighbours under one ordinary hit are mesh problems.
+                var outliers = worstFold.Where(x => x.Value.frac > 0.05f && x.Value.n > 10).OrderByDescending(x => x.Value.frac)
+                    .Select(x => $"{x.Key} {x.Value.n}/{x.Value.tris} ({x.Value.frac * 100f:0}%, {x.Value.hit})").ToList();
+                sb.AppendLine($"  PART FOLD OUTLIERS (> 5 % of a part folded by one 15 m/s wide hit; Body > 20 folds under a click dent): " +
+                              $"{(outliers.Count + dentBodyFolds.Count == 0 ? "none" : string.Join(", ", outliers.Concat(dentBodyFolds)))} {(outliers.Count + dentBodyFolds.Count == 0 ? "PASS" : "REVIEW")}");
 
                 // ---------------------------------------------------------------- rebuild optimisation: exactness and cost on the same recorded impacts
                 if (!legacyConfiguration)
@@ -224,6 +236,23 @@ namespace DamageLab.EditorTools
                 if (n > 0) l.Add((n, $"{fs[i].name} {n}/{t.Length / 3}"));
             }
             return l.Count == 0 ? "none" : string.Join(", ", l.OrderByDescending(x => x.n).Take(7).Select(x => x.s));
+        }
+
+        static Dictionary<string, (float frac, int n, int tris)> PartFoldFractions(MeshFilter[] fs, List<Vector3[]> baseV)
+        {
+            var r = new Dictionary<string, (float, int, int)>();
+            for (int i = 0; i < fs.Length; i++)
+            {
+                var v = fs[i].sharedMesh.vertices; var t = fs[i].sharedMesh.triangles; var v0 = baseV[i]; int n = 0;
+                for (int k = 0; k < t.Length; k += 3)
+                {
+                    Vector3 a = Vector3.Cross(v0[t[k + 1]] - v0[t[k]], v0[t[k + 2]] - v0[t[k]]);
+                    Vector3 c = Vector3.Cross(v[t[k + 1]] - v[t[k]], v[t[k + 2]] - v[t[k]]);
+                    if (a.sqrMagnitude > 1e-12f && Vector3.Dot(a, c) < 0f) n++;
+                }
+                if (t.Length > 0) r[fs[i].name] = ((float)n / (t.Length / 3), n, t.Length / 3);
+            }
+            return r;
         }
 
         struct LayerPair { public int pa, ia, pb, ib; public float d0; }

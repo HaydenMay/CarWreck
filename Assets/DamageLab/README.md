@@ -363,6 +363,86 @@ Phase 4 limitations:
 * **Physics repeatability is at the millimetre level.** Identical launches can differ by a few mm of contact because PhysX keeps internal contact history across resets. The deformation itself is exact for a given impact sequence. (The vehicle engine milestone found and removed four discontinuities in the box crush that could amplify such differences to tens of centimetres; see *Repeatability investigation* below.)
 * **Many hits fold triangles.** After 84 heavy hits, 5 % of triangles are folded, from the visual system under extreme saturation, not the hitbox.
 
+## Collision Lab: random testing (Random Launch, Chaos Run)
+
+The **Random Testing** card fires blocks from any horizontal bearing instead of the eight fixed directions (which
+are unchanged).
+
+* **RANDOM LAUNCH** fires the next shot of the current seed with the selected speed, mass and impactor.
+* **CHAOS RUN** fires a seeded sequence of 10 / 25 / 50 blocks (shots 0..N−1 of the seed), **one block at a time, never
+  repairing the car**. **STOP** lets the block in flight finish its impact, then ends the run; damage is kept.
+  Switching vehicle, Repair Car and Reset All stop a run at once.
+* **Seed** (editable) and **NEW SEED**; **Random Block Width** also picks narrow/wide per shot. Speed variation is an
+  inspector option (`randomOptions.speedVariation`, off by default).
+* The diagnostics show the seed, shot, approach angle, lateral offset, impactor, aim point and, for a run, launched /
+  hit / missed counts, regions and hitbox boxes struck and average deformation time. The console logs every shot and a
+  final sanity line (non-finite vertices, invalid hitbox boxes).
+
+How a shot is built (`Scripts/Collision/RandomImpact.cs`, `CollisionLabRandom.cs`):
+
+* **Selections** are a pure function of (seed, shot): SplitMix64 integer hashing gives the approach bearing (0–360°),
+  the lateral offset (±85 % of the body's half-width seen from that bearing) and the optional width/speed choice.
+  They do not depend on physics, so a seed reproduces exactly — the same in the editor and in WebGL.
+* **Placement** aims through the body centre plus the offset, sweeps the block (`BoxCast`) from well outside the car
+  along its path against the car's **current colliders** (the damage-aware hitbox, so earlier crush is respected) and
+  parks it `startGap` (5 m) before the first touch. It backs off if it would ever overlap the car. A line that the
+  current shape does not intersect is still launched and counted as a miss.
+* **Completion** before the next launch: the contact has been processed, no new contact for 15 physics steps and the
+  block is slow or moving away (or, without contact, it has passed the car, stopped, or timed out); then the hitbox
+  update is applied and the block is reset. Outcomes: impact (damage applied), contact only (below the damage
+  threshold), miss.
+
+Validation (`collision-random <vehicle> [seed] [count]`, real PhysX, 20 m/s, 2500 kg, random width), measured:
+
+| | Muscle car | Hatchback |
+|---|---|---|
+| Seeded 50-shot run | 50/50 impacts, 0 misses, 24 stored + 26 merged | 50/50 impacts, 0 misses, 24 stored + 26 merged |
+| Spread | 8 regions, 12 of 14 hitbox boxes, 8 approach octants | 8 regions, 12 of 14 boxes, 8 octants |
+| Block overlapping the car when parked | 0/50 undamaged, 0/50 crushed | 0/50, 0/50 |
+| First touch deeper on the crushed car (aims at the current hitbox) | 50/50 lines | 50/50 lines |
+| Saturation (boxes hit ≥ 4×, first → last hit) | 0.38 → 0.09 m | 0.28 → 0.14 m |
+| Least-damaged regions still deform | 0.21–0.39 m | 0.22–0.38 m |
+| Hitbox update pending at a launch | 0 | 0 |
+| Same seed again: random selections | identical | identical |
+| Replay of the recorded impacts | 0.0 m (exact) | 0.0 m (exact) |
+| 0.1 mm shift of every impactor, replayed | ≤ 14.3 mm | ≤ 12.7 mm |
+| Physics re-run of the whole run (informational) | 28–170 mm | 22–177 mm |
+| NaN / invalid boxes, repair, reset, STOP, switching mid-run | none / exact / exact / PASS / PASS | same |
+| Editor cost | 3.3 s wall for 50 shots; 57 ms deformation per impact | 5.0 s; 89 ms |
+
+**Reproducibility vs PhysX.** Three different things are measured:
+1. *Random selections* — exact for a seed (tested: identical in two runs and between editor and WebGL).
+2. *Deformation for a given impact sequence* — exact (replay difference 0.0 m), and smooth: perturbing every impactor by
+   0.1 mm moves the mesh by at most 14 mm after 50 heavy hits (before the vehicle engine milestone's fix: hundreds of mm).
+3. *Physical trajectories* — PhysX is not bit-repeatable across runs: the same seed re-run gives the same outcome and
+   region for every shot, but contact points start to differ by a few mm to 2 cm at some shot (shots 6–42 in seven
+   pairs of runs), and later heavy hits on slightly different crushed metal carry that forward (22–177 mm at the end).
+   The 33-launch overflow test shows the most sensitive case: launch 28, the 1.9 m wide sled square onto the 2.05 m
+   muscle car's rear, whose block edges sit right at the rear corners. The solver yaws the block slightly while it
+   resolves the step's penetration: −1.10° vs +1.10° in one pair of runs, +0.65° vs +1.27° in another (crush depth and
+   area identical, footprint centre 1–5 cm apart). Within a band of the block's length × sin(yaw) from its edge, its
+   leading surface is the side wall, not the front face, so that yaw decides whether the corner metal is under the face
+   (crushed) or beside it: a continuous but very steep function of the block's real geometry, giving 250–280 mm
+   between runs (other pairs: 0.7–4.8 mm; the hatchback 0.02–31 mm). These physics re-runs are informational; the
+   deformation checks are (1)–(2). Using the block's pre-contact orientation for the footprint would remove this
+   sensitivity; it is a possible future change to the shared receiver, not made here.
+
+**WebGL** (Chromium, desktop-app browser pane, 1920 × 1080, real UI clicks; measured from the build's console log):
+
+| | Muscle car | Hatchback |
+|---|---|---|
+| Seeded 50-shot Chaos Run (seed 2026, 20 m/s, 2500 kg, random width) | 50 launched, 50 impacts, 0 missed; 8 regions, 12 boxes; 24 stored + 26 merged | same counts; 8 regions, 12 boxes; 24 + 26 |
+| Deformation per impact | 15.3 ms avg | 20.7 ms avg |
+| End-of-run sanity | 0 non-finite of 62,014 vertices, 0 invalid boxes | 0 of 80,108, 0 invalid |
+| Random selections vs the editor run of the same seed | identical (261.7°, 94.6°, 248.5°, 76.4° …) | identical |
+
+Also checked in the browser: RANDOM LAUNCH, 10/25/50, seed entry and NEW SEED, Random Block Width, STOP mid-run
+(ends after the block in flight, damage kept), manual LAUNCH refused during a run, Repair Car and Reset All after a run,
+switching vehicles (diagnostics start clean), paint and stripes on heavily crushed metal, no console errors.
+Test-harness notes: synthetic text insertion does not reach Unity WebGL input fields (individual key presses do), and a
+click that teleports the cursor in the same frame can land on the previously hovered button; neither happens with a
+real mouse and keyboard.
+
 ## Vehicle engine (reusable vehicles)
 
 A vehicle is **data**. The destruction code is the same for every vehicle; a new vehicle needs a model, a definition asset and a validation run, not new code. This section is the technical reference for adding one (and for a future guided `/addacar` workflow).
@@ -449,16 +529,25 @@ Both shipped vehicles produce **0 warnings**. The hatchback with the old muscle-
 * Faces sit at the median of the outermost *current* metal in a 6 × 4 grid of cells per face, only ever move inward, stop 6 cm short of the region's inner face, and re-fit only near new impacts (1.2 m + footprint). Repair restores the exact original boxes.
 * Limits: one flat face per region (a partly struck section retracts only if most of its metal moved); corners are stepped (two faces), not bevelled; collider height never changes.
 
-### Adding a vehicle (checklist)
+### Adding a vehicle
 
-1. **Model**: export facing +Z in metres, one object per component family with token-friendly names, Read/Write enabled meshes, wheels as separate objects.
-2. **Definition**: create *Damage Lab ▸ Vehicle Definition* (or extend `VehicleDefinitionSetup`), set `displayName`, `model`, `mass`.
-3. **Rules**: one `VehiclePartRule` per component family with its role and crumple (use the role table above).
-4. **Profile**: copy an existing profile, set `roofLineStart` to the measured beltline and `roofLineEnd` about 7 cm below the roof.
-5. **Shell**: leave section depths and impact height at 0 (automatic) unless the vehicle needs explicit values.
-6. **Register**: save the definition asset in `Settings/Vehicles/`. The scene builder lists every definition there (muscle car and hatchback first); rebuild the scene (`collision-build`) to get its selector button.
-7. **Validate** (bridge commands take the vehicle's index in the Collision Lab list): warnings must be 0; `vehicle <i>` (integration: every direction, repeats, saturation, Damage Lab paths, folded triangles per part, rebuild exactness), `collision-phase4 <i>` (coverage of all 16 targets, locality, 84-hit long run, repair), `collision-overflow <i>` (33 heavy hits, record merging, repeatability investigation), `vehicle-switch`.
-8. **Review folds per part**: parts that fold far more than their neighbours under ordinary hits are usually mesh problems (thin recessed geometry, overlapping shells), to be fixed in the model, not by weakening the shared engine.
+The full production standard lives in [`Docs/VehicleProduction`](../../Docs/VehicleProduction/README.md): the asset
+specification, the QA checklist and the `addacar` workflow (Claude Code `/addacar`, Codex `$addacar`). In short:
+
+1. **Model**: a Blender generator script exporting a +Y-forward, metre-scale FBX with token-named components, four
+   `Wheel_*` roots at the wheel centres, `UVMap` + `StripeProjection` UVs, `palette.json` and a stripe mask.
+2. **Manifest**: `Assets/Vehicles/<Vehicle>/vehicle.json` — identity, paths, mass, component rules, cabin line (0 =
+   measured), shell (0 = automatic), the generator's expected dimensions and wheel centres, optional socket metadata.
+3. **Asset QA** in Blender: `Blender/Scripts/vehicle_asset_qa.py`.
+4. **Import**: bridge `vehicle-import <manifest>` (`dry` to check only) writes import settings, materials, the
+   `VehicleDefinition` and its damage profile into `Settings/Vehicles/`; `collision-build` adds it to the selector.
+5. **Validate** (bridge commands take the vehicle's index in the Collision Lab list): `vehicle <i>` (including the
+   PART FOLD OUTLIERS check), `collision-phase4 <i>`, `collision-overflow <i>`, `collision-random <i>`, `vehicle-switch`.
+
+`vehicle-import-check` shows the two reference manifests reproduce the hand-written configurations exactly, and
+`vehicle-import-roundtrip` imports the hatchback's manifest for real and replays the same impacts into both cars
+(identical meshes). Parts that fold far more than their neighbours are mesh problems, fixed in the model, never by
+weakening the shared engine.
 
 ### Repeatability investigation (vehicle engine milestone)
 

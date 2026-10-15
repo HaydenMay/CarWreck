@@ -362,13 +362,56 @@ namespace DamageLab.EditorTools
             lab.statusText = Label("Status", content, "Ready", 15, TextDim, FontStyle.Normal, TextAnchor.MiddleCenter);
             Layout(lab.statusText.gameObject, 24);
 
+            // Random testing: one random block, or a seeded Chaos Run of 10 / 25 / 50 blocks (never repairs the car)
+            var rndCard = AutoCard("RandomTesting", content);
+            var rh = Label("Heading", rndCard.transform, "Random Testing", 17, TextDim, FontStyle.Bold, TextAnchor.MiddleLeft);
+            Layout(rh.gameObject, 28);
+            RectTransform Grid(string name, Vector2 cell)
+            {
+                var g = new GameObject(name, typeof(RectTransform)).GetComponent<RectTransform>();
+                g.SetParent(rndCard.transform, false);
+                var gl = g.gameObject.AddComponent<GridLayoutGroup>();
+                gl.cellSize = cell; gl.spacing = new Vector2(8, 8);
+                gl.constraint = GridLayoutGroup.Constraint.FixedColumnCount; gl.constraintCount = 3;
+                Layout(g.gameObject, cell.y);
+                return g;
+            }
+            var actions = Grid("RandomButtons", new Vector2(128, 44));
+            lab.randomLaunchButton = SmallButton(actions, "RandomLaunchButton", "RANDOM LAUNCH");
+            lab.chaosButton = SmallButton(actions, "ChaosRunButton", "CHAOS RUN");
+            lab.stopButton = SmallButton(actions, "StopButton", "STOP");
+            var ch = Label("ChaosCountHeading", rndCard.transform, "Chaos run impacts", 15, TextDim, FontStyle.Normal, TextAnchor.MiddleLeft);
+            Layout(ch.gameObject, 24);
+            var counts = Grid("ChaosCounts", new Vector2(128, 38));
+            lab.chaosCountButtons = new Button[lab.chaosCounts.Length];
+            for (int i = 0; i < lab.chaosCounts.Length; i++) lab.chaosCountButtons[i] = SmallButton(counts, "Count" + lab.chaosCounts[i], lab.chaosCounts[i].ToString());
+            lab.seedText = ch;   // "Chaos run impacts · next shot N" (kept up to date by the lab)
+            var seedRow = Grid("SeedRow", new Vector2(196, 38));
+            seedRow.GetComponent<GridLayoutGroup>().constraintCount = 2;
+            // Editable seed (the same seed replays the same random selections), next to NEW SEED.
+            var seedBg = Img("SeedField", seedRow, Well, DamageLabAssets.GetSprite("RoundedRectSmall"), sliced: true);
+            var seedLabel = Label("Text", seedBg.transform, lab.randomSeed.ToString(), 17, TextMain, FontStyle.Bold, TextAnchor.MiddleCenter);
+            Stretch(seedLabel.rectTransform, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+            seedLabel.supportRichText = false;
+            lab.seedField = seedBg.gameObject.AddComponent<InputField>();
+            lab.seedField.textComponent = seedLabel;
+            lab.seedField.contentType = InputField.ContentType.IntegerNumber;
+            lab.seedField.characterLimit = 6;
+            lab.seedField.targetGraphic = seedBg;
+            lab.seedField.text = lab.randomSeed.ToString();
+            lab.seedField.caretColor = Accent;
+            lab.seedField.selectionColor = new Color(Accent.r, Accent.g, Accent.b, 0.4f);
+            lab.newSeedButton = SmallButton(seedRow, "NewSeedButton", "NEW SEED");
+            lab.varyWidthToggle = CheckToggle(Row(rndCard.transform, "VaryWidthRow", 42), "Random Block Width");
+            lab.varyWidthToggle.isOn = lab.randomOptions.varyWidth;
+
             // Diagnostics
             var diag = AutoCard("Diagnostics", content);
             var dgh = Label("Heading", diag.transform, "Last Collision", 17, TextDim, FontStyle.Bold, TextAnchor.MiddleLeft);
             Layout(dgh.gameObject, 28);
             lab.diagnosticsText = Label("Text", diag.transform, "No collision yet.", 15, TextMain, FontStyle.Normal, TextAnchor.UpperLeft);
             lab.diagnosticsText.supportRichText = false;
-            Layout(lab.diagnosticsText.gameObject, 300);
+            Layout(lab.diagnosticsText.gameObject, 450);
 
             // Controls hint (top-left)
             var hint = Img("ControlsHint", root, new Color(0.11f, 0.12f, 0.13f, 0.86f), DamageLabAssets.RoundedRectSprite, sliced: true);
