@@ -1,0 +1,5 @@
+# Revision 3 WebGL build (Logs/rev3_webgl.log, 2026-10-15)
+[DamageLab] > collision-webgl
+Build Finished, Result: Success.
+[DamageLab] WebGL build Succeeded: 21.2 MB, 0 errors, 309s -> Builds/WebGLCollision
+Browser behaviour was not retested for Revision 3.

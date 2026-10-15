@@ -1,0 +1,30 @@
+# Revision 3 manifest import check and round trip (Logs/rev3_import.log, 2026-10-15)
+[DamageLab] > vehicle-import-check
+[DamageLab] Vehicle manifest Docs/VehicleProduction/examples/compact_hatchback.vehicle.json (dry run: nothing written)
+  imported size (1.892, 1.425, 4.050) m vs generator (1.892, 1.425, 4.050) m (Unity x, y, z): worst 0.0 cm
+  wheel origins: 4 checked against the generator (2 cm tolerance)
+  Compact Hatchback (carwreck.compact_hatchback r1): 76 components, 80,108 deformable vertices, 40 rules, mass 950 kg
+  measured body (1.851, 0.714, 4.014), beltline 0.93 m, cabin top 1.42 m -> cabin line 0.93-1.35 m; shell 0.56/0.56/0.41 m, impact height 0.60 m
+  classification: 0 unclassified, 0 ambiguous; warnings 0
+  RESULT: PASS (configuration)
+  manifest vs Assets/DamageLab/Settings/Vehicles/CompactHatchback.asset: rules identical True (40/40), mass/model/cabin line True, shell/impact height/limits True, damage tuning identical True PASS
+[DamageLab] Vehicle manifest Docs/VehicleProduction/examples/muscle_car.vehicle.json (dry run: nothing written)
+  imported size (2.053, 1.486, 4.988) m vs generator (2.053, 1.486, 4.988) m (Unity x, y, z): worst 0.0 cm
+  wheel origins: 4 checked against the generator (2 cm tolerance)
+  Muscle Car (carwreck.muscle_car r1): 16 components, 62,014 deformable vertices, 12 rules, mass 1400 kg
+  measured body (2.053, 0.713, 4.988), beltline 1.04 m, cabin top 1.47 m -> cabin line 1.05-1.40 m; shell 0.70/0.70/0.45 m, impact height 0.70 m
+  classification: 0 unclassified, 0 ambiguous; warnings 0
+  RESULT: PASS (configuration)
+  manifest vs Assets/DamageLab/Settings/Vehicles/MuscleCar.asset: rules identical True (12/12, 1 runtime-only Ignore rule not compared), mass/model/cabin line True, shell/impact height/limits True, damage tuning identical True PASS
+[DamageLab] > vehicle-import-roundtrip
+[DamageLab] Vehicle manifest Temp/ManifestRoundtrip.vehicle.json
+  materials: 11 (Hatch_Paint uses the two-colour paint shader)
+  model import settings applied (readable, uncompressed, vertex order kept, imported normals, metre scale, axis conversion baked)
+  imported size (1.892, 1.425, 4.050) m vs generator (1.892, 1.425, 4.050) m (Unity x, y, z): worst 0.0 cm
+  wheel origins: 4 checked against the generator (2 cm tolerance)
+  Manifest Roundtrip (carwreck.manifest_roundtrip r1): 76 components, 80,108 deformable vertices, 40 rules, mass 950 kg
+  measured body (1.851, 0.714, 4.014), beltline 0.93 m, cabin top 1.42 m -> cabin line 0.93-1.35 m; shell 0.56/0.56/0.41 m, impact height 0.60 m
+  classification: 0 unclassified, 0 ambiguous; warnings 0
+  wrote Assets/DamageLab/Settings/Vehicles/ManifestRoundtrip.asset and Assets/DamageLab/Settings/Vehicles/ManifestRoundtripDamageProfile.asset; rebuild the Collision Lab scene (collision-build) to add it to the vehicle selector
+  RESULT: PASS (configuration)
+  6 recorded impacts replayed into the hand-written and the manifest-built hatchback: mesh difference 0.0E+000 m, warnings 0, colliders 14 PASS

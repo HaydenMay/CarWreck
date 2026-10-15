@@ -1,0 +1,45 @@
+[CollisionLab] Phase 4: whole-vehicle damage-aware hitbox - Compact Pickup (real PhysX, Physics.Simulate 50 Hz, anchored car)
+  Car colliders: 14 boxes = core + cabin + 12 adaptive regions (16 adaptive faces, 126,676 vertex samples)
+  Undamaged faces (car space): FrontLeft +Z 2.342; FrontLeft -X -0.946; FrontCentre +Z 2.350; FrontRight +Z 2.342; FrontRight +X 0.946; RearLeft -Z -2.350; RearLeft -X -0.974; RearCentre -Z -2.350; RearRight -Z -2.350; RearRight +X 0.974; LeftRear -X -0.970; RightRear +X 0.970; LeftMid -X -0.970; RightMid +X 0.970; LeftFront -X -0.959; RightFront +X 0.959;
+  A. COVERAGE (narrow block, 15 m/s, 1500 kg; Repair Car before each target). Depth = where the block first touches the car's physical
+     hitbox (parked block swept along its launch path), outward along the approach. For reference: the recorded impactor pose and the
+     averaged PhysX contact point, both reported after a 30 cm physics step, so 0-15 cm past the true first touch depending on step phase.
+     target                      region       hit1 touch  face before->after hit1   hit2 touch (deeper by)   pose 1->2       contact 1->2    region retract  result
+     front centre                FrontCentre     2.351    2.350 ->  2.032         2.033 ( 31.8 cm)     2.229-> 2.033    2.300-> 2.032     34.9 cm      PASS  [FrontCentreBox -> FrontCentreBox]
+     front left                  FrontLeft       2.343    2.342 ->  2.080         2.080 ( 26.3 cm)     2.218-> 1.970    2.273-> 1.982     28.2 cm      FAIL  [FrontLeftBox -> FrontLeftBox]
+     front right                 FrontRight      2.343    2.342 ->  2.068         2.069 ( 27.5 cm)     2.219-> 1.954    2.273-> 1.979     29.1 cm      FAIL  [FrontRightBox -> FrontRightBox]
+     rear centre                 RearCentre      2.351    2.350 ->  2.040         2.041 ( 31.0 cm)     2.230-> 1.916    2.300-> 1.995     37.2 cm      PASS  [RearCentreBox -> RearCentreBox]
+     rear left                   RearLeft        2.351    2.350 ->  2.050         2.051 ( 30.0 cm)     2.230-> 1.930    2.300-> 2.000     34.7 cm      PASS  [RearLeftBox -> RearLeftBox]
+     rear right                  RearRight       2.351    2.350 ->  2.052         2.053 ( 29.8 cm)     2.230-> 1.933    2.300-> 2.001     35.8 cm      PASS  [RearRightBox -> RearRightBox]
+     left side front             LeftFront       0.960    0.959 ->  0.755         0.756 ( 20.4 cm)     0.825-> 0.756    0.927-> 0.755     23.2 cm      PASS  [LeftFrontBox -> LeftFrontBox]
+     left side mid               LeftMid         0.971    0.970 ->  0.844         0.880 (  9.1 cm)     0.840-> 0.731    0.914-> 0.895     22.4 cm      PASS  [LeftMidBox -> CabinBox]
+     left side rear              LeftRear        0.971    0.970 ->  0.758         0.758 ( 21.3 cm)     0.840-> 0.758    0.932-> 0.758     22.1 cm      PASS  [LeftRearBox -> LeftRearBox]
+     right side front            RightFront      0.960    0.959 ->  0.767         0.767 ( 19.3 cm)     0.825-> 0.767    0.927-> 0.767     20.4 cm      PASS  [RightFrontBox -> RightFrontBox]
+     right side mid              RightMid        0.971    0.970 ->  0.845         0.880 (  9.1 cm)     0.841-> 0.731    0.914-> 0.895     22.2 cm      PASS  [RightMidBox -> CabinBox]
+     right side rear             RightRear       0.971    0.970 ->  0.745         0.745 ( 22.6 cm)     0.841-> 0.745    0.933-> 0.745     23.6 cm      PASS  [RightRearBox -> RightRearBox]
+     front-left corner angled    FrontLeft       2.477      (two faces)           2.270 ( 20.7 cm)     2.338-> 2.167    2.443-> 2.174     33.9 cm      PASS  [FrontLeftBox -> FrontLeftBox]
+        corner faces after hit 1: FrontLeft +Z 2.342->2.141 FrontLeft -X -0.946->-0.875
+     rear-right corner angled    RearRight       2.500      (two faces)           2.318 ( 18.2 cm)     2.369-> 2.232    2.450-> 2.177     30.4 cm      PASS  [RearRightBox -> RearRightBox]
+        corner faces after hit 1: RearRight -Z -2.350->-2.180 RearRight +X 0.974->0.901
+     front-right corner angled   FrontRight      2.477      (two faces)           2.276 ( 20.1 cm)     2.338-> 2.175    2.443-> 2.176     32.9 cm      PASS  [FrontRightBox -> FrontRightBox]
+        corner faces after hit 1: FrontRight +Z 2.342->2.139 FrontRight +X 0.946->0.888
+     rear-left corner angled     RearLeft        2.500      (two faces)           2.339 ( 16.1 cm)     2.369-> 2.261    2.450-> 2.186     29.5 cm      PASS  [RearLeftBox -> RearLeftBox]
+        corner faces after hit 1: RearLeft -Z -2.350->-2.193 RearLeft -X -0.974->-0.919
+  Coverage: every region's second identical hit lands deeper, at the retracted face FAIL
+  B/C. LOCALITY + SATURATION (30 m/s, 4000 kg, narrow unless noted):
+     front centre x25: moved per hit 1/2/3 0.436/0.206/0.081 m ... 23/24/25 0.012/0.014/0.013 m; face 2.350 -> 2.022 -> 2.001 (moved 0.0 cm over hits 21-25); all applied True, diagnostics True PASS (local saturation)
+       then front left        : mesh moved 0.400 m, FrontLeft retracted 30.0 cm PASS
+       then front right       : mesh moved 0.379 m, FrontRight retracted 29.3 cm PASS
+       then left side mid     : mesh moved 0.413 m, LeftMid retracted 26.5 cm PASS
+       then right side mid    : mesh moved 0.395 m, RightMid retracted 26.2 cm PASS
+       then rear centre       : mesh moved 0.423 m, RearCentre retracted 33.4 cm PASS
+     left side mid x10 (wide), then rear left       : mesh moved 0.363 m PASS
+     left side mid x10 (wide), then right side mid  : mesh moved 0.390 m PASS
+     rear centre x10, then front centre            : mesh moved 0.447 m PASS
+     rear centre x10, then left side front         : mesh moved 0.423 m PASS
+  Locality: a hammered region does not stop other regions deforming PASS
+  D. LONG RUN: 84 mixed hits (14 targets x 6 rounds, narrow/wide alternating, 30 and 15 m/s, 4000 kg): applied 84/84, diagnostics correct 84/84, impacts 84 (24 stored, 60 merged), max disp 0.500 m, NaN 0, flipped 15593 of 228,330 (6.8%), car drift 0.47 mm, outward face moves blocked 302 PASS
+     deformation per hit by block of 20: 121.9 / 119.5 / 122.6 / 123.4 / 131.5 ms; hitbox update 2.73 ms avg over 29 updates
+     region retraction after the long run: FrontLeft -47cm FrontCentre -35cm FrontRight -50cm RearLeft -54cm RearCentre -37cm RearRight -55cm LeftRear -26cm RightRear -26cm LeftMid -35cm RightMid -35cm LeftFront -31cm RightFront -31cm
+  E. Reset Block after 84 hits: mesh change 0.0E+000 PASS; Repair Car: mesh 0.0E+000/0.0E+000, all 12 region boxes identical to the original True, next hit is impact #1 PASS; Reset All: mesh 0.0E+000/0.0E+000, boxes exact True PASS
+  COSTS (editor, this machine): 14 car colliders; hitbox update 2.45 ms avg / 4.46 ms max over 101 updates (only after impacts; 9.4 of 16 faces re-fitted per update on average); visual deformation 105.2 ms avg / 184.2 ms max per hit; physics step 0.046 ms avg over 34200 steps

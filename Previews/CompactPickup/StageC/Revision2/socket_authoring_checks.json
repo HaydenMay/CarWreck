@@ -1,0 +1,262 @@
+[
+  {
+    "socket_group": "roof.compact_mount",
+    "socket_id": "R1",
+    "support": "Cabin_Roof",
+    "pass": true,
+    "resolved_rest_point": [
+      -0.47999998927116394,
+      -0.05999999865889549,
+      1.801304578781128
+    ],
+    "normal_dot_expected": 0.9971932172775269,
+    "validation": "Blender seed/support only; no runtime binding/strength/attachment test"
+  },
+  {
+    "socket_group": "roof.compact_mount",
+    "socket_id": "R2",
+    "support": "Cabin_Roof",
+    "pass": true,
+    "resolved_rest_point": [
+      0.47999998927116394,
+      -0.05999999865889549,
+      1.8013358116149902
+    ],
+    "normal_dot_expected": 0.9971932172775269,
+    "validation": "Blender seed/support only; no runtime binding/strength/attachment test"
+  },
+  {
+    "socket_group": "roof.compact_mount",
+    "socket_id": "R3",
+    "support": "Cabin_Roof",
+    "pass": true,
+    "resolved_rest_point": [
+      -0.47999998927116394,
+      0.36000001430511475,
+      1.8027037382125854
+    ],
+    "normal_dot_expected": 0.9975079298019409,
+    "validation": "Blender seed/support only; no runtime binding/strength/attachment test"
+  },
+  {
+    "socket_group": "roof.compact_mount",
+    "socket_id": "R4",
+    "support": "Cabin_Roof",
+    "pass": true,
+    "resolved_rest_point": [
+      0.47999998927116394,
+      0.36000001430511475,
+      1.802683711051941
+    ],
+    "normal_dot_expected": 0.9975079298019409,
+    "validation": "Blender seed/support only; no runtime binding/strength/attachment test"
+  },
+  {
+    "socket_group": "hood.scoop",
+    "socket_id": "H1",
+    "support": "Body_Hood",
+    "pass": true,
+    "resolved_rest_point": [
+      -0.25999999046325684,
+      1.2799999713897705,
+      1.285430908203125
+    ],
+    "normal_dot_expected": 0.9962737560272217,
+    "validation": "Blender seed/support only; no runtime binding/strength/attachment test"
+  },
+  {
+    "socket_group": "hood.scoop",
+    "socket_id": "H2",
+    "support": "Body_Hood",
+    "pass": true,
+    "resolved_rest_point": [
+      0.25999999046325684,
+      1.2799999713897705,
+      1.285430908203125
+    ],
+    "normal_dot_expected": 0.9962737560272217,
+    "validation": "Blender seed/support only; no runtime binding/strength/attachment test"
+  },
+  {
+    "socket_group": "hood.scoop",
+    "socket_id": "H3",
+    "support": "Body_Hood",
+    "pass": true,
+    "resolved_rest_point": [
+      -0.25999999046325684,
+      1.75,
+      1.2454614639282227
+    ],
+    "normal_dot_expected": 0.9962771534919739,
+    "validation": "Blender seed/support only; no runtime binding/strength/attachment test"
+  },
+  {
+    "socket_group": "hood.scoop",
+    "socket_id": "H4",
+    "support": "Body_Hood",
+    "pass": true,
+    "resolved_rest_point": [
+      0.25999999046325684,
+      1.75,
+      1.2454614639282227
+    ],
+    "normal_dot_expected": 0.9962771534919739,
+    "validation": "Blender seed/support only; no runtime binding/strength/attachment test"
+  },
+  {
+    "socket_group": "front.push_bar",
+    "socket_id": "F1",
+    "support": "Bumper_Front",
+    "pass": true,
+    "resolved_rest_point": [
+      -0.550000011920929,
+      2.3499999046325684,
+      0.75
+    ],
+    "normal_dot_expected": 0.9999999403953552,
+    "validation": "Blender seed/support only; no runtime binding/strength/attachment test"
+  },
+  {
+    "socket_group": "front.push_bar",
+    "socket_id": "F2",
+    "support": "Bumper_Front",
+    "pass": true,
+    "resolved_rest_point": [
+      0.550000011920929,
+      2.3499999046325684,
+      0.75
+    ],
+    "normal_dot_expected": 0.9999999403953552,
+    "validation": "Blender seed/support only; no runtime binding/strength/attachment test"
+  },
+  {
+    "socket_group": "rear.utility",
+    "socket_id": "B1",
+    "support": "Bumper_Rear",
+    "pass": true,
+    "resolved_rest_point": [
+      -0.550000011920929,
+      -2.3499999046325684,
+      0.6399999856948853
+    ],
+    "normal_dot_expected": 1.0,
+    "validation": "Blender seed/support only; no runtime binding/strength/attachment test"
+  },
+  {
+    "socket_group": "rear.utility",
+    "socket_id": "B2",
+    "support": "Bumper_Rear",
+    "pass": true,
+    "resolved_rest_point": [
+      0.550000011920929,
+      -2.3499999046325684,
+      0.6399999856948853
+    ],
+    "normal_dot_expected": 1.0,
+    "validation": "Blender seed/support only; no runtime binding/strength/attachment test"
+  },
+  {
+    "socket_group": "bed.rail_l",
+    "socket_id": "L1",
+    "support": "BedRail_L",
+    "pass": true,
+    "resolved_rest_point": [
+      -0.921999990940094,
+      -0.6499999761581421,
+      1.3300000429153442
+    ],
+    "normal_dot_expected": 1.0,
+    "validation": "Blender seed/support only; no runtime binding/strength/attachment test"
+  },
+  {
+    "socket_group": "bed.rail_l",
+    "socket_id": "L2",
+    "support": "BedRail_L",
+    "pass": true,
+    "resolved_rest_point": [
+      -0.921999990940094,
+      -1.9299999475479126,
+      1.3300000429153442
+    ],
+    "normal_dot_expected": 1.0,
+    "validation": "Blender seed/support only; no runtime binding/strength/attachment test"
+  },
+  {
+    "socket_group": "bed.rail_r",
+    "socket_id": "BR1",
+    "support": "BedRail_R",
+    "pass": true,
+    "resolved_rest_point": [
+      0.921999990940094,
+      -0.6499999761581421,
+      1.3300000429153442
+    ],
+    "normal_dot_expected": 1.0,
+    "validation": "Blender seed/support only; no runtime binding/strength/attachment test"
+  },
+  {
+    "socket_group": "bed.rail_r",
+    "socket_id": "BR2",
+    "support": "BedRail_R",
+    "pass": true,
+    "resolved_rest_point": [
+      0.921999990940094,
+      -1.9299999475479126,
+      1.3300000429153442
+    ],
+    "normal_dot_expected": 1.0,
+    "validation": "Blender seed/support only; no runtime binding/strength/attachment test"
+  },
+  {
+    "socket_group": "bed.floor",
+    "socket_id": "C1",
+    "support": "BedFloor",
+    "pass": true,
+    "resolved_rest_point": [
+      -0.4000000059604645,
+      -0.6499999761581421,
+      0.8944999575614929
+    ],
+    "normal_dot_expected": 1.0,
+    "validation": "Blender seed/support only; no runtime binding/strength/attachment test"
+  },
+  {
+    "socket_group": "bed.floor",
+    "socket_id": "C2",
+    "support": "BedFloor",
+    "pass": true,
+    "resolved_rest_point": [
+      0.4000000059604645,
+      -0.6499999761581421,
+      0.8944999575614929
+    ],
+    "normal_dot_expected": 1.0,
+    "validation": "Blender seed/support only; no runtime binding/strength/attachment test"
+  },
+  {
+    "socket_group": "bed.floor",
+    "socket_id": "C3",
+    "support": "BedFloor",
+    "pass": true,
+    "resolved_rest_point": [
+      -0.4000000059604645,
+      -1.9600000381469727,
+      0.8944999575614929
+    ],
+    "normal_dot_expected": 1.0,
+    "validation": "Blender seed/support only; no runtime binding/strength/attachment test"
+  },
+  {
+    "socket_group": "bed.floor",
+    "socket_id": "C4",
+    "support": "BedFloor",
+    "pass": true,
+    "resolved_rest_point": [
+      0.4000000059604645,
+      -1.9600000381469727,
+      0.8944999575614929
+    ],
+    "normal_dot_expected": 1.0,
+    "validation": "Blender seed/support only; no runtime binding/strength/attachment test"
+  }
+]

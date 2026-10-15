@@ -1,0 +1,836 @@
+{
+  "stage": "B",
+  "units": "metres",
+  "orientation": "+X right, +Y forward, +Z up",
+  "bounds": {
+    "min": [
+      -1.1274999380111694,
+      -2.3600001335144043,
+      -0.0011059939861297607
+    ],
+    "max": [
+      1.1274999380111694,
+      2.361999988555908,
+      1.8200000524520874
+    ]
+  },
+  "cabin_bounds": {
+    "min": [
+      -0.9549999833106995,
+      -0.27000001072883606,
+      1.284999966621399
+    ],
+    "max": [
+      0.9549999833106995,
+      0.9800000190734863,
+      1.8200000524520874
+    ]
+  },
+  "roof_bounds": {
+    "min": [
+      -0.8220000267028809,
+      -0.20000000298023224,
+      1.7899999618530273
+    ],
+    "max": [
+      0.8220000267028809,
+      0.5199999809265137,
+      1.8200000524520874
+    ]
+  },
+  "bed_bounds": {
+    "min": [
+      -0.9700000286102295,
+      -2.259999990463257,
+      0.5049999952316284
+    ],
+    "max": [
+      0.9700000286102295,
+      -0.3149999976158142,
+      1.309999942779541
+    ]
+  },
+  "hood_bounds": {
+    "min": [
+      -0.9700000286102295,
+      0.9800000190734863,
+      1.1784393787384033
+    ],
+    "max": [
+      0.9700000286102295,
+      2.25,
+      1.312999963760376
+    ]
+  },
+  "body_bounds": {
+    "min": [
+      -0.9700000286102295,
+      -2.259999990463257,
+      0.5049999952316284
+    ],
+    "max": [
+      0.9700000286102295,
+      2.25,
+      1.309999942779541
+    ]
+  },
+  "liner_floor_bounds": {
+    "min": [
+      -0.5699999928474426,
+      -2.2125000953674316,
+      0.9100000262260437
+    ],
+    "max": [
+      0.5699999928474426,
+      -0.35749998688697815,
+      0.9200000166893005
+    ]
+  },
+  "grille_bounds": {
+    "min": [
+      -0.5950000286102295,
+      2.2209999561309814,
+      0.862500011920929
+    ],
+    "max": [
+      0.5950000286102295,
+      2.2850000858306885,
+      1.1475000381469727
+    ]
+  },
+  "lower_paint_boundary_m": 0.805,
+  "front_differential_bounds": {
+    "min": [
+      -0.8399999737739563,
+      1.5199999809265137,
+      0.30000001192092896
+    ],
+    "max": [
+      0.8399999737739563,
+      1.7812159061431885,
+      0.8698616623878479
+    ]
+  },
+  "meshes": 56,
+  "vertices": 121994,
+  "deformable_vertices": 88098,
+  "wheel_bounds": {
+    "Wheel_FL": {
+      "min": [
+        -1.062000036239624,
+        1.2188940048217773,
+        -0.0011059939861297607
+      ],
+      "max": [
+        -0.7179999947547913,
+        2.061105966567993,
+        0.8411059975624084
+      ]
+    },
+    "Wheel_FR": {
+      "min": [
+        0.7179999947547913,
+        1.2188940048217773,
+        -0.0011059939861297607
+      ],
+      "max": [
+        1.062000036239624,
+        2.061105966567993,
+        0.8411059975624084
+      ]
+    },
+    "Wheel_RL": {
+      "min": [
+        -1.062000036239624,
+        -1.7311060428619385,
+        -0.0011059939861297607
+      ],
+      "max": [
+        -0.7179999947547913,
+        -0.8888940215110779,
+        0.8411059975624084
+      ]
+    },
+    "Wheel_RR": {
+      "min": [
+        0.7179999947547913,
+        -1.7311060428619385,
+        -0.0011059939861297607
+      ],
+      "max": [
+        1.062000036239624,
+        -0.8888940215110779,
+        0.8411059975624084
+      ]
+    }
+  },
+  "production_asset_qa": "NOT RUN - modeling diagnostics only",
+  "unity_import": "NOT RUN",
+  "destruction_tests": "NOT RUN",
+  "production_manifest_written": false,
+  "runtime_sockets_written": false,
+  "wheel_centers": {
+    "Wheel_FL": [
+      -0.8900000154972076,
+      1.6399999856948853,
+      0.42000000178813934
+    ],
+    "Wheel_FR": [
+      0.8900000154972076,
+      1.6399999856948853,
+      0.42000000178813934
+    ],
+    "Wheel_RL": [
+      -0.8900000154972076,
+      -1.3100000321865082,
+      0.42000000178813934
+    ],
+    "Wheel_RR": [
+      0.8900000154972076,
+      -1.3100000321865082,
+      0.42000000178813934
+    ]
+  },
+  "wheel_origins": {
+    "Wheel_FL": [
+      -0.8759999871253967,
+      1.6399999856948853,
+      0.41999998688697815
+    ],
+    "Wheel_FR": [
+      0.8759999871253967,
+      1.6399999856948853,
+      0.41999998688697815
+    ],
+    "Wheel_RL": [
+      -0.8759999871253967,
+      -1.309999942779541,
+      0.41999998688697815
+    ],
+    "Wheel_RR": [
+      0.8759999871253967,
+      -1.309999942779541,
+      0.41999998688697815
+    ]
+  },
+  "rocker_bottom_m": 0.5049999952316284,
+  "front_tire_to_arch_gap_m": 0.1438879370689392,
+  "components": [
+    {
+      "name": "BedFloor",
+      "proposed_role": "Panel",
+      "vertices": 2376,
+      "polygons": 2374,
+      "quads": 2374,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.05457145009121434
+    },
+    {
+      "name": "BedFrontWall",
+      "proposed_role": "Body",
+      "vertices": 2768,
+      "polygons": 2766,
+      "quads": 2766,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.025915503490650846
+    },
+    {
+      "name": "BedLiner_Floor",
+      "proposed_role": "Trim",
+      "vertices": 5626,
+      "polygons": 5472,
+      "quads": 5472,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.03500002681675803
+    },
+    {
+      "name": "BedLiner_FrontWall",
+      "proposed_role": "Trim",
+      "vertices": 1859,
+      "polygons": 1704,
+      "quads": 1704,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.03149998226252787
+    },
+    {
+      "name": "BedLiner_Side_L",
+      "proposed_role": "Trim",
+      "vertices": 2212,
+      "polygons": 2041,
+      "quads": 2041,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.02984619140625
+    },
+    {
+      "name": "BedLiner_Side_R",
+      "proposed_role": "Trim",
+      "vertices": 2212,
+      "polygons": 2041,
+      "quads": 2041,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.02984619140625
+    },
+    {
+      "name": "BedLiner_Tailgate",
+      "proposed_role": "Trim",
+      "vertices": 1859,
+      "polygons": 1704,
+      "quads": 1704,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.03149998226252787
+    },
+    {
+      "name": "BedLiner_WheelTub_L",
+      "proposed_role": "Trim",
+      "vertices": 1566,
+      "polygons": 1482,
+      "quads": 1482,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.03538168246345387
+    },
+    {
+      "name": "BedLiner_WheelTub_R",
+      "proposed_role": "Trim",
+      "vertices": 1566,
+      "polygons": 1482,
+      "quads": 1482,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.03538168246345387
+    },
+    {
+      "name": "BedRail_L",
+      "proposed_role": "Panel",
+      "vertices": 592,
+      "polygons": 584,
+      "quads": 584,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.060000001424923524
+    },
+    {
+      "name": "BedRail_R",
+      "proposed_role": "Panel",
+      "vertices": 592,
+      "polygons": 584,
+      "quads": 584,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.060000001424923524
+    },
+    {
+      "name": "BedRail_Rear",
+      "proposed_role": "Panel",
+      "vertices": 744,
+      "polygons": 742,
+      "quads": 742,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.0258904096389975
+    },
+    {
+      "name": "BedSide_L",
+      "proposed_role": "Body",
+      "vertices": 3192,
+      "polygons": 3051,
+      "quads": 3051,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.0347321027905076
+    },
+    {
+      "name": "BedSide_R",
+      "proposed_role": "Body",
+      "vertices": 3192,
+      "polygons": 3051,
+      "quads": 3051,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.0347321027905076
+    },
+    {
+      "name": "Body_CabRear",
+      "proposed_role": "Body",
+      "vertices": 1404,
+      "polygons": 1402,
+      "quads": 1402,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.05000001108273741
+    },
+    {
+      "name": "Body_Hood",
+      "proposed_role": "Body",
+      "vertices": 4550,
+      "polygons": 4410,
+      "quads": 4410,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.026696041637367694
+    },
+    {
+      "name": "Body_Nose",
+      "proposed_role": "Body",
+      "vertices": 2799,
+      "polygons": 2692,
+      "quads": 2692,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.027647078370275725
+    },
+    {
+      "name": "Bumper_Front",
+      "proposed_role": "Bumper",
+      "vertices": 1568,
+      "polygons": 1566,
+      "quads": 1566,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.03491228777166284
+    },
+    {
+      "name": "Bumper_Rear",
+      "proposed_role": "Bumper",
+      "vertices": 1316,
+      "polygons": 1314,
+      "quads": 1314,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.03491228777166284
+    },
+    {
+      "name": "BumperMarker_L",
+      "proposed_role": "Light",
+      "vertices": 766,
+      "polygons": 764,
+      "quads": 764,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.024062443168096973
+    },
+    {
+      "name": "BumperMarker_R",
+      "proposed_role": "Light",
+      "vertices": 766,
+      "polygons": 764,
+      "quads": 764,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.024062443168096973
+    },
+    {
+      "name": "Cabin_RearDivider",
+      "proposed_role": "Cabin",
+      "vertices": 194,
+      "polygons": 192,
+      "quads": 192,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.013478279349944446
+    },
+    {
+      "name": "Cabin_RearGlass",
+      "proposed_role": "Cabin",
+      "vertices": 1080,
+      "polygons": 1012,
+      "quads": 1012,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.04678568924858805
+    },
+    {
+      "name": "Cabin_Roof",
+      "proposed_role": "Cabin",
+      "vertices": 1885,
+      "polygons": 1792,
+      "quads": 1792,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.02583047611638623
+    },
+    {
+      "name": "Cabin_RoofEdges",
+      "proposed_role": "Cabin",
+      "vertices": 468,
+      "polygons": 480,
+      "quads": 448,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.024285718213077786
+    },
+    {
+      "name": "Cabin_SideGlass_L",
+      "proposed_role": "Cabin",
+      "vertices": 1080,
+      "polygons": 1012,
+      "quads": 1012,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.034619913776461016
+    },
+    {
+      "name": "Cabin_SideGlass_R",
+      "proposed_role": "Cabin",
+      "vertices": 1080,
+      "polygons": 1012,
+      "quads": 1012,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.034619913776461016
+    },
+    {
+      "name": "Cabin_Windshield",
+      "proposed_role": "Cabin",
+      "vertices": 1080,
+      "polygons": 1012,
+      "quads": 1012,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.04635816749485819
+    },
+    {
+      "name": "CabTrim_MirrorsHandles",
+      "proposed_role": "Trim",
+      "vertices": 1688,
+      "polygons": 1696,
+      "quads": 1648,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.017777800613954328
+    },
+    {
+      "name": "Door_L",
+      "proposed_role": "Body",
+      "vertices": 1025,
+      "polygons": 960,
+      "quads": 960,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.034722229280199135
+    },
+    {
+      "name": "Door_R",
+      "proposed_role": "Body",
+      "vertices": 1025,
+      "polygons": 960,
+      "quads": 960,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.034722229280199135
+    },
+    {
+      "name": "FrontFender_L",
+      "proposed_role": "Body",
+      "vertices": 2688,
+      "polygons": 2565,
+      "quads": 2565,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.030298152005823017
+    },
+    {
+      "name": "FrontFender_R",
+      "proposed_role": "Body",
+      "vertices": 2688,
+      "polygons": 2565,
+      "quads": 2565,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.030298152005823017
+    },
+    {
+      "name": "FrontIndicator_L",
+      "proposed_role": "Light",
+      "vertices": 940,
+      "polygons": 938,
+      "quads": 938,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.008900046392481493
+    },
+    {
+      "name": "FrontIndicator_R",
+      "proposed_role": "Light",
+      "vertices": 940,
+      "polygons": 938,
+      "quads": 938,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.008900046392481493
+    },
+    {
+      "name": "FrontPlate",
+      "proposed_role": "Trim",
+      "vertices": 440,
+      "polygons": 438,
+      "quads": 438,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.017777800613954328
+    },
+    {
+      "name": "Grille_Frame",
+      "proposed_role": "Fascia",
+      "vertices": 864,
+      "polygons": 864,
+      "quads": 864,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.04699993124836981
+    },
+    {
+      "name": "Grille_Inset",
+      "proposed_role": "Fascia",
+      "vertices": 2226,
+      "polygons": 2214,
+      "quads": 2214,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.02489130626360977
+    },
+    {
+      "name": "Headlight_L",
+      "proposed_role": "Light",
+      "vertices": 1429,
+      "polygons": 1376,
+      "quads": 1376,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.013529420137945282
+    },
+    {
+      "name": "Headlight_R",
+      "proposed_role": "Light",
+      "vertices": 1429,
+      "polygons": 1376,
+      "quads": 1376,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.013529420137945282
+    },
+    {
+      "name": "HeadlightHousing_L",
+      "proposed_role": "Light",
+      "vertices": 408,
+      "polygons": 408,
+      "quads": 408,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.04699993124836981
+    },
+    {
+      "name": "HeadlightHousing_R",
+      "proposed_role": "Light",
+      "vertices": 408,
+      "polygons": 408,
+      "quads": 408,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.04699993124836981
+    },
+    {
+      "name": "RearPlate",
+      "proposed_role": "Trim",
+      "vertices": 414,
+      "polygons": 412,
+      "quads": 412,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.017875016054326714
+    },
+    {
+      "name": "Suspension_Front",
+      "proposed_role": "Underbody",
+      "vertices": 4430,
+      "polygons": 4544,
+      "quads": 4288,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.02999997160861788
+    },
+    {
+      "name": "Suspension_Rear",
+      "proposed_role": "Underbody",
+      "vertices": 2682,
+      "polygons": 2752,
+      "quads": 2528,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.05000001108273741
+    },
+    {
+      "name": "Tailgate",
+      "proposed_role": "Body",
+      "vertices": 1394,
+      "polygons": 1392,
+      "quads": 1392,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.04750001479920358
+    },
+    {
+      "name": "TailgateHandle",
+      "proposed_role": "Trim",
+      "vertices": 124,
+      "polygons": 122,
+      "quads": 122,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.014090909775478961
+    },
+    {
+      "name": "Taillight_L",
+      "proposed_role": "Light",
+      "vertices": 1864,
+      "polygons": 1854,
+      "quads": 1854,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.015399932861328125
+    },
+    {
+      "name": "Taillight_R",
+      "proposed_role": "Light",
+      "vertices": 1864,
+      "polygons": 1854,
+      "quads": 1854,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.015399932861328125
+    },
+    {
+      "name": "Underbody_Frame",
+      "proposed_role": "Underbody",
+      "vertices": 4508,
+      "polygons": 4516,
+      "quads": 4484,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.055000006200914685
+    },
+    {
+      "name": "Wheel_FL",
+      "proposed_role": "Wheel",
+      "vertices": 8474,
+      "polygons": 8928,
+      "quads": 6360,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.04004992939508318
+    },
+    {
+      "name": "Wheel_FR",
+      "proposed_role": "Wheel",
+      "vertices": 8474,
+      "polygons": 8928,
+      "quads": 6360,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.04004992939508318
+    },
+    {
+      "name": "Wheel_RL",
+      "proposed_role": "Wheel",
+      "vertices": 8474,
+      "polygons": 8928,
+      "quads": 6360,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.04004994338383789
+    },
+    {
+      "name": "Wheel_RR",
+      "proposed_role": "Wheel",
+      "vertices": 8474,
+      "polygons": 8928,
+      "quads": 6360,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.04004994338383789
+    },
+    {
+      "name": "Wheelhouse_Inner",
+      "proposed_role": "Underbody",
+      "vertices": 1804,
+      "polygons": 1600,
+      "quads": 1600,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.032441898616514295
+    },
+    {
+      "name": "Wipers",
+      "proposed_role": "Trim",
+      "vertices": 424,
+      "polygons": 436,
+      "quads": 396,
+      "ngons": 0,
+      "zero_area_faces": 0,
+      "collapsed_uv_faces": 0,
+      "p90_edge_m": 0.02825402793020269
+    }
+  ]
+}

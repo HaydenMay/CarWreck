@@ -1,0 +1,23 @@
+tube-prototype 2 Suspension (standalone; touches no runtime state). Per-vertex = shipped field; sections = coherent tube sections.
+Same standard 15 m/s 1500 kg wide hit per side as the part-fold outlier report.
+
+Suspension_Front: 8138 vertices, 428 sections, 7742 bound (95%), 8832 triangles
+Suspension_Rear: 4622 vertices, 110 sections, 2646 bound (57%), 5280 triangles
+-- Front
+   Suspension_Front   max disp 28 mm; folds per-vertex 484/8832 (5.48%) -> sections 39/8832 (0.44%); worst section radius change 216%
+   Suspension_Rear    max disp 0 mm; folds per-vertex 0/5280 (0.00%) -> sections 0/5280 (0.00%); worst section radius change 0%
+-- Rear
+   Suspension_Front   max disp 0 mm; folds per-vertex 0/8832 (0.00%) -> sections 0/8832 (0.00%); worst section radius change 0%
+   Suspension_Rear    max disp 27 mm; folds per-vertex 44/5280 (0.83%) -> sections 44/5280 (0.83%); worst section radius change 1%
+-- Left side
+   Suspension_Front   max disp 0 mm; folds per-vertex 0/8832 (0.00%) -> sections 0/8832 (0.00%); worst section radius change 0%
+   Suspension_Rear    max disp 5 mm; folds per-vertex 0/5280 (0.00%) -> sections 0/5280 (0.00%); worst section radius change 13%
+-- Right side
+   Suspension_Front   max disp 0 mm; folds per-vertex 0/8832 (0.00%) -> sections 0/8832 (0.00%); worst section radius change 0%
+   Suspension_Rear    max disp 4 mm; folds per-vertex 0/5280 (0.00%) -> sections 0/5280 (0.00%); worst section radius change 0%
+-- Front-left corner (angled)
+   Suspension_Front   max disp 50 mm; folds per-vertex 350/8832 (3.96%) -> sections 13/8832 (0.15%); worst section radius change 344%
+   Suspension_Rear    max disp 0 mm; folds per-vertex 0/5280 (0.00%) -> sections 0/5280 (0.00%); worst section radius change 0%
+-- Rear-right corner (angled)
+   Suspension_Front   max disp 0 mm; folds per-vertex 0/8832 (0.00%) -> sections 0/8832 (0.00%); worst section radius change 0%
+   Suspension_Rear    max disp 46 mm; folds per-vertex 134/5280 (2.54%) -> sections 105/5280 (1.99%); worst section radius change 241%

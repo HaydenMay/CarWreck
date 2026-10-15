@@ -1,0 +1,397 @@
+{
+  "stage": "B role proposals; not an imported vehicle manifest",
+  "components": [
+    {
+      "pattern": "BedFloor",
+      "match": "Exact",
+      "role": "Panel",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "BedFrontWall",
+      "match": "Exact",
+      "role": "Body",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "BedLiner_Floor",
+      "match": "Exact",
+      "role": "Trim",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "BedLiner_FrontWall",
+      "match": "Exact",
+      "role": "Trim",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "BedLiner_Side_L",
+      "match": "Exact",
+      "role": "Trim",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "BedLiner_Side_R",
+      "match": "Exact",
+      "role": "Trim",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "BedLiner_Tailgate",
+      "match": "Exact",
+      "role": "Trim",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "BedLiner_WheelTub_L",
+      "match": "Exact",
+      "role": "Trim",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "BedLiner_WheelTub_R",
+      "match": "Exact",
+      "role": "Trim",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "BedRail_L",
+      "match": "Exact",
+      "role": "Panel",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "BedRail_R",
+      "match": "Exact",
+      "role": "Panel",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "BedRail_Rear",
+      "match": "Exact",
+      "role": "Panel",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "BedSide_L",
+      "match": "Exact",
+      "role": "Body",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "BedSide_R",
+      "match": "Exact",
+      "role": "Body",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "Body_CabRear",
+      "match": "Exact",
+      "role": "Body",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "Body_Hood",
+      "match": "Exact",
+      "role": "Body",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "Body_Nose",
+      "match": "Exact",
+      "role": "Body",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "Bumper_Front",
+      "match": "Exact",
+      "role": "Bumper",
+      "mode": "Deform",
+      "crumple": 0.25
+    },
+    {
+      "pattern": "Bumper_Rear",
+      "match": "Exact",
+      "role": "Bumper",
+      "mode": "Deform",
+      "crumple": 0.25
+    },
+    {
+      "pattern": "BumperMarker_L",
+      "match": "Exact",
+      "role": "Light",
+      "mode": "Deform",
+      "crumple": 0.45
+    },
+    {
+      "pattern": "BumperMarker_R",
+      "match": "Exact",
+      "role": "Light",
+      "mode": "Deform",
+      "crumple": 0.45
+    },
+    {
+      "pattern": "Cabin_RearDivider",
+      "match": "Exact",
+      "role": "Cabin",
+      "mode": "Deform",
+      "crumple": 0.85
+    },
+    {
+      "pattern": "Cabin_RearGlass",
+      "match": "Exact",
+      "role": "Cabin",
+      "mode": "Deform",
+      "crumple": 0.85
+    },
+    {
+      "pattern": "Cabin_Roof",
+      "match": "Exact",
+      "role": "Cabin",
+      "mode": "Deform",
+      "crumple": 0.85
+    },
+    {
+      "pattern": "Cabin_RoofEdges",
+      "match": "Exact",
+      "role": "Cabin",
+      "mode": "Deform",
+      "crumple": 0.85
+    },
+    {
+      "pattern": "Cabin_SideGlass_L",
+      "match": "Exact",
+      "role": "Cabin",
+      "mode": "Deform",
+      "crumple": 0.85
+    },
+    {
+      "pattern": "Cabin_SideGlass_R",
+      "match": "Exact",
+      "role": "Cabin",
+      "mode": "Deform",
+      "crumple": 0.85
+    },
+    {
+      "pattern": "Cabin_Windshield",
+      "match": "Exact",
+      "role": "Cabin",
+      "mode": "Deform",
+      "crumple": 0.85
+    },
+    {
+      "pattern": "CabTrim_MirrorsHandles",
+      "match": "Exact",
+      "role": "Trim",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "Door_L",
+      "match": "Exact",
+      "role": "Body",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "Door_R",
+      "match": "Exact",
+      "role": "Body",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "FrontFender_L",
+      "match": "Exact",
+      "role": "Body",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "FrontFender_R",
+      "match": "Exact",
+      "role": "Body",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "FrontIndicator_L",
+      "match": "Exact",
+      "role": "Light",
+      "mode": "Deform",
+      "crumple": 0.45
+    },
+    {
+      "pattern": "FrontIndicator_R",
+      "match": "Exact",
+      "role": "Light",
+      "mode": "Deform",
+      "crumple": 0.45
+    },
+    {
+      "pattern": "FrontPlate",
+      "match": "Exact",
+      "role": "Trim",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "Grille_Frame",
+      "match": "Exact",
+      "role": "Fascia",
+      "mode": "Deform",
+      "crumple": 0.55
+    },
+    {
+      "pattern": "Grille_Inset",
+      "match": "Exact",
+      "role": "Fascia",
+      "mode": "Deform",
+      "crumple": 0.55
+    },
+    {
+      "pattern": "Headlight_L",
+      "match": "Exact",
+      "role": "Light",
+      "mode": "Deform",
+      "crumple": 0.45
+    },
+    {
+      "pattern": "Headlight_R",
+      "match": "Exact",
+      "role": "Light",
+      "mode": "Deform",
+      "crumple": 0.45
+    },
+    {
+      "pattern": "HeadlightHousing_L",
+      "match": "Exact",
+      "role": "Light",
+      "mode": "Deform",
+      "crumple": 0.45
+    },
+    {
+      "pattern": "HeadlightHousing_R",
+      "match": "Exact",
+      "role": "Light",
+      "mode": "Deform",
+      "crumple": 0.45
+    },
+    {
+      "pattern": "RearPlate",
+      "match": "Exact",
+      "role": "Trim",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "Suspension_Front",
+      "match": "Exact",
+      "role": "Underbody",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "Suspension_Rear",
+      "match": "Exact",
+      "role": "Underbody",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "Tailgate",
+      "match": "Exact",
+      "role": "Body",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "TailgateHandle",
+      "match": "Exact",
+      "role": "Trim",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "Taillight_L",
+      "match": "Exact",
+      "role": "Light",
+      "mode": "Deform",
+      "crumple": 0.45
+    },
+    {
+      "pattern": "Taillight_R",
+      "match": "Exact",
+      "role": "Light",
+      "mode": "Deform",
+      "crumple": 0.45
+    },
+    {
+      "pattern": "Underbody_Frame",
+      "match": "Exact",
+      "role": "Underbody",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "Wheel_FL",
+      "match": "Exact",
+      "role": "Wheel",
+      "mode": "Rigid",
+      "crumple": 0
+    },
+    {
+      "pattern": "Wheel_FR",
+      "match": "Exact",
+      "role": "Wheel",
+      "mode": "Rigid",
+      "crumple": 0
+    },
+    {
+      "pattern": "Wheel_RL",
+      "match": "Exact",
+      "role": "Wheel",
+      "mode": "Rigid",
+      "crumple": 0
+    },
+    {
+      "pattern": "Wheel_RR",
+      "match": "Exact",
+      "role": "Wheel",
+      "mode": "Rigid",
+      "crumple": 0
+    },
+    {
+      "pattern": "Wheelhouse_Inner",
+      "match": "Exact",
+      "role": "Underbody",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "Wipers",
+      "match": "Exact",
+      "role": "Trim",
+      "mode": "Deform",
+      "crumple": 1
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+rotated side-shot footprint uses 25 cm lateral half-width, not 1.9 m length: PASS
+intentional cabin overlap (8 mm): swept 0.8802, expected 0.8790, cabinFirst True, acceptance True, expected True: PASS
+footprint clear of cabin: swept 0.7512, expected 0.7500, cabinFirst False, acceptance True, expected True: PASS
+stale outer shell: swept 0.9632, expected 0.7500, cabinFirst False, acceptance False, expected False: PASS
+misplaced cabin even within 6 cm face tolerance: swept 0.9052, expected 0.8790, cabinFirst True, acceptance False, expected False: PASS
+expanded cabin: swept 0.9002, expected 0.8790, cabinFirst True, acceptance False, expected False: PASS
+scaled cabin child preserves raw size but expands physical box: swept 0.8978, expected 0.8790, cabinFirst True, acceptance False, expected False: PASS
+rotated cabin child changes protected volume: swept 0.7512, expected 0.8790, cabinFirst True, acceptance False, expected False: PASS
+insufficient depth change: swept 0.7512, expected 0.7500, cabinFirst False, acceptance False, expected False: PASS
+insufficient regional retraction: swept 0.7512, expected 0.7500, cabinFirst False, acceptance False, expected False: PASS
+impact not applied: swept 0.7512, expected 0.7500, cabinFirst False, acceptance False, expected False: PASS
+wrong swept surface over 6 cm: swept 0.8213, expected 0.7500, cabinFirst False, acceptance False, expected False: PASS

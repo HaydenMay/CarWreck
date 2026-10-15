@@ -1,0 +1,46 @@
+{
+  "status": "NOT ACCEPTED - mandatory adaptive-contact coverage/fold criteria and visual lamp separation unresolved",
+  "source_blend_sha256": "9b99100812355e3c825b4aac686148409bb2e7c531f43404676ff2218ba7e09a",
+  "fbx_sha256": "9a47347bf5f196d5973df24ce3a5044accc792693fbbb5903dbc6c4d7c161115",
+  "blender_mandatory_failures": [],
+  "blender_recommendations": [
+    "Cabin_RearDivider: small part (31 cm) with only 384 triangles deforms with crumple 0.85: consider a denser mesh, a lower crumple, or Rigid",
+    "TailgateHandle: small part (16 cm) with only 244 triangles deforms with crumple 1: consider a denser mesh, a lower crumple, or Rigid"
+  ],
+  "blender_deformable_vertices": 86610,
+  "unity_deformable_vertices": 114694,
+  "import_pass": true,
+  "integration_functional_checks_pass": true,
+  "mandatory_fold_criteria_pass": false,
+  "coverage": {
+    "total_targets": 16,
+    "passed": 14,
+    "failed": [
+      "left side front             LeftFront       0.962    0.961 ->  0.753         0.880 (  8.2 cm)     0.827-> 0.728    0.920-> 0.879     23.4 cm      FAIL  [LeftFrontBox -> CabinBox]",
+      "right side front            RightFront      0.962    0.961 ->  0.780         0.880 (  8.2 cm)     0.827-> 0.728    0.920-> 0.879     20.8 cm      FAIL  [RightFrontBox -> CabinBox]"
+    ]
+  },
+  "overflow_pass": true,
+  "chaos_pass": true,
+  "switching_pass": true,
+  "pickup_switch_fresh": true,
+  "two_colors_independent": true,
+  "webgl_browser_functional_pass": true,
+  "paint_uvs_unchanged": true,
+  "open_bed_collision_above_liner_m": 0.42148566246032715,
+  "remaining_fold_review": "PART FOLD OUTLIERS (> 5 % of a part folded by one 15 m/s wide hit; Body > 20 folds under a click dent): FrontIndicator_L 124/1324 (9%, Front), Suspension_Front 476/8832 (5%, Front) REVIEW",
+  "hardware": {
+    "cpu": "AMD Ryzen 7 5700, 8 cores / 16 logical processors",
+    "gpu": "NVIDIA GeForce RTX 4060",
+    "environment": "Windows Unity 6000.6.0f1 Editor, real PhysX scripted 50 Hz, anchored vehicle"
+  },
+  "timing_lines": [
+    "every hit applied PASS; deformation per hit 122.0 ms avg / 186.1 ms max over 15",
+    "REBUILD OPTIMISATION (9 recorded impacts replayed): before 89.0 ms/impact (parts evaluated 52.0, rebuilt 52.0 of 52); after 78.5 ms/impact (evaluated 35.2, rebuilt 35.2); identical mesh: max difference 0.0E+000 m PASS; matches the live run 0.0E+000 m",
+    "deformation per hit by block of 20: 124.2 / 122.4 / 124.6 / 122.5 / 126.8 ms; hitbox update 2.77 ms avg over 36 updates",
+    "COSTS (editor, this machine): 14 car colliders; hitbox update 2.57 ms avg / 4.72 ms max over 98 updates (only after impacts; 9.5 of 16 faces re-fitted per update on average); visual deformation 107.7 ms avg / 189.2 ms max per hit; physics step 0.046 ms avg over 34200 steps",
+    "Deformation cost per hit: 104.6 ms avg for hits 1-24, 109.9 ms avg for hits 25+ (merging is O(1); per-hit cost does not grow)",
+    "PERFORMANCE (editor): 50-shot run 7.5 s wall time for 1911 physics steps (38 steps = 0.76 s simulated per shot); deformation 134.0 ms avg / 192.6 ms max per impact; hitbox update 2.31 ms avg; physics step 0.069 ms avg"
+  ],
+  "note": "No shared engine, role resistance, rigid classification or validation threshold changes. PhysX re-runs are informational; recorded replays have their own results."
+}

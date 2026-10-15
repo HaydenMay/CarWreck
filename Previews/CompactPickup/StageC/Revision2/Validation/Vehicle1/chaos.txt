@@ -1,0 +1,27 @@
+[CollisionLab] Random impact validation - Compact Hatchback: seed 2026, 50 shots, 20 m/s, 2500 kg, random block width (real PhysX, anchored)
+  1. Selections: generating shots 0-49 twice gives identical parameters PASS; seed 2027 gives a different sequence PASS
+     first shots: 261.7° -0.82 N | 94.6° +0.52 N | 248.5° +0.68 N | 76.4° +0.69 N
+     approach octants: F 13 FR 3 R 4 RR 4 B 6 RL 6 L 11 FL 3; lateral range -0.82..+0.74; narrow 22/50
+  2. Placement (undamaged): parked block overlaps the car 0/50 PASS; contact predicted for 50/50
+  3. Chaos run: completed True, launched 50, impacts 50, contact only 0, missed 0; impacts on car 50 (24 stored, 26 merged) PASS
+     one block at a time: hitbox update still pending at the next launch 0 times PASS; fewest steps for a shot with contact 27 (>= 15 quiet steps); car never repaired (impacts only grew) PASS
+     impacts by approach octant: F 13 FR 3 R 4 RR 4 B 6 RL 6 L 11 FL 3
+     regions struck: front centre 12, middle left 10, rear left 8, rear centre 6, front right 5, rear right 4, middle right 3, front left 2
+     hitbox boxes struck 12/14: RearLeft 9, FrontRight 8, RearRight 7, FrontLeft 4, RightFront 4, LeftMid 4, Cabin 4, FrontCentre 4, LeftFront 3, RearCentre 1, LeftRear 1, RightRear 1
+     spread over the car (>= 6 regions, >= 8 boxes, >= 6 approach octants) PASS
+     local saturation (boxes hit >= 4 times, mesh moved first -> last hit): FrontLeft 0.30->0.12 m, RightFront 0.27->0.10 m, RearLeft 0.39->0.16 m, FrontRight 0.34->0.09 m, LeftMid 0.35->0.39 m, RearRight 0.36->0.12 m, Cabin 0.06->0.10 m, FrontCentre 0.20->0.06 m; mean 0.284 -> 0.142 m PASS
+     sanity: NaN 0, folded 8114 of 132,673 (6.1%), boxes finite and only retracted True (total 385 cm, outward moves blocked 200), car drift 0.13 mm PASS
+  4. Placement (after 50 shots): parked block overlaps the crushed car 0/50 PASS; first touch now deeper than on the undamaged car for 50/50 lines (aims at the current hitbox)
+  5. Least-damaged region RightMid (retracted 0 cm, its box struck 0x): manual narrow hit moved the mesh 0.383 m PASS
+  5. Least-damaged region RightRear (retracted 13 cm, its box struck 1x): manual narrow hit moved the mesh 0.248 m PASS
+  5. Least-damaged region RightFront (retracted 14 cm, its box struck 4x): manual narrow hit moved the mesh 0.221 m PASS
+  6. Same seed again: identical random selections for all 50 shots PASS (exact: they depend only on the seed)
+     replay of the 50 recorded impacts into a repaired car: mesh difference 0.0E+000 m PASS (deformation is exact for a given impact sequence)
+     physics re-run of the whole run: same outcome and region 50/50 shots, final mesh difference 99.6 mm, first shot whose mesh change differs by > 1 mm: 10 (PhysX is not bit-repeatable across runs; informational)
+     physics inputs between the two runs: first input difference > 1 mm at shot 10: footprint centre (-0.507, 0.641, -1.087) vs (-0.525, 0.643, -1.065), crush 0.234 vs 0.230 m; largest at shot 27 (55.5 mm)
+     0.1 mm perturbation of every one of the 50 impactors (replayed): worst mesh difference 25.6 mm FAIL (no amplification regression; pre-fix this was 100s of mm)
+  7. STOP during shot 2: the block in flight finishes first (True), the run ends after 2 launch(es), no further launch; damage kept (2 impacts, not repaired); block parked clear of the car True PASS
+  8. Repair Car: mesh 0.0E+000/0.0E+000, hitbox original True; Reset All: mesh 0.0E+000/0.0E+000 PASS
+  9. Switching to Muscle Car during a run: run stopped, old car gone, new car undamaged and stays undamaged, block parked PASS
+  PERFORMANCE (editor): 50-shot run 5.1 s wall time for 1679 physics steps (34 steps = 0.67 s simulated per shot); deformation 90.7 ms avg / 124.1 ms max per impact; hitbox update 1.70 ms avg; physics step 0.077 ms avg
+  Random impact validation FAIL

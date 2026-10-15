@@ -1,0 +1,272 @@
+{
+  "catalog": [
+    {
+      "sheet": 1,
+      "view": "front_low",
+      "crop_pixels": [
+        0,
+        0,
+        640,
+        353
+      ],
+      "projection": "perspective, low front three-quarter",
+      "features": "lift, tire stance, integrated grille",
+      "crop_file": "photo1_front_low.png"
+    },
+    {
+      "sheet": 1,
+      "view": "side",
+      "crop_pixels": [
+        643,
+        0,
+        1280,
+        353
+      ],
+      "projection": "near orthographic side",
+      "features": "wheelbase, cab/bed, wheel arch gap",
+      "crop_file": "photo1_side.png"
+    },
+    {
+      "sheet": 1,
+      "view": "front_suspension",
+      "crop_pixels": [
+        0,
+        355,
+        472,
+        690
+      ],
+      "projection": "perspective detail",
+      "features": "front tire, suspension and rocker height",
+      "crop_file": "photo1_front_suspension.png"
+    },
+    {
+      "sheet": 1,
+      "view": "rear_wheel",
+      "crop_pixels": [
+        474,
+        355,
+        842,
+        690
+      ],
+      "projection": "perspective detail",
+      "features": "rear arch, tire and bed side",
+      "crop_file": "photo1_rear_wheel.png"
+    },
+    {
+      "sheet": 1,
+      "view": "bed",
+      "crop_pixels": [
+        844,
+        355,
+        1280,
+        690
+      ],
+      "projection": "perspective detail",
+      "features": "ribbed liner, intruding wheel tubs, bed depth",
+      "crop_file": "photo1_bed.png"
+    },
+    {
+      "sheet": 1,
+      "view": "lower_door",
+      "crop_pixels": [
+        0,
+        693,
+        637,
+        960
+      ],
+      "projection": "perspective detail",
+      "features": "continuous cream trim and rocker contour",
+      "crop_file": "photo1_lower_door.png"
+    },
+    {
+      "sheet": 1,
+      "view": "rear_low",
+      "crop_pixels": [
+        639,
+        693,
+        1280,
+        960
+      ],
+      "projection": "perspective, low rear three-quarter",
+      "features": "tailgate, clearance and bed length",
+      "crop_file": "photo1_rear_low.png"
+    },
+    {
+      "sheet": 2,
+      "view": "top",
+      "crop_pixels": [
+        0,
+        0,
+        795,
+        486
+      ],
+      "projection": "near orthographic top",
+      "features": "convex hood plan, short roof, open bed, track",
+      "crop_file": "photo2_top.png"
+    },
+    {
+      "sheet": 2,
+      "view": "nose_top",
+      "crop_pixels": [
+        797,
+        0,
+        1280,
+        486
+      ],
+      "projection": "perspective, high front",
+      "features": "hood crown, shoulder lines and grille",
+      "crop_file": "photo2_nose_top.png"
+    },
+    {
+      "sheet": 2,
+      "view": "front",
+      "crop_pixels": [
+        0,
+        488,
+        512,
+        960
+      ],
+      "projection": "near orthographic front",
+      "features": "rectangular lamps, grille width, track",
+      "crop_file": "photo2_front.png"
+    },
+    {
+      "sheet": 2,
+      "view": "grille",
+      "crop_pixels": [
+        514,
+        488,
+        873,
+        960
+      ],
+      "projection": "perspective detail",
+      "features": "grille integration, bumper depth",
+      "crop_file": "photo2_grille.png"
+    },
+    {
+      "sheet": 2,
+      "view": "hood_fender",
+      "crop_pixels": [
+        875,
+        488,
+        1280,
+        960
+      ],
+      "projection": "perspective detail",
+      "features": "convex hood and fender contour",
+      "crop_file": "photo2_hood_fender.png"
+    },
+    {
+      "sheet": 3,
+      "view": "front34",
+      "crop_pixels": [
+        0,
+        0,
+        748,
+        462
+      ],
+      "projection": "perspective front three-quarter",
+      "features": "primary design and stock stance",
+      "crop_file": "photo3_front34.png"
+    },
+    {
+      "sheet": 3,
+      "view": "rear34",
+      "crop_pixels": [
+        750,
+        0,
+        1280,
+        462
+      ],
+      "projection": "perspective rear three-quarter",
+      "features": "tailgate, bed volume and cab rear",
+      "crop_file": "photo3_rear34.png"
+    },
+    {
+      "sheet": 3,
+      "view": "side",
+      "crop_pixels": [
+        0,
+        465,
+        625,
+        765
+      ],
+      "projection": "near orthographic side; PRIMARY proportions",
+      "features": "wheelbase, overhangs, hood, cab/bed",
+      "crop_file": "photo3_side.png"
+    },
+    {
+      "sheet": 3,
+      "view": "front",
+      "crop_pixels": [
+        627,
+        465,
+        940,
+        765
+      ],
+      "projection": "near orthographic front",
+      "features": "width, roof taper, grille and ride height",
+      "crop_file": "photo3_front.png"
+    },
+    {
+      "sheet": 3,
+      "view": "rear",
+      "crop_pixels": [
+        942,
+        465,
+        1280,
+        765
+      ],
+      "projection": "near orthographic rear",
+      "features": "tailgate, roof width and rear clearance",
+      "crop_file": "photo3_rear.png"
+    },
+    {
+      "sheet": 3,
+      "view": "primary_palette",
+      "crop_pixels": [
+        21,
+        786,
+        438,
+        925
+      ],
+      "projection": "color chips",
+      "features": "forest green, warm cream, dark steel",
+      "crop_file": "photo3_primary_palette.png"
+    },
+    {
+      "sheet": 3,
+      "view": "alternate_palette",
+      "crop_pixels": [
+        444,
+        786,
+        867,
+        925
+      ],
+      "projection": "color chips; secondary direction",
+      "features": "independent color A/B; not selected",
+      "crop_file": "photo3_alternate_palette.png"
+    },
+    {
+      "sheet": 3,
+      "view": "alternate34",
+      "crop_pixels": [
+        869,
+        768,
+        1280,
+        960
+      ],
+      "projection": "perspective; alternate palette",
+      "features": "body design cross-check; blue not selected",
+      "crop_file": "photo3_alternate34.png"
+    }
+  ],
+  "primary_proportion_view": "Photo3 side",
+  "primary_plan_view": "Photo2 top",
+  "primary_palette": "Photo3 forest/cream",
+  "sheet_sha256": {
+    "1": "83d3c706fc58b9dedb274e94141ac66c38c04035eee9d50801aec1bb4d6f7eec",
+    "2": "9503e15f51b7afe7e71402441ba58fe8b44c8f248c3cd1e1cb010e311933da7b",
+    "3": "9317f22cf818c919f4073ffa3c02a83711f17d8f6155dc575d6fa34934d92710"
+  }
+}

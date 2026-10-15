@@ -1,0 +1,87 @@
+{
+  "stage": "B modeling diagnostics only",
+  "checks": {
+    "approved_stage_a_hashes_unchanged": true,
+    "deformable_vertices_under_90000": true,
+    "deformable_parts_at_most_80": true,
+    "all_coordinates_finite": true,
+    "no_zero_area_faces": true,
+    "no_collapsed_uv_faces": true,
+    "body_grid_p90_under_6cm": true,
+    "body_has_no_ngons": true,
+    "wheel_origins_preserved_under_0_1mm": true,
+    "four_wheels_centered_within_3cm": true,
+    "open_bed_center_hits_liner": true,
+    "cab_bed_gap_clear_above_chassis": true,
+    "hood_plan_monotone_no_hourglass": true,
+    "roof_uses_primary_green_uv_mask": true,
+    "front_arch_gap_at_least_10cm": true,
+    "all_vehicle_object_scales_applied": true,
+    "two_uv_layers_on_every_part": true,
+    "grille_slats_recessed_behind_frame": true,
+    "open_cavity_panels_face_visible_interior": true,
+    "stamped_bumper_surfaces_remain_closed": true,
+    "socket_seeds_hit_support_and_normal": true
+  },
+  "passed": 21,
+  "total": 21,
+  "source_blend_sha256": "57672aacffeef0e7e1fa35cde9651d5b3ddead2267cc67bb820bf58b58aec970",
+  "approved_a_revision": "f230c5a58f52547844f2e07ef79263e9b0d65bb4",
+  "vertices_total": 121994,
+  "deformable_vertices": 88098,
+  "body_edge_p90_m": {
+    "BedFrontWall": 0.025915503490650846,
+    "BedSide_L": 0.0347321027905076,
+    "BedSide_R": 0.0347321027905076,
+    "Body_CabRear": 0.05000001108273741,
+    "Body_Hood": 0.026696041637367694,
+    "Body_Nose": 0.027647078370275725,
+    "Door_L": 0.034722229280199135,
+    "Door_R": 0.034722229280199135,
+    "FrontFender_L": 0.030298152005823017,
+    "FrontFender_R": 0.030298152005823017,
+    "Tailgate": 0.04750001479920358
+  },
+  "zero_area_faces": 0,
+  "collapsed_uv_faces": 0,
+  "wheel_origin_max_delta_m": 0.0,
+  "bed_ray": {
+    "hit": true,
+    "object": "BedLiner_Floor",
+    "point": [
+      0.0,
+      -1.2799999713897705,
+      0.9200000762939453
+    ]
+  },
+  "cab_gap_ray": {
+    "hit": true,
+    "object": "Underbody_Frame",
+    "point": [
+      0.0,
+      -0.2939999997615814,
+      0.44700002670288086
+    ]
+  },
+  "roof_primary_srgb": [
+    0.08,
+    0.22,
+    0.145
+  ],
+  "roof_mask_selects_a": true,
+  "cavity_min_normal_dot": {
+    "BedLiner_Side_L": 0.9481242299079895,
+    "BedLiner_Side_R": 0.9481242299079895,
+    "BedLiner_FrontWall": 0.9279198050498962,
+    "BedLiner_Tailgate": 0.9279237985610962,
+    "Wheelhouse_Inner": 0.4201914966106415
+  },
+  "bumper_open_boundary_edges": {
+    "Bumper_Front": 0,
+    "Bumper_Rear": 0
+  },
+  "production_asset_qa": "NOT RUN",
+  "unity_import": "NOT RUN",
+  "destruction_tests": "NOT RUN",
+  "live_attachments": "NOT RUN"
+}

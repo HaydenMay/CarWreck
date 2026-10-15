@@ -1,0 +1,12 @@
+[CollisionLab] Vehicle switching (real PhysX, anchored)
+  muscle car damaged: 3 impacts, max disp 0.434 m, hitbox retracted 136 cm in total
+  switch -> Compact Hatchback: old car destroyed True, damage models/receivers/hitboxes in scene 1/1/1, stray car colliders 0, definition+profile+mass (950 kg) True, impacts 0, mesh vs pristine source 0.0E+000 m, hitbox faces original True, body (1.851, 0.714, 4.014) = measured True, impact height 0.60 m, front aim z 2.011 on body front True, panel shows it / no stale report True PASS
+    first hit on it: applied True, impact #1, moved 0.388 m, footprint z 2.048 (body front 2.011) PASS
+  switch -> Muscle Car: old car destroyed True, damage models/receivers/hitboxes in scene 1/1/1, stray car colliders 0, definition+profile+mass (1400 kg) True, impacts 0, mesh vs pristine source 0.0E+000 m, hitbox faces original True, body (2.053, 0.713, 4.988) = measured True, impact height 0.70 m, front aim z 2.514 on body front True, panel shows it / no stale report True PASS
+    first hit on it: applied True, impact #1, moved 0.426 m, footprint z 2.477 (body front 2.514) PASS
+    muscle car after switching back and repairing that hit: identical to the original undamaged car 0.0E+000 m PASS
+  switch -> Compact Hatchback: old car destroyed True, damage models/receivers/hitboxes in scene 1/1/1, stray car colliders 0, definition+profile+mass (950 kg) True, impacts 0, mesh vs pristine source 0.0E+000 m, hitbox faces original True, body (1.851, 0.714, 4.014) = measured True, impact height 0.60 m, front aim z 2.011 on body front True, panel shows it / no stale report True PASS
+    first hit on it: applied True, impact #1, moved 0.388 m, footprint z 2.048 (body front 2.011) PASS
+  switch -> Muscle Car: old car destroyed True, damage models/receivers/hitboxes in scene 1/1/1, stray car colliders 0, definition+profile+mass (1400 kg) True, impacts 0, mesh vs pristine source 0.0E+000 m, hitbox faces original True, body (2.053, 0.713, 4.988) = measured True, impact height 0.70 m, front aim z 2.514 on body front True, panel shows it / no stale report True PASS
+    first hit on it: applied True, impact #1, moved 0.426 m, footprint z 2.477 (body front 2.514) PASS
+  Vehicle switching carries no damage, colliders or reports between vehicles PASS

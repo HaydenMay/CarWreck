@@ -1,0 +1,1277 @@
+{
+  "format": "carwreck.vehicle.v1",
+  "id": "carwreck.compact_pickup",
+  "revision": 3,
+  "displayName": "Compact Pickup",
+  "model": "Assets/Vehicles/CompactPickup/Models/CompactPickup.fbx",
+  "palette": "Assets/Vehicles/CompactPickup/palette.json",
+  "paint": {
+    "material": "Pickup_Paint",
+    "stripeMask": "Assets/Vehicles/CompactPickup/Textures/LowerBodyMask.png"
+  },
+  "massKg": 1350,
+  "unknownComponentCrumple": 1,
+  "maxImpactRecords": 24,
+  "cabinLine": {
+    "start": 0,
+    "end": 0
+  },
+  "shell": {
+    "frontDepth": 0,
+    "rearDepth": 0,
+    "sideDepth": 0,
+    "impactHeight": 0
+  },
+  "components": [
+    {
+      "pattern": "BedFloor",
+      "match": "Exact",
+      "role": "Panel",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "BedFrontWall",
+      "match": "Exact",
+      "role": "Body",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "BedLiner_Floor",
+      "match": "Exact",
+      "role": "Trim",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "BedLiner_FrontWall",
+      "match": "Exact",
+      "role": "Trim",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "BedLiner_Side_L",
+      "match": "Exact",
+      "role": "Trim",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "BedLiner_Side_R",
+      "match": "Exact",
+      "role": "Trim",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "BedLiner_Tailgate",
+      "match": "Exact",
+      "role": "Trim",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "BedLiner_WheelTub_L",
+      "match": "Exact",
+      "role": "Trim",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "BedLiner_WheelTub_R",
+      "match": "Exact",
+      "role": "Trim",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "BedRail_L",
+      "match": "Exact",
+      "role": "Panel",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "BedRail_R",
+      "match": "Exact",
+      "role": "Panel",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "BedRail_Rear",
+      "match": "Exact",
+      "role": "Panel",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "BedSide_L",
+      "match": "Exact",
+      "role": "Body",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "BedSide_R",
+      "match": "Exact",
+      "role": "Body",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "Body_CabRear",
+      "match": "Exact",
+      "role": "Body",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "Body_Hood",
+      "match": "Exact",
+      "role": "Body",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "Body_Nose",
+      "match": "Exact",
+      "role": "Body",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "BumperMarker_L",
+      "match": "Exact",
+      "role": "Light",
+      "mode": "Deform",
+      "crumple": 0.45
+    },
+    {
+      "pattern": "BumperMarker_R",
+      "match": "Exact",
+      "role": "Light",
+      "mode": "Deform",
+      "crumple": 0.45
+    },
+    {
+      "pattern": "Bumper_Front",
+      "match": "Exact",
+      "role": "Bumper",
+      "mode": "Deform",
+      "crumple": 0.25
+    },
+    {
+      "pattern": "Bumper_Rear",
+      "match": "Exact",
+      "role": "Bumper",
+      "mode": "Deform",
+      "crumple": 0.25
+    },
+    {
+      "pattern": "CabTrim_MirrorsHandles",
+      "match": "Exact",
+      "role": "Trim",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "Cabin_RearDivider",
+      "match": "Exact",
+      "role": "Cabin",
+      "mode": "Deform",
+      "crumple": 0.85
+    },
+    {
+      "pattern": "Cabin_RearGlass",
+      "match": "Exact",
+      "role": "Cabin",
+      "mode": "Deform",
+      "crumple": 0.85
+    },
+    {
+      "pattern": "Cabin_Roof",
+      "match": "Exact",
+      "role": "Cabin",
+      "mode": "Deform",
+      "crumple": 0.85
+    },
+    {
+      "pattern": "Cabin_RoofEdges",
+      "match": "Exact",
+      "role": "Cabin",
+      "mode": "Deform",
+      "crumple": 0.85
+    },
+    {
+      "pattern": "Cabin_SideGlass_L",
+      "match": "Exact",
+      "role": "Cabin",
+      "mode": "Deform",
+      "crumple": 0.85
+    },
+    {
+      "pattern": "Cabin_SideGlass_R",
+      "match": "Exact",
+      "role": "Cabin",
+      "mode": "Deform",
+      "crumple": 0.85
+    },
+    {
+      "pattern": "Cabin_Windshield",
+      "match": "Exact",
+      "role": "Cabin",
+      "mode": "Deform",
+      "crumple": 0.85
+    },
+    {
+      "pattern": "Door_L",
+      "match": "Exact",
+      "role": "Body",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "Door_R",
+      "match": "Exact",
+      "role": "Body",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "FrontFender_L",
+      "match": "Exact",
+      "role": "Body",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "FrontFender_R",
+      "match": "Exact",
+      "role": "Body",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "FrontIndicator_L",
+      "match": "Exact",
+      "role": "Light",
+      "mode": "Deform",
+      "crumple": 0.45
+    },
+    {
+      "pattern": "FrontIndicator_R",
+      "match": "Exact",
+      "role": "Light",
+      "mode": "Deform",
+      "crumple": 0.45
+    },
+    {
+      "pattern": "FrontPlate",
+      "match": "Exact",
+      "role": "Trim",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "Grille_Frame",
+      "match": "Exact",
+      "role": "Fascia",
+      "mode": "Deform",
+      "crumple": 0.55
+    },
+    {
+      "pattern": "Grille_Inset",
+      "match": "Exact",
+      "role": "Fascia",
+      "mode": "Deform",
+      "crumple": 0.55
+    },
+    {
+      "pattern": "HeadlightHousing_L",
+      "match": "Exact",
+      "role": "Light",
+      "mode": "Deform",
+      "crumple": 0.45
+    },
+    {
+      "pattern": "HeadlightHousing_R",
+      "match": "Exact",
+      "role": "Light",
+      "mode": "Deform",
+      "crumple": 0.45
+    },
+    {
+      "pattern": "Headlight_L",
+      "match": "Exact",
+      "role": "Light",
+      "mode": "Deform",
+      "crumple": 0.45
+    },
+    {
+      "pattern": "Headlight_R",
+      "match": "Exact",
+      "role": "Light",
+      "mode": "Deform",
+      "crumple": 0.45
+    },
+    {
+      "pattern": "RearPlate",
+      "match": "Exact",
+      "role": "Trim",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "Suspension_Front",
+      "match": "Exact",
+      "role": "Underbody",
+      "mode": "Deform",
+      "crumple": 1,
+      "coherentTubeSections": true
+    },
+    {
+      "pattern": "Suspension_Rear",
+      "match": "Exact",
+      "role": "Underbody",
+      "mode": "Deform",
+      "crumple": 1,
+      "coherentTubeSections": true
+    },
+    {
+      "pattern": "Tailgate",
+      "match": "Exact",
+      "role": "Body",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "TailgateHandle",
+      "match": "Exact",
+      "role": "Trim",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "Taillight_L",
+      "match": "Exact",
+      "role": "Light",
+      "mode": "Deform",
+      "crumple": 0.45
+    },
+    {
+      "pattern": "Taillight_R",
+      "match": "Exact",
+      "role": "Light",
+      "mode": "Deform",
+      "crumple": 0.45
+    },
+    {
+      "pattern": "Underbody_Frame",
+      "match": "Exact",
+      "role": "Underbody",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "Wheel_FL",
+      "match": "Exact",
+      "role": "Wheel",
+      "mode": "Rigid",
+      "crumple": 0
+    },
+    {
+      "pattern": "Wheel_FR",
+      "match": "Exact",
+      "role": "Wheel",
+      "mode": "Rigid",
+      "crumple": 0
+    },
+    {
+      "pattern": "Wheel_RL",
+      "match": "Exact",
+      "role": "Wheel",
+      "mode": "Rigid",
+      "crumple": 0
+    },
+    {
+      "pattern": "Wheel_RR",
+      "match": "Exact",
+      "role": "Wheel",
+      "mode": "Rigid",
+      "crumple": 0
+    },
+    {
+      "pattern": "Wheelhouse_Inner",
+      "match": "Exact",
+      "role": "Underbody",
+      "mode": "Deform",
+      "crumple": 1
+    },
+    {
+      "pattern": "Wipers",
+      "match": "Exact",
+      "role": "Trim",
+      "mode": "Deform",
+      "crumple": 1
+    }
+  ],
+  "expected": {
+    "dimensionsM": [
+      2.254999876022339,
+      4.7220001220703125,
+      1.8211060464382172
+    ],
+    "wheels": [
+      {
+        "name": "Wheel_FL",
+        "position": [
+          -0.8759999871253967,
+          1.6399999856948853,
+          0.41999998688697815
+        ]
+      },
+      {
+        "name": "Wheel_FR",
+        "position": [
+          0.8759999871253967,
+          1.6399999856948853,
+          0.41999998688697815
+        ]
+      },
+      {
+        "name": "Wheel_RL",
+        "position": [
+          -0.8759999871253967,
+          -1.309999942779541,
+          0.41999998688697815
+        ]
+      },
+      {
+        "name": "Wheel_RR",
+        "position": [
+          0.8759999871253967,
+          -1.309999942779541,
+          0.41999998688697815
+        ]
+      }
+    ]
+  },
+  "sockets": {
+    "coordinates": "Blender vehicle-local metres; +X right +Y forward +Z up",
+    "runtime_ready": false,
+    "groups": [
+      {
+        "socket_group": "roof.compact_mount",
+        "mount_mode": "multi_point_rigid",
+        "mesh_role": "Cabin_Roof",
+        "sockets": [
+          {
+            "id": "R1",
+            "origin": [
+              -0.48,
+              -0.06,
+              2.2
+            ],
+            "direction": [
+              0,
+              0,
+              -1
+            ],
+            "expected_normal": [
+              0,
+              0,
+              1
+            ],
+            "rotation_xyzw": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "bounds": [
+              [
+                -0.524999989271164,
+                -0.10499999865889549,
+                1.756304578781128
+              ],
+              [
+                -0.43499998927116396,
+                -0.014999998658895494,
+                1.8463045787811279
+              ]
+            ],
+            "max_distance": 0.8
+          },
+          {
+            "id": "R2",
+            "origin": [
+              0.48,
+              -0.06,
+              2.2
+            ],
+            "direction": [
+              0,
+              0,
+              -1
+            ],
+            "expected_normal": [
+              0,
+              0,
+              1
+            ],
+            "rotation_xyzw": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "bounds": [
+              [
+                0.43499998927116396,
+                -0.10499999865889549,
+                1.7563358116149903
+              ],
+              [
+                0.524999989271164,
+                -0.014999998658895494,
+                1.8463358116149902
+              ]
+            ],
+            "max_distance": 0.8
+          },
+          {
+            "id": "R3",
+            "origin": [
+              -0.48,
+              0.36,
+              2.2
+            ],
+            "direction": [
+              0,
+              0,
+              -1
+            ],
+            "expected_normal": [
+              0,
+              0,
+              1
+            ],
+            "rotation_xyzw": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "bounds": [
+              [
+                -0.524999989271164,
+                0.31500001430511476,
+                1.7577037382125855
+              ],
+              [
+                -0.43499998927116396,
+                0.40500001430511473,
+                1.8477037382125854
+              ]
+            ],
+            "max_distance": 0.8
+          },
+          {
+            "id": "R4",
+            "origin": [
+              0.48,
+              0.36,
+              2.2
+            ],
+            "direction": [
+              0,
+              0,
+              -1
+            ],
+            "expected_normal": [
+              0,
+              0,
+              1
+            ],
+            "rotation_xyzw": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "bounds": [
+              [
+                0.43499998927116396,
+                0.31500001430511476,
+                1.757683711051941
+              ],
+              [
+                0.524999989271164,
+                0.40500001430511473,
+                1.8476837110519408
+              ]
+            ],
+            "max_distance": 0.8
+          }
+        ],
+        "maximum_candidate_footprint_m": [
+          1.3,
+          0.5
+        ]
+      },
+      {
+        "socket_group": "hood.scoop",
+        "mount_mode": "multi_point_rigid",
+        "mesh_role": "Body_Hood",
+        "sockets": [
+          {
+            "id": "H1",
+            "origin": [
+              -0.26,
+              1.28,
+              1.7
+            ],
+            "direction": [
+              0,
+              0,
+              -1
+            ],
+            "expected_normal": [
+              0,
+              0,
+              1
+            ],
+            "rotation_xyzw": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "bounds": [
+              [
+                -0.3049999904632568,
+                1.2349999713897706,
+                1.240430908203125
+              ],
+              [
+                -0.21499999046325685,
+                1.3249999713897704,
+                1.330430908203125
+              ]
+            ],
+            "max_distance": 0.8
+          },
+          {
+            "id": "H2",
+            "origin": [
+              0.26,
+              1.28,
+              1.7
+            ],
+            "direction": [
+              0,
+              0,
+              -1
+            ],
+            "expected_normal": [
+              0,
+              0,
+              1
+            ],
+            "rotation_xyzw": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "bounds": [
+              [
+                0.21499999046325685,
+                1.2349999713897706,
+                1.240430908203125
+              ],
+              [
+                0.3049999904632568,
+                1.3249999713897704,
+                1.330430908203125
+              ]
+            ],
+            "max_distance": 0.8
+          },
+          {
+            "id": "H3",
+            "origin": [
+              -0.26,
+              1.75,
+              1.7
+            ],
+            "direction": [
+              0,
+              0,
+              -1
+            ],
+            "expected_normal": [
+              0,
+              0,
+              1
+            ],
+            "rotation_xyzw": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "bounds": [
+              [
+                -0.3049999904632568,
+                1.705,
+                1.2004614639282227
+              ],
+              [
+                -0.21499999046325685,
+                1.795,
+                1.2904614639282226
+              ]
+            ],
+            "max_distance": 0.8
+          },
+          {
+            "id": "H4",
+            "origin": [
+              0.26,
+              1.75,
+              1.7
+            ],
+            "direction": [
+              0,
+              0,
+              -1
+            ],
+            "expected_normal": [
+              0,
+              0,
+              1
+            ],
+            "rotation_xyzw": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "bounds": [
+              [
+                0.21499999046325685,
+                1.705,
+                1.2004614639282227
+              ],
+              [
+                0.3049999904632568,
+                1.795,
+                1.2904614639282226
+              ]
+            ],
+            "max_distance": 0.8
+          }
+        ],
+        "maximum_candidate_footprint_m": [
+          0.7,
+          0.7
+        ]
+      },
+      {
+        "socket_group": "front.push_bar",
+        "mount_mode": "multi_point_rigid",
+        "mesh_role": "Bumper_Front",
+        "sockets": [
+          {
+            "id": "F1",
+            "origin": [
+              -0.55,
+              2.7,
+              0.75
+            ],
+            "direction": [
+              0,
+              -1,
+              0
+            ],
+            "expected_normal": [
+              0,
+              1,
+              0
+            ],
+            "rotation_xyzw": [
+              -0.7071067690849304,
+              0.0,
+              0.0,
+              0.7071068286895752
+            ],
+            "bounds": [
+              [
+                -0.595000011920929,
+                2.3049999046325684,
+                0.705
+              ],
+              [
+                -0.5050000119209289,
+                2.3949999046325683,
+                0.795
+              ]
+            ],
+            "max_distance": 0.8
+          },
+          {
+            "id": "F2",
+            "origin": [
+              0.55,
+              2.7,
+              0.75
+            ],
+            "direction": [
+              0,
+              -1,
+              0
+            ],
+            "expected_normal": [
+              0,
+              1,
+              0
+            ],
+            "rotation_xyzw": [
+              -0.7071067690849304,
+              0.0,
+              0.0,
+              0.7071068286895752
+            ],
+            "bounds": [
+              [
+                0.5050000119209289,
+                2.3049999046325684,
+                0.705
+              ],
+              [
+                0.595000011920929,
+                2.3949999046325683,
+                0.795
+              ]
+            ],
+            "max_distance": 0.8
+          }
+        ]
+      },
+      {
+        "socket_group": "rear.utility",
+        "mount_mode": "multi_point_rigid",
+        "mesh_role": "Bumper_Rear",
+        "sockets": [
+          {
+            "id": "B1",
+            "origin": [
+              -0.55,
+              -2.7,
+              0.64
+            ],
+            "direction": [
+              0,
+              1,
+              0
+            ],
+            "expected_normal": [
+              0,
+              -1,
+              0
+            ],
+            "rotation_xyzw": [
+              0.7071067690849304,
+              0.0,
+              -0.0,
+              0.7071068286895752
+            ],
+            "bounds": [
+              [
+                -0.595000011920929,
+                -2.3949999046325683,
+                0.5949999856948852
+              ],
+              [
+                -0.5050000119209289,
+                -2.3049999046325684,
+                0.6849999856948853
+              ]
+            ],
+            "max_distance": 0.8
+          },
+          {
+            "id": "B2",
+            "origin": [
+              0.55,
+              -2.7,
+              0.64
+            ],
+            "direction": [
+              0,
+              1,
+              0
+            ],
+            "expected_normal": [
+              0,
+              -1,
+              0
+            ],
+            "rotation_xyzw": [
+              0.7071067690849304,
+              0.0,
+              -0.0,
+              0.7071068286895752
+            ],
+            "bounds": [
+              [
+                0.5050000119209289,
+                -2.3949999046325683,
+                0.5949999856948852
+              ],
+              [
+                0.595000011920929,
+                -2.3049999046325684,
+                0.6849999856948853
+              ]
+            ],
+            "max_distance": 0.8
+          }
+        ]
+      },
+      {
+        "socket_group": "bed.rail_l",
+        "mount_mode": "multi_point_rigid",
+        "mesh_role": "BedRail_L",
+        "sockets": [
+          {
+            "id": "L1",
+            "origin": [
+              -0.922,
+              -0.65,
+              1.8
+            ],
+            "direction": [
+              0,
+              0,
+              -1
+            ],
+            "expected_normal": [
+              0,
+              0,
+              1
+            ],
+            "rotation_xyzw": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "bounds": [
+              [
+                -0.966999990940094,
+                -0.6949999761581421,
+                1.2850000429153443
+              ],
+              [
+                -0.876999990940094,
+                -0.604999976158142,
+                1.3750000429153442
+              ]
+            ],
+            "max_distance": 0.8
+          },
+          {
+            "id": "L2",
+            "origin": [
+              -0.922,
+              -1.93,
+              1.8
+            ],
+            "direction": [
+              0,
+              0,
+              -1
+            ],
+            "expected_normal": [
+              0,
+              0,
+              1
+            ],
+            "rotation_xyzw": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "bounds": [
+              [
+                -0.966999990940094,
+                -1.9749999475479125,
+                1.2850000429153443
+              ],
+              [
+                -0.876999990940094,
+                -1.8849999475479127,
+                1.3750000429153442
+              ]
+            ],
+            "max_distance": 0.8
+          }
+        ],
+        "maximum_candidate_footprint_m": [
+          0.08,
+          1.5
+        ]
+      },
+      {
+        "socket_group": "bed.rail_r",
+        "mount_mode": "multi_point_rigid",
+        "mesh_role": "BedRail_R",
+        "sockets": [
+          {
+            "id": "BR1",
+            "origin": [
+              0.922,
+              -0.65,
+              1.8
+            ],
+            "direction": [
+              0,
+              0,
+              -1
+            ],
+            "expected_normal": [
+              0,
+              0,
+              1
+            ],
+            "rotation_xyzw": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "bounds": [
+              [
+                0.876999990940094,
+                -0.6949999761581421,
+                1.2850000429153443
+              ],
+              [
+                0.966999990940094,
+                -0.604999976158142,
+                1.3750000429153442
+              ]
+            ],
+            "max_distance": 0.8
+          },
+          {
+            "id": "BR2",
+            "origin": [
+              0.922,
+              -1.93,
+              1.8
+            ],
+            "direction": [
+              0,
+              0,
+              -1
+            ],
+            "expected_normal": [
+              0,
+              0,
+              1
+            ],
+            "rotation_xyzw": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "bounds": [
+              [
+                0.876999990940094,
+                -1.9749999475479125,
+                1.2850000429153443
+              ],
+              [
+                0.966999990940094,
+                -1.8849999475479127,
+                1.3750000429153442
+              ]
+            ],
+            "max_distance": 0.8
+          }
+        ],
+        "maximum_candidate_footprint_m": [
+          0.08,
+          1.5
+        ]
+      },
+      {
+        "socket_group": "bed.floor",
+        "mount_mode": "multi_point_rigid",
+        "mesh_role": "BedFloor",
+        "sockets": [
+          {
+            "id": "C1",
+            "origin": [
+              -0.4,
+              -0.65,
+              1.4
+            ],
+            "direction": [
+              0,
+              0,
+              -1
+            ],
+            "expected_normal": [
+              0,
+              0,
+              1
+            ],
+            "rotation_xyzw": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "bounds": [
+              [
+                -0.44500000596046446,
+                -0.6949999761581421,
+                0.8494999575614929
+              ],
+              [
+                -0.3550000059604645,
+                -0.604999976158142,
+                0.939499957561493
+              ]
+            ],
+            "max_distance": 0.8
+          },
+          {
+            "id": "C2",
+            "origin": [
+              0.4,
+              -0.65,
+              1.4
+            ],
+            "direction": [
+              0,
+              0,
+              -1
+            ],
+            "expected_normal": [
+              0,
+              0,
+              1
+            ],
+            "rotation_xyzw": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "bounds": [
+              [
+                0.3550000059604645,
+                -0.6949999761581421,
+                0.8494999575614929
+              ],
+              [
+                0.44500000596046446,
+                -0.604999976158142,
+                0.939499957561493
+              ]
+            ],
+            "max_distance": 0.8
+          },
+          {
+            "id": "C3",
+            "origin": [
+              -0.4,
+              -1.96,
+              1.4
+            ],
+            "direction": [
+              0,
+              0,
+              -1
+            ],
+            "expected_normal": [
+              0,
+              0,
+              1
+            ],
+            "rotation_xyzw": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "bounds": [
+              [
+                -0.44500000596046446,
+                -2.0050000381469726,
+                0.8494999575614929
+              ],
+              [
+                -0.3550000059604645,
+                -1.9150000381469727,
+                0.939499957561493
+              ]
+            ],
+            "max_distance": 0.8
+          },
+          {
+            "id": "C4",
+            "origin": [
+              0.4,
+              -1.96,
+              1.4
+            ],
+            "direction": [
+              0,
+              0,
+              -1
+            ],
+            "expected_normal": [
+              0,
+              0,
+              1
+            ],
+            "rotation_xyzw": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "bounds": [
+              [
+                0.3550000059604645,
+                -2.0050000381469726,
+                0.8494999575614929
+              ],
+              [
+                0.44500000596046446,
+                -1.9150000381469727,
+                0.939499957561493
+              ]
+            ],
+            "max_distance": 0.8
+          }
+        ],
+        "maximum_candidate_footprint_m": [
+          1.0,
+          1.45
+        ]
+      }
+    ]
+  }
+}

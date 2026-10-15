@@ -1,0 +1,42 @@
+{
+  "status": "mandatory_failures_remain_architecture_review_required",
+  "checkpoint_c_complete": false,
+  "merged": false,
+  "adaptive_coverage": {
+    "muscle": 16,
+    "hatch": 16,
+    "pickup": 16,
+    "total_per_vehicle": 16
+  },
+  "indicator_standard_hit_folded": {
+    "left": [
+      50,
+      1324
+    ],
+    "right": [
+      2,
+      1324
+    ],
+    "limit_fraction": 0.05
+  },
+  "suspension_standard_hit": {
+    "folded": 484,
+    "triangles": 8832,
+    "limit_fraction": 0.05,
+    "pass": false
+  },
+  "chaos_perturbation_limit_mm": 20,
+  "full_suite_perturbation_mm": {
+    "pickup": 21.7,
+    "hatch": 25.6
+  },
+  "saved_pickup_counterexample_mm": 26.582,
+  "shared_runtime_changed": false,
+  "approved_a_b_preserved": true,
+  "webgl_build_errors": 0,
+  "webgl_browser_warning_occurrences": 2,
+  "webgl_browser_unique_warnings": 1,
+  "browser_hatch_repair_verified": false,
+  "contact_contract_fixtures_passed": 12,
+  "cabin_actual_transform_verified": true
+}

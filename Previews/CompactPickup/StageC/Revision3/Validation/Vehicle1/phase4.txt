@@ -1,0 +1,59 @@
+[CollisionLab] Phase 4: whole-vehicle damage-aware hitbox - Compact Hatchback (real PhysX, Physics.Simulate 50 Hz, anchored car)
+  Car colliders: 14 boxes = core + cabin + 12 adaptive regions (16 adaptive faces, 89,867 vertex samples)
+  Undamaged faces (car space): FrontLeft +Z 2.006; FrontLeft -X -0.882; FrontCentre +Z 2.009; FrontRight +Z 2.006; FrontRight +X 0.882; RearLeft -Z -1.981; RearLeft -X -0.874; RearCentre -Z -1.962; RearRight -Z -1.944; RearRight +X 0.874; LeftRear -X -0.839; RightRear +X 0.839; LeftMid -X -0.821; RightMid +X 0.821; LeftFront -X -0.847; RightFront +X 0.847; 
+  A. COVERAGE (narrow block, 15 m/s, 1500 kg; Repair Car before each target). Depth = where the block first touches the car's physical
+     hitbox (parked block swept along its launch path), outward along the approach. For reference: the recorded impactor pose and the
+     averaged PhysX contact point, both reported after a 30 cm physics step, so 0-15 cm past the true first touch depending on step phase.
+     Acceptance unchanged: >3 cm deeper, <6 cm from expected first physical surface, >5 cm regional retraction; cabin matches measured protection within 1 mm.
+     Solver contact/recorded poses are diagnostics. A swept footprint overlapping the intact protected cabin must stop there.
+     target                      region       hit1 touch  face before->after hit1   hit2 touch (deeper by)   pose 1->2       contact 1->2    region retract  result
+     front centre                FrontCentre     2.010    2.009 ->  1.707         1.707 ( 30.3 cm)     1.854-> 1.707    1.960-> 1.707     35.2 cm      PASS  [FrontCentreBox -> FrontCentreBox]
+        swept surface FrontCentreBox, expected adaptive face 1.707; sweep error 0.6 mm; cabin geometry intact True
+     front left                  FrontLeft       2.008    2.006 ->  1.698         1.698 ( 30.9 cm)     1.851-> 1.698    1.935-> 1.698     35.3 cm      PASS  [FrontLeftBox -> FrontLeftBox]
+        swept surface FrontLeftBox, expected adaptive face 1.698; sweep error 0.6 mm; cabin geometry intact True
+     front right                 FrontRight      2.008    2.006 ->  1.692         1.692 ( 31.6 cm)     1.851-> 1.692    1.935-> 1.692     35.1 cm      PASS  [FrontRightBox -> FrontRightBox]
+        swept surface FrontRightBox, expected adaptive face 1.692; sweep error 0.6 mm; cabin geometry intact True
+     rear centre                 RearCentre      1.963    1.962 ->  1.693         1.694 ( 26.9 cm)     1.796-> 1.694    1.932-> 1.693     31.1 cm      PASS  [RearCentreBox -> RearCentreBox]
+        swept surface RearCentreBox, expected adaptive face 1.693; sweep error 0.6 mm; cabin geometry intact True
+     rear left                   RearLeft        1.983    1.981 ->  1.690         1.691 ( 29.2 cm)     1.821-> 1.691    1.922-> 1.690     33.3 cm      PASS  [RearLeftBox -> RearLeftBox]
+        swept surface RearLeftBox, expected adaptive face 1.690; sweep error 0.6 mm; cabin geometry intact True
+     rear right                  RearRight       1.946    1.944 ->  1.689         1.690 ( 25.6 cm)     1.773-> 1.690    1.913-> 1.689     29.0 cm      PASS  [RearRightBox -> RearRightBox]
+        swept surface RearRightBox, expected adaptive face 1.689; sweep error 0.6 mm; cabin geometry intact True
+     left side front             LeftFront       0.848    0.847 ->  0.688         0.689 ( 15.9 cm)     0.670-> 0.689    0.836-> 0.688     18.2 cm      PASS  [LeftFrontBox -> LeftFrontBox]
+        swept surface LeftFrontBox, expected adaptive face 0.688; sweep error 0.4 mm; cabin geometry intact True
+     left side mid               LeftMid         0.822    0.821 ->  0.618         0.702 ( 11.9 cm)     0.640-> 0.618    0.825-> 0.618     24.3 cm      PASS  [LeftMidBox -> LeftMidBox]
+        swept surface CabinBox, expected protected cabin 0.701; sweep error 1.2 mm; cabin geometry intact True
+     left side rear              LeftRear        0.840    0.839 ->  0.725         0.725 ( 11.5 cm)     0.659-> 0.725    0.832-> 0.725     13.0 cm      PASS  [LeftRearBox -> LeftRearBox]
+        swept surface LeftRearBox, expected adaptive face 0.725; sweep error 0.5 mm; cabin geometry intact True
+     right side front            RightFront      0.848    0.847 ->  0.706         0.707 ( 14.1 cm)     0.670-> 0.707    0.836-> 0.706     14.7 cm      PASS  [RightFrontBox -> RightFrontBox]
+        swept surface RightFrontBox, expected adaptive face 0.706; sweep error 0.5 mm; cabin geometry intact True
+     right side mid              RightMid        0.822    0.821 ->  0.616         0.702 ( 11.9 cm)     0.640-> 0.617    0.825-> 0.616     24.3 cm      PASS  [RightMidBox -> RightMidBox]
+        swept surface CabinBox, expected protected cabin 0.701; sweep error 1.2 mm; cabin geometry intact True
+     right side rear             RightRear       0.840    0.839 ->  0.710         0.710 ( 13.0 cm)     0.660-> 0.710    0.832-> 0.710     14.0 cm      PASS  [RightRearBox -> RightRearBox]
+        swept surface RightRearBox, expected adaptive face 0.710; sweep error 0.5 mm; cabin geometry intact True
+     front-left corner angled    FrontLeft       2.162      (two faces)           1.915 ( 24.7 cm)     1.985-> 1.754    2.147-> 1.865     40.9 cm      PASS  [FrontLeftBox -> FrontLeftBox]
+        corner faces after hit 1: FrontLeft +Z 2.006->1.779 FrontLeft -X -0.882->-0.778 
+     rear-right corner angled    RearRight       2.106      (two faces)           1.895 ( 21.1 cm)     2.000-> 1.731    1.832-> 1.853     35.1 cm      PASS  [RearRightBox -> RearRightBox]
+        corner faces after hit 1: RearRight -Z -1.944->-1.764 RearRight +X 0.874->0.765 
+     front-right corner angled   FrontRight      2.162      (two faces)           1.905 ( 25.7 cm)     1.985-> 1.742    2.147-> 1.861     40.8 cm      PASS  [FrontRightBox -> FrontRightBox]
+        corner faces after hit 1: FrontRight +Z 2.006->1.770 FrontRight +X 0.882->0.774 
+     rear-left corner angled     RearLeft        2.137      (two faces)           1.891 ( 24.6 cm)     1.954-> 1.725    2.133-> 1.851     39.1 cm      PASS  [RearLeftBox -> RearLeftBox]
+        corner faces after hit 1: RearLeft -Z -1.981->-1.767 RearLeft -X -0.874->-0.752 
+  Coverage: every region's second identical hit lands deeper, at the retracted face or independently expected protected cabin PASS
+  B/C. LOCALITY + SATURATION (30 m/s, 4000 kg, narrow unless noted):
+     front centre x25: moved per hit 1/2/3 0.389/0.215/0.080 m ... 23/24/25 0.010/0.012/0.012 m; face 2.009 -> 1.675 -> 1.633 (moved 0.0 cm over hits 21-25); all applied True, diagnostics True PASS (local saturation)
+       then front left        : mesh moved 0.432 m, FrontLeft retracted 36.3 cm PASS
+       then front right       : mesh moved 0.403 m, FrontRight retracted 36.0 cm PASS
+       then left side mid     : mesh moved 0.414 m, LeftMid retracted 24.3 cm PASS
+       then right side mid    : mesh moved 0.394 m, RightMid retracted 24.3 cm PASS
+       then rear centre       : mesh moved 0.395 m, RearCentre retracted 31.6 cm PASS
+     left side mid x10 (wide), then rear left       : mesh moved 0.381 m PASS
+     left side mid x10 (wide), then right side mid  : mesh moved 0.394 m PASS
+     rear centre x10, then front centre            : mesh moved 0.411 m PASS
+     rear centre x10, then left side front         : mesh moved 0.315 m PASS
+  Locality: a hammered region does not stop other regions deforming PASS
+  D. LONG RUN: 84 mixed hits (14 targets x 6 rounds, narrow/wide alternating, 30 and 15 m/s, 4000 kg): applied 84/84, diagnostics correct 84/84, impacts 84 (24 stored, 60 merged), max disp 0.500 m, NaN 0, flipped 7171 of 132,673 (5.4%), car drift 3.31 mm, outward face moves blocked 333 PASS
+     deformation per hit by block of 20: 89.3 / 83.8 / 92.3 / 84.1 / 85.5 ms; hitbox update 1.92 ms avg over 44 updates
+     region retraction after the long run: FrontLeft -50cm FrontCentre -38cm FrontRight -52cm RearLeft -49cm RearCentre -41cm RearRight -50cm LeftRear -21cm RightRear -21cm LeftMid -24cm RightMid -24cm LeftFront -21cm RightFront -21cm 
+  E. Reset Block after 84 hits: mesh change 0.0E+000 PASS; Repair Car: mesh 0.0E+000/0.0E+000, all 12 region boxes identical to the original True, next hit is impact #1 PASS; Reset All: mesh 0.0E+000/0.0E+000, boxes exact True PASS
+  COSTS (editor, this machine): 14 car colliders; hitbox update 1.90 ms avg / 3.42 ms max over 126 updates (only after impacts; 10.0 of 16 faces re-fitted per update on average); visual deformation 86.8 ms avg / 142.3 ms max per hit; physics step 0.071 ms avg over 34200 steps

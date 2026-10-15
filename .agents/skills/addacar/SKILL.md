@@ -42,6 +42,11 @@ At every checkpoint act as the first visual reviewer: matched-angle renders, a c
 measured from the geometry, a feature checklist, discrepancies fixed or listed before asking. Never claim a perfect
 match without evidence.
 
+At each checkpoint, commit and push the review images/report to the feature branch and provide hosted gallery links.
+Keep all approved checkpoint renders and comparisons for later review, including A, B and C after completion/merge.
+At the end, clean only unapproved drafts; preserve pending reviews and approved images/links as specified in the
+canonical workflow's "Checkpoint image delivery and cleanup" section.
+
 Rules that always apply:
 - Never merge a vehicle into `main` without the user's approval.
 - Any vehicle shape and size; no muscle-car dimensions, no fixed vertex counts.

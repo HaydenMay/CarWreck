@@ -40,7 +40,7 @@ namespace DamageLab.Deformation
         Mesh wireMesh;
         GameObject wireObject;
 
-        public DeformablePart(MeshFilter filter, Transform vehicleRoot, float crumple)
+        public DeformablePart(MeshFilter filter, Transform vehicleRoot, float crumple, bool coherentTubeSections = false)
         {
             this.filter = filter;
             this.crumple = crumple;
@@ -114,6 +114,8 @@ namespace DamageLab.Deformation
                 for (int i = 0; i < n; i++) baseCalcNormals[i] = -baseCalcNormals[i];
             }
 
+            if (coherentTubeSections) BuildSections();
+
             RuntimeMesh = Object.Instantiate(sourceMesh);
             RuntimeMesh.name = sourceMesh.name + " (Damage Instance)";
             RuntimeMesh.hideFlags = HideFlags.DontSave;
@@ -166,8 +168,9 @@ namespace DamageLab.Deformation
             if (onlyIfImpactsChanged && appliedOnce && !ImpactDirty) return false;
             appliedOnce = true;
             ImpactDirty = false;
-            bool any = impacts != null && hasImpacts;
-            for (int d = 0; d < states.Length; d++) any |= states[d].active;
+            bool sliderActive = false;
+            for (int d = 0; d < states.Length; d++) sliderActive |= states[d].active;
+            bool any = sliderActive || impacts != null && hasImpacts;
             int n = baseVerts.Length;
 
             if (!any)
@@ -188,6 +191,7 @@ namespace DamageLab.Deformation
             applyImpacts = any && hasImpacts ? impacts : null;
             if (MultiThreaded && n >= 4096) Parallel.For(0, (n + ChunkSize - 1) / ChunkSize, applyChunk ??= DisplaceChunk);
             else DisplaceChunk(0, n);
+            if (sectionVerts != null && sliderActive) CoherentSectionDisplacement();   // impacts alone are already coherent
 
             ComputeNormals(work, workNormals);
             for (int i = 0; i < n; i++)
@@ -249,11 +253,7 @@ namespace DamageLab.Deformation
         {
             int n = vehiclePos.Length;
             impactSum ??= new Vector3[n];
-            if (impactCap == null)
-            {
-                impactCap = new float[n];
-                for (int i = 0; i < n; i++) impactCap[i] = field.Capacity(vehiclePos[i], crumple);
-            }
+            EnsureCaps(field);
             hasImpacts = true;
             ImpactDirty = true;
             if (MultiThreaded && n >= 4096)
@@ -267,6 +267,79 @@ namespace DamageLab.Deformation
             else
             {
                 Accumulate(field, index, 0, n);
+            }
+            if (sectionVerts != null) CoherentSectionSums();
+        }
+
+        void EnsureCaps(ImpactField field)
+        {
+            if (impactCap != null) return;
+            int n = vehiclePos.Length;
+            impactCap = new float[n];
+            for (int i = 0; i < n; i++) impactCap[i] = field.Capacity(vehiclePos[i], crumple);
+            if (sectionVerts == null) return;
+            // A section is only as strong as its weakest member: never exceed any bound vertex's own capacity
+            // (cabin and wheel-mount protection stay intact).
+            for (int s = 0; s + 1 < sectionStart.Length; s++)
+            {
+                float cap = float.PositiveInfinity;
+                for (int k = sectionStart[s]; k < sectionStart[s + 1]; k++) cap = Mathf.Min(cap, impactCap[sectionVerts[k]]);
+                for (int k = sectionStart[s]; k < sectionStart[s + 1]; k++) impactCap[sectionVerts[k]] = cap;
+            }
+        }
+
+        // ---- Coherent tube sections (opt-in per component) ----
+        // Thin tubes are a few centimetres across, so the surface-normal parts of the impact field (folds, the outward
+        // tent) vary around one ring and turn the section inside out. With sections on, every ring moves as one unit:
+        // its members share the mean impact sum and the smallest capacity, so the tube still bends, crushes and saturates
+        // along its length while its cross-section stays round. Unbound vertices (flat faces) are unchanged.
+        int[] sectionStart;               // CSR: members of section s are sectionVerts[sectionStart[s] .. sectionStart[s+1])
+        int[] sectionVerts;
+        /// <summary>Number of coherent tube sections (0 when the option is off or no tube geometry was found).</summary>
+        public int SectionCount => sectionStart == null ? 0 : sectionStart.Length - 1;
+        /// <summary>Vertices bound to a coherent tube section.</summary>
+        public int SectionBoundVertices => sectionVerts == null ? 0 : sectionVerts.Length;
+
+        void BuildSections()
+        {
+            var section = TubeSections.Build(vehiclePos, vehicleNormal, triangles, out int count);
+            if (count == 0) return;
+            sectionStart = new int[count + 1];
+            foreach (int s in section) if (s >= 0) sectionStart[s + 1]++;
+            for (int s = 0; s < count; s++) sectionStart[s + 1] += sectionStart[s];
+            sectionVerts = new int[sectionStart[count]];
+            var fill = (int[])sectionStart.Clone();
+            for (int i = 0; i < section.Length; i++) if (section[i] >= 0) sectionVerts[fill[section[i]]++] = i;
+        }
+
+        void CoherentSectionSums()
+        {
+            for (int s = 0; s + 1 < sectionStart.Length; s++)
+            {
+                int a = sectionStart[s], b = sectionStart[s + 1];
+                // Sections this impact did not reach are still coherent: leave them bit-identical, so skipping a
+                // part the impact cannot touch gives exactly the same result as evaluating it.
+                Vector3 first = impactSum[sectionVerts[a]];
+                bool coherent = true;
+                for (int k = a + 1; k < b && coherent; k++) coherent = impactSum[sectionVerts[k]].Equals(first);   // exact, unlike ==
+                if (coherent) continue;
+                Vector3 sum = Vector3.zero;
+                for (int k = a; k < b; k++) sum += impactSum[sectionVerts[k]];
+                sum /= b - a;
+                for (int k = a; k < b; k++) impactSum[sectionVerts[k]] = sum;
+            }
+        }
+
+        /// <summary>Directional (slider) crush also varies with the surface normal; give each ring its mean displacement.</summary>
+        void CoherentSectionDisplacement()
+        {
+            for (int s = 0; s + 1 < sectionStart.Length; s++)
+            {
+                int a = sectionStart[s], b = sectionStart[s + 1];
+                Vector3 sum = Vector3.zero;
+                for (int k = a; k < b; k++) { int i = sectionVerts[k]; sum += work[i] - baseVerts[i]; }
+                sum /= b - a;
+                for (int k = a; k < b; k++) { int i = sectionVerts[k]; work[i] = baseVerts[i] + sum; }
             }
         }
 
@@ -309,11 +382,7 @@ namespace DamageLab.Deformation
         {
             if (sum == null || sum.Length != vehiclePos.Length) return;
             impactSum = (Vector3[])sum.Clone();
-            if (impactCap == null)
-            {
-                impactCap = new float[sum.Length];
-                for (int i = 0; i < sum.Length; i++) impactCap[i] = field.Capacity(vehiclePos[i], crumple);
-            }
+            EnsureCaps(field);
             hasImpacts = true;
             ImpactDirty = true;
         }

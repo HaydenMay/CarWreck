@@ -1,0 +1,154 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 262164dfbe684e6438f34300cc36d55d, type: 3}
+  m_Name: CompactPickupDamageProfile
+  m_EditorClassIdentifier: Assembly-CSharp::DamageLab.Deformation.VehicleDamageProfile
+  front:
+    direction: 0
+    maxCrushDepth: 0.85
+    damageExponent: 1.1
+    zoneLengthScale: 1.7
+    zoneLengthMin: 0.15
+    impactCenter: {x: -0.18, y: 0.55}
+    radiusAtLowDamage: {x: 0.45, y: 0.35}
+    radiusAtFullDamage: {x: 0.85, y: 0.7}
+    upperRadiusScale: 1.2
+    baseCoverage: 0.22
+    profileSharpness: 1
+    verticalShape: 1.4
+    profileIrregularity: 0.3
+    foldWavelength: 0.32
+    foldStrength: 0.9
+    elasticStrain: 0.08
+    foldVariation: 0.6
+    outwardBuckle: 0.3
+    creaseStrength: 0.16
+    wrinkleStrength: 0.04
+    creaseFrequency: 2.6
+    drawIn: 0.12
+    roofSag: 0.06
+    seed: 11
+  rear:
+    direction: 1
+    maxCrushDepth: 0.75
+    damageExponent: 1.1
+    zoneLengthScale: 1.7
+    zoneLengthMin: 0.15
+    impactCenter: {x: 0.2, y: 0.6}
+    radiusAtLowDamage: {x: 0.45, y: 0.35}
+    radiusAtFullDamage: {x: 0.85, y: 0.7}
+    upperRadiusScale: 1.2
+    baseCoverage: 0.22
+    profileSharpness: 1
+    verticalShape: 1.4
+    profileIrregularity: 0.3
+    foldWavelength: 0.3
+    foldStrength: 0.9
+    elasticStrain: 0.08
+    foldVariation: 0.6
+    outwardBuckle: 0.3
+    creaseStrength: 0.16
+    wrinkleStrength: 0.04
+    creaseFrequency: 2.6
+    drawIn: 0.12
+    roofSag: 0.06
+    seed: 23
+  left:
+    direction: 2
+    maxCrushDepth: 0.55
+    damageExponent: 0.95
+    zoneLengthScale: 1.7
+    zoneLengthMin: 0.12
+    impactCenter: {x: -0.05, y: 0.62}
+    radiusAtLowDamage: {x: 0.55, y: 0.3}
+    radiusAtFullDamage: {x: 1.25, y: 0.5}
+    upperRadiusScale: 0.8
+    baseCoverage: 0.06
+    profileSharpness: 1.6
+    verticalShape: 1.15
+    profileIrregularity: 0.25
+    foldWavelength: 0.24
+    foldStrength: 0.8
+    elasticStrain: 0.1
+    foldVariation: 0.6
+    outwardBuckle: 0.2
+    creaseStrength: 0.24
+    wrinkleStrength: 0.05
+    creaseFrequency: 2.6
+    drawIn: 0.15
+    roofSag: 0.05
+    seed: 37
+  right:
+    direction: 3
+    maxCrushDepth: 0.55
+    damageExponent: 0.95
+    zoneLengthScale: 1.7
+    zoneLengthMin: 0.12
+    impactCenter: {x: 0.15, y: 0.6}
+    radiusAtLowDamage: {x: 0.55, y: 0.3}
+    radiusAtFullDamage: {x: 1.25, y: 0.5}
+    upperRadiusScale: 0.8
+    baseCoverage: 0.06
+    profileSharpness: 1.6
+    verticalShape: 1.15
+    profileIrregularity: 0.25
+    foldWavelength: 0.24
+    foldStrength: 0.8
+    elasticStrain: 0.1
+    foldVariation: 0.6
+    outwardBuckle: 0.2
+    creaseStrength: 0.24
+    wrinkleStrength: 0.05
+    creaseFrequency: 2.6
+    drawIn: 0.15
+    roofSag: 0.05
+    seed: 53
+  roofLineStart: 1.34
+  roofLineEnd: 1.75
+  impact:
+    maxDepth: 0.42
+    depthExponent: 1.15
+    radiusMin: 0.16
+    radiusMax: 0.6
+    grazingDepth: 0.45
+    profileSharpness: 2.6
+    footprintIrregularity: 0.22
+    buckleLobes: 6
+    buckleStrength: 0.26
+    rimCrease: 0.15
+    floorWrinkle: 0.05
+    lip: 0.06
+    drawIn: 0.12
+    panelLimit: 0.5
+    cabinLimit: 0.36
+    wheelLimit: 0.2
+    wheelInner: 0.5
+    wheelOuter: 0.95
+    saturationKnee: 0.6
+    spreadPerHit: 0.15
+    maxSpread: 1.5
+    hardening: 0.6
+    referenceArea: 0.5
+    areaExponent: 0.35
+    areaFactorMin: 0.6
+    areaFactorMax: 1.6
+    crushCompression: 0.85
+    faceUnevenness: 0.15
+    foldWavelength: 0.14
+    foldStrength: 0.35
+    edgeFalloff: 0.08
+    edgeFalloffPerDepth: 0.3
+    edgeSoftness: 0.03
+    pleatWavelength: 0.24
+    pleatDepth: 0.12
+    tentLength: 2.5
+    tentHeight: 0.22

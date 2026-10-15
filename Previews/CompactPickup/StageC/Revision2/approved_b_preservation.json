@@ -1,0 +1,113 @@
+{
+  "approved_revision": "156d2673008b63212f53db4b23784e5bc78c617e",
+  "same_geometry_uv_material_slots_and_roles": false,
+  "unchanged_components": 49,
+  "changed_components": [
+    "BedRail_Rear",
+    "Body_Hood",
+    "FrontIndicator_L",
+    "FrontIndicator_R",
+    "Headlight_L",
+    "Headlight_R",
+    "Wipers"
+  ],
+  "topology_correction": "Even hood stations retain the approved contour. Hidden wiper backs, lower tailgate-cap skin and concealed rear lens caps removed. Indicator returns retain their approved depth and are inset 22 mm to sit within the nose face; exposed corner geometry is otherwise unchanged. Paint, roles and vehicle footprint retained. The planar-lens experiment was rejected after visual review.",
+  "surface_changes": {
+    "BedRail_Rear": {
+      "max_m": 0.016411608085036278,
+      "p95_m": 0.016411608085036278,
+      "exposed_max_m": 0.016411608085036278
+    },
+    "Body_Hood": {
+      "max_m": 0.0012494423426687717,
+      "p95_m": 0.0008688239031471312,
+      "exposed_max_m": 0.0012494423426687717
+    },
+    "FrontIndicator_L": {
+      "max_m": 0.02961885742843151,
+      "p95_m": 0.024084463715553284,
+      "exposed_max_m": 0.02363007701933384
+    },
+    "FrontIndicator_R": {
+      "max_m": 0.02961885742843151,
+      "p95_m": 0.024084463715553284,
+      "exposed_max_m": 0.02363007701933384
+    },
+    "Headlight_L": {
+      "max_m": 0.0279998779296875,
+      "p95_m": 0.0279998779296875,
+      "exposed_max_m": 0.0
+    },
+    "Headlight_R": {
+      "max_m": 0.0279998779296875,
+      "p95_m": 0.0279998779296875,
+      "exposed_max_m": 0.0
+    },
+    "Wipers": {
+      "max_m": 0.009647214785218239,
+      "p95_m": 0.00964721105992794,
+      "exposed_max_m": 0.009647214785218239
+    }
+  },
+  "components": {
+    "FrontFender_L": "4332d2c594daaa57a9d0e3f397216c1b5607a5fcdd87fbfa7b55b30427fa4c68",
+    "FrontFender_R": "266c847d5e42f5cdb1da820fb9453fbb27457d971c6801276344ccf6b4e8c4f3",
+    "Door_L": "8ed2d9692875989a8a3b76afef25f4ee4e30051faec51fda289b746861cb067f",
+    "Door_R": "367df865edee13b8550e753c71add40df74b7d7f186c16c92b85f40b372a2d5a",
+    "BedSide_L": "2f676eb072562592b27632e68afd7b44d9a7614b3ce65b081471531302e0dc8e",
+    "BedSide_R": "3cd98783d2b5c43857c958c4ec5b97228b95fa1b925caddd920f0180c442d49e",
+    "Body_CabRear": "f597affd151d589b1eb91e97c41364bfd595cefe408b1c40682c12dc397ba3c5",
+    "Body_Nose": "4fac1ad06856f5f560a21c5c47a654a07757112e822a0f944d04d2557fed6ff1",
+    "Grille_Frame": "54196cccba327029481e764e10a891e7f9e1b7b843549cb08fdd57ede12df5d6",
+    "Grille_Inset": "8f93a84cbcdadf8115e7fa9aec78b4be31fd55aab31dcd5c818e82ede03f007e",
+    "HeadlightHousing_L": "6249700292d394a7f88e31811496a80ff9bdaa2daf71cffaf9634ea6e270ef70",
+    "Headlight_L": "c8afd36f1391958497f1e1a258e3256829edc9a5f6234379b0f4f4bfbf949b7f",
+    "HeadlightHousing_R": "8b14b23a9b702d6b734928f966f59e4c2ba6baa96063c361fdcf80270454040a",
+    "Headlight_R": "7f0dc382a222ca3227c3825238d1f935e3c08dde8ea4fcac2ed6aeaaedc1d533",
+    "Bumper_Front": "a80c95e7faa4c274dc95b0fbe997317ee3a39ab298450acb519fca6b87e8d62e",
+    "BumperMarker_L": "35ed47abb63d0d60925605d966dd8b788ab5f2ae43bfe0ebe7dc74caedc766bf",
+    "BumperMarker_R": "a2b25a631b3badb23786c89bd47e5ffad7cff514b7b8cf96877a63b212e57a37",
+    "FrontPlate": "4a6b444aa6004283317500af8e2f92eb795850c9b4a0c2f40e47801d7189b0ce",
+    "Cabin_Windshield": "2b5218e1dca22d9443d0811f6c23d882c4a5e6546425b3cac58cf4bcc34c8e9a",
+    "Cabin_RearGlass": "875c3ce48af0ff35194cd1d3af81a7e26bdad543087f4e1fb9554bc10b716f4a",
+    "Cabin_SideGlass_L": "8b016cb939653f2bd96df8f0d2089004d6e2f41fcbafaa087834c0e8de3a9f7c",
+    "Cabin_SideGlass_R": "08a3f1ecc235e142f2866fedd5f1146e3f8e0ca6b2469bb8534c13ce1dd21e44",
+    "Cabin_Roof": "39b786c58d100a1247544d4ce14e64bce86c00320aa4cab6ad63c6e81e406329",
+    "Cabin_RoofEdges": "e1a9367db1e3af73829565afb73dbd4a7e4af193d943339fd3b609806e4e5821",
+    "Cabin_RearDivider": "7c9e0b72f4d41998fcca332db8b7e86862959a2dee00befe7fd6313875dfd16c",
+    "CabTrim_MirrorsHandles": "d062edc4f59c1d0ff0f354848e738896f9033d9253d9363508fe8e6c1945aeab",
+    "Wipers": "849861c972fb829c2250912c05b979f68fe5549d6112eb1e007e907641b459ad",
+    "BedFloor": "5b26b2c9629945a656263fdfdab8a2daf39565775d7f2bc315f839a39228c261",
+    "BedLiner_Floor": "ef605748341ecdfdf3d9369b404677e91f33e5d65998c635a6e70a2480a07b0c",
+    "BedLiner_WheelTub_L": "a46f901f03dc6ee4089b38192cf7d2f0cfc8a0bc2feae83db3dcfc129c2e309d",
+    "BedLiner_WheelTub_R": "5f26823aca3947bbc72d25748db4cae834eb6de760347bb1c9160961ed5ce355",
+    "BedLiner_Side_L": "42d5a4e51a2385a06f29b3efe1399e5b29dee398c43e7a60179873d3379943e3",
+    "BedRail_L": "0932f442d5ea66914e67aec7d94b7ac824e3eba8ecbeaaf5133535c1090b47b0",
+    "BedLiner_Side_R": "1bce7983ebb03c2765129986b02f5da7d1b01ca19fc079d3610a3f3bac459500",
+    "BedRail_R": "6f01ea996681bb9af5f79c1e12c2d9b8796705d0c601bb8b90a32361de497542",
+    "BedFrontWall": "9482eb25e5a6001dc818a825b96cbed134a7b02d0c80aafe0a052b0fb32f4771",
+    "BedLiner_FrontWall": "aabe9f52c24a8c95f5b4f50d12a5896b72ec2656f597c576abc8d611e3c9d318",
+    "BedLiner_Tailgate": "9552a34e314e025543c32ea801c49147a3791d48a84444515345c13b8f7f7e9d",
+    "Tailgate": "fa4b06251866d6a27c69b05df442cd394e6172331f66913315e9e5ce715fbfb4",
+    "BedRail_Rear": "febb6403538fc0f4f6ddc52861ce6b76a998d89edd244cdd8f5b6652ac5af788",
+    "TailgateHandle": "3628dc6681fda20a48932ef76fa0cd05e28f66856425147a6d1e9c79a9113765",
+    "Bumper_Rear": "1cb5d2bb4e884f06a2379095a1ae698a3120c39c3181a9f547cf9eb1fea8bf54",
+    "RearPlate": "40bc9869ea9aee4fe9230ebd683c98394e1d05b216736e4de6e4ec8fc5d3e5e3",
+    "Taillight_L": "1706a79015e9b43c738cbf70ec86252249ddac5cb20b9106c0ff9d0abf2fa805",
+    "Taillight_R": "b9f45c3b91acf6c0ebc659aa0cb7c0e18710e900331e3f4c06f605a1142c19bc",
+    "Wheel_FL": "caca4cd0e989d432ef988206a3ce46d0fe12886726062a93d319da780b89ebc6",
+    "Wheel_FR": "ebdc38eb28f4adf252d653105734aa5fc261e58f02cc435fb0b86f894092b83a",
+    "Wheel_RL": "396f942817ab58fca35baed200a3dd213253bb9317a267467583f9b3a3b85b10",
+    "Wheel_RR": "a976315548ba43f0a54d4d87765fbcd0184c9fa64ece167542b343958d1bd654",
+    "Underbody_Frame": "5a037ac877cc62c38bebc7eadda331c5d893b0ff3fdef374a80d8c5168755686",
+    "Suspension_Front": "eeebc95422af14ba31c1d9cb7118a9f3ed57b335db19861555fe6669943d47dd",
+    "Suspension_Rear": "5fb83c7d70bba3f2a0b6c7be7bbd673c1c353ff9b03b5a1d9c285ca8f3f26390",
+    "Wheelhouse_Inner": "d759f4439dda6d37bb77a1d283e9f12d2ae3f1ff73da4a1fd6ca3c614b4df009",
+    "Body_Hood": "fab041bd12e8fc16d193fc6b3f178207d248a9e0eb0b545b77a009a786aa5558",
+    "FrontIndicator_L": "24a080b518a4d5be53ec75807100130bafb8cd9b7bed813baf1e6b0dad6dd96c",
+    "FrontIndicator_R": "efc0d92aa36b91607154a7afec40c0395b5f127cc2f05f89d189deaffff22033"
+  },
+  "final_blend_sha256": "c14b2cd9b587c6defc65334930a3049ef85283f1ce977378142104a1735b39c4",
+  "mass_kg": 1350,
+  "mass_note": "1350 kg is a game-design assumption for a compact 4x4 pickup, not a measured reference specification."
+}

@@ -1,0 +1,33 @@
+{
+  "checkpoint": "A",
+  "status": "approved",
+  "approved_revision": "f230c5a58f52547844f2e07ef79263e9b0d65bb4",
+  "approval": "User: Checkpoint A is approved; retain wheelbase, cabin/bed relationship, raised stance, green/cream layout; bed/track reference differences accepted.",
+  "files_sha256": {
+    "Blender/CompactPickup_StageA.blend": "41cc87bad47daf4910516c492aed14565adc0e4db027c7a2a7ca7ec67e08b69a",
+    "Blender/Scripts/build_compact_pickup.py": "2dadd22fca4d86d64fafa99ead59053d2f9915b837cfd1ac602823299b2f6b76",
+    "Previews/CompactPickup/StageA/geometry_measurements.json": "b8500b5a71e238c6ce630d726fa8c78e7bf193585b08188d878da1f5747a3257",
+    "Previews/CompactPickup/StageA/cameras.json": "2e50d85fc10a52499de32aabdb32a3ffe7064bdd3bda1c6b0e543adfb57cfd60",
+    "Previews/CompactPickup/StageA/checkpoint_a_details.png": "220aeb9a71ca3b0bef830de0175c717e991f517f3efdf31216ebf607e52bab49",
+    "Previews/CompactPickup/StageA/checkpoint_a_overview.png": "5380347877e4b265e2805a7849b604e7321751464d08d455824395b64a5d066d",
+    "Previews/CompactPickup/StageA/comparison_detail_bed.png": "7d3bd8b522fff144e420d54684801cf22834547ac00edb534ddfa5e97075e9d3",
+    "Previews/CompactPickup/StageA/comparison_detail_clearance.png": "e6f07b54d7864020dfd6ccd09e44e5e10e1e0a50d245d0c3c9c6f061c763fed4",
+    "Previews/CompactPickup/StageA/comparison_detail_front.png": "097c91dbbcd4c968b1dc74826e0ae37b8caf0b43ea2b313e6dac67617771c5b0",
+    "Previews/CompactPickup/StageA/comparison_detail_nose_top.png": "278c32499d73a7fb6547cf144e0e3792e203d02d91b7b959b5f00e3342c333bb",
+    "Previews/CompactPickup/StageA/comparison_front34.png": "7b5df4142e23b0c5117ea003eacc9b9d4b9aa3751b060f28d9af65a5f3bbc2e7",
+    "Previews/CompactPickup/StageA/comparison_photo1_rear.png": "7ef8dc4aba6a606a5ceee7af7781483924c91dfe3eb3da25604323aa54761e01",
+    "Previews/CompactPickup/StageA/comparison_photo1_side.png": "366f8a16358286b00aeccc0499e2d1cc66b91e9e25e50f9638bf70026bf903e6",
+    "Previews/CompactPickup/StageA/comparison_rear34.png": "1c9c22f7a45a7439499999de7fe4e33ad28515acdd2db4b63eb511e7a6d2ccd8",
+    "Previews/CompactPickup/StageA/comparison_side.png": "d751fd66877d71c1d47fb56203b45ca50f140cd5e8d18ba64391d2dc05a88c91",
+    "Previews/CompactPickup/StageA/comparison_top.png": "53ae9d3ce2308bdc3164c7086ccb99362ed813fbb62d0012f5ba88a9d22da852",
+    "Previews/CompactPickup/StageA/stage_a_bed.png": "18ff293ca971552a1aeed41df9f63ec160b45354a8a6c91fc1d98ed334ae59bf",
+    "Previews/CompactPickup/StageA/stage_a_clearance.png": "b5e04790c373f072d8745eb9b4798570166f288979c4cf0bdd5e6cc76d3c9021",
+    "Previews/CompactPickup/StageA/stage_a_front.png": "6d386dc69e88b57677d9ba21b00d0aff0ed3932b88316d3077d094ccd86b8823",
+    "Previews/CompactPickup/StageA/stage_a_front34.png": "b0b2f65cf4dc5f793fba598e2424f16a9c6729ba32d7cfa94f7057f2cfa7fc16",
+    "Previews/CompactPickup/StageA/stage_a_nose_top.png": "11bb0c8472d1fa8578c997f2255cec11c8520137d75d7bbd7fae03875e0fdd5f",
+    "Previews/CompactPickup/StageA/stage_a_rear.png": "9b9a60ff31bb1bf064dd46686e1730306374d040ead5847a74b87303a13071ca",
+    "Previews/CompactPickup/StageA/stage_a_rear34.png": "ea808e2b3e7bf68e4521f07cbd80de9f4037eb01f56d2d03894a11e7105ca5ac",
+    "Previews/CompactPickup/StageA/stage_a_side.png": "eae10b81f2c1c7ce32c02b908c16155ddf3c5d96614bd87325e42df734d10ceb",
+    "Previews/CompactPickup/StageA/stage_a_top.png": "e98a29baf99c9d4dcb3c431800caae76af320fea5c7a093b14f803e4828021ad"
+  }
+}

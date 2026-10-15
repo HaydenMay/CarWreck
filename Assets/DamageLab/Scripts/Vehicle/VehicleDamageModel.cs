@@ -402,7 +402,7 @@ namespace DamageLab.Vehicle
                     UnityEngine.Debug.LogWarning($"[DamageLab] Mesh '{mf.sharedMesh.name}' is not readable; enable Read/Write on the model importer.", this);
                     continue;
                 }
-                var part = new DeformablePart(mf, transform, rule != null ? rule.crumple : UnknownCrumple);
+                var part = new DeformablePart(mf, transform, rule != null ? rule.crumple : UnknownCrumple, rule != null && rule.coherentTubeSections);
                 parts.Add(part);
                 DeformableVertices += part.VertexCount;
                 if (rule != null && rule.DefinesImpactFaces)

@@ -1,0 +1,310 @@
+{
+  "front34": {
+    "position": [
+      -5.5,
+      8.5,
+      2.4
+    ],
+    "target": [
+      0,
+      0,
+      0.92
+    ],
+    "projection": "PERSP",
+    "lens_mm": 70,
+    "scale": 5.9,
+    "vehicle_pixel_bounds": [
+      56.94958448410034,
+      229.48705673217773,
+      1223.866138458252,
+      877.5830769538879
+    ],
+    "diagnostic_paint_specular_disabled": false
+  },
+  "side": {
+    "position": [
+      -10,
+      0,
+      1.14
+    ],
+    "target": [
+      0,
+      0,
+      0.94
+    ],
+    "projection": "ORTHO",
+    "lens_mm": 70,
+    "scale": 5.45,
+    "vehicle_pixel_bounds": [
+      95.91147065162659,
+      246.9385528564453,
+      1343.5592651367188,
+      733.9081907272339
+    ],
+    "diagnostic_paint_specular_disabled": false
+  },
+  "rear34": {
+    "position": [
+      5.7,
+      -8.2,
+      2.6
+    ],
+    "target": [
+      0,
+      -0.1,
+      0.92
+    ],
+    "projection": "PERSP",
+    "lens_mm": 70,
+    "scale": 5.9,
+    "vehicle_pixel_bounds": [
+      55.09445071220398,
+      214.57374572753906,
+      1258.425693511963,
+      862.897789478302
+    ],
+    "diagnostic_paint_specular_disabled": false
+  },
+  "top": {
+    "position": [
+      0,
+      0,
+      12
+    ],
+    "target": [
+      0,
+      0,
+      0
+    ],
+    "projection": "ORTHO",
+    "lens_mm": 70,
+    "scale": 5.5,
+    "vehicle_pixel_bounds": [
+      101.58545851707458,
+      184.79999542236328,
+      1337.890920639038,
+      775.1999759674072
+    ],
+    "diagnostic_paint_specular_disabled": false
+  },
+  "front": {
+    "position": [
+      0,
+      10,
+      1.03
+    ],
+    "target": [
+      0,
+      0,
+      1.03
+    ],
+    "projection": "ORTHO",
+    "lens_mm": 70,
+    "scale": 3.2,
+    "vehicle_pixel_bounds": [
+      212.62497425079346,
+      124.50033187866211,
+      1227.3749828338623,
+      943.9981019496918
+    ],
+    "diagnostic_paint_specular_disabled": false
+  },
+  "rear": {
+    "position": [
+      0,
+      -10,
+      1.03
+    ],
+    "target": [
+      0,
+      0,
+      1.03
+    ],
+    "projection": "ORTHO",
+    "lens_mm": 70,
+    "scale": 3.2,
+    "vehicle_pixel_bounds": [
+      212.62503862380981,
+      124.500732421875,
+      1227.3749828338623,
+      943.9985311031342
+    ],
+    "diagnostic_paint_specular_disabled": false
+  },
+  "nose_top": {
+    "position": [
+      0,
+      5.6,
+      5.3
+    ],
+    "target": [
+      0,
+      1.45,
+      1.02
+    ],
+    "projection": "ORTHO",
+    "lens_mm": 70,
+    "scale": 3.4,
+    "vehicle_pixel_bounds": [
+      242.47042894363403,
+      -739.4684600830078,
+      1197.5291633605957,
+      893.0192756652832
+    ],
+    "diagnostic_paint_specular_disabled": false
+  },
+  "bed": {
+    "position": [
+      3.8,
+      -5.5,
+      5.8
+    ],
+    "target": [
+      0,
+      -1.25,
+      1.0
+    ],
+    "projection": "ORTHO",
+    "lens_mm": 70,
+    "scale": 3.3,
+    "vehicle_pixel_bounds": [
+      80.9032291173935,
+      -490.3472900390625,
+      2082.458839416504,
+      1048.0251932144165
+    ],
+    "diagnostic_paint_specular_disabled": false
+  },
+  "clearance": {
+    "position": [
+      -5.8,
+      5.5,
+      1.5
+    ],
+    "target": [
+      0,
+      0,
+      0.78
+    ],
+    "projection": "ORTHO",
+    "lens_mm": 70,
+    "scale": 5.8,
+    "vehicle_pixel_bounds": [
+      131.4873468875885,
+      211.86504364013672,
+      1310.7762336730957,
+      714.7161483764648
+    ],
+    "diagnostic_paint_specular_disabled": false
+  },
+  "hood_detail": {
+    "position": [
+      -2.6,
+      3.7,
+      2.65
+    ],
+    "target": [
+      -0.57,
+      1.64,
+      1.17
+    ],
+    "projection": "ORTHO",
+    "lens_mm": 70,
+    "scale": 1.8,
+    "vehicle_pixel_bounds": [
+      -555.0207138061523,
+      -1036.9166564941406,
+      3194.3576431274414,
+      1444.3646049499512
+    ],
+    "diagnostic_paint_specular_disabled": false
+  },
+  "wheel_detail": {
+    "position": [
+      -3.4,
+      2.3,
+      1.2
+    ],
+    "target": [
+      -0.89,
+      1.64,
+      0.52
+    ],
+    "projection": "ORTHO",
+    "lens_mm": 70,
+    "scale": 1.45,
+    "vehicle_pixel_bounds": [
+      -421.47897720336914,
+      -1280.9706115722656,
+      4569.913902282715,
+      1009.3593907356262
+    ],
+    "diagnostic_paint_specular_disabled": false
+  },
+  "cabin_detail": {
+    "position": [
+      -3.6,
+      4.6,
+      2.5
+    ],
+    "target": [
+      0,
+      0.39,
+      1.5
+    ],
+    "projection": "ORTHO",
+    "lens_mm": 70,
+    "scale": 2.6,
+    "vehicle_pixel_bounds": [
+      -393.8930368423462,
+      221.81230545043945,
+      2119.3588256835938,
+      1458.0570602416992
+    ],
+    "diagnostic_paint_specular_disabled": false
+  },
+  "roof_color": {
+    "position": [
+      -3.2,
+      3.0,
+      4.5
+    ],
+    "target": [
+      0,
+      0.15,
+      1.5
+    ],
+    "projection": "ORTHO",
+    "lens_mm": 70,
+    "scale": 2.45,
+    "vehicle_pixel_bounds": [
+      -623.0356979370117,
+      -219.34764862060547,
+      2200.1649856567383,
+      1810.6756210327148
+    ],
+    "diagnostic_paint_specular_disabled": true
+  },
+  "fascia_detail": {
+    "position": [
+      -2.3,
+      4.9,
+      1.45
+    ],
+    "target": [
+      -0.4,
+      2.25,
+      1.0
+    ],
+    "projection": "ORTHO",
+    "lens_mm": 70,
+    "scale": 1.65,
+    "vehicle_pixel_bounds": [
+      -304.43422079086304,
+      -531.643180847168,
+      3472.320671081543,
+      1330.488166809082
+    ],
+    "diagnostic_paint_specular_disabled": false
+  }
+}

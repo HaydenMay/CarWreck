@@ -49,6 +49,8 @@ namespace DamageLab.Vehicle
         [Range(0f, 1f)] public float rigidFollow = 0.75f;
         [Tooltip("Whether this part defines the outer faces the impacts are measured from (Body and Bumper roles always do).")]
         public bool definesImpactFaces = false;
+        [Tooltip("Thin tubes (coil springs, rods, pipes): each mesh-detected cross-section ring moves as one unit, so the tube bends and crushes along its length without its round section turning inside out. Off by default.")]
+        public bool coherentTubeSections = false;
 
         public bool DefinesImpactFaces => definesImpactFaces || role == VehicleComponentRole.Body || role == VehicleComponentRole.Bumper;
 

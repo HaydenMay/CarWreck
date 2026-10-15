@@ -88,18 +88,31 @@ namespace DamageLab.EditorTools
         /// sweep it (it is large relative to that motion), so poses and contact points reported after the step land 0-15 cm
         /// past the true first touch depending on the step phase.
         /// </summary>
-        static float SweptFirstTouch(Target t, bool narrow = true)
+        struct SweptTouch
+        {
+            public float outward;
+            public Collider collider;
+            public Vector3 parkedCenter, half;
+        }
+
+        static SweptTouch SweptFirstTouch(Target t, bool narrow = true)
         {
             lab.narrowImpactor = narrow; lab.aimOffset = Off(t); lab.direction = t.d;
             lab.ResetBlock();
             var bc = lab.sled.GetComponent<BoxCollider>(); var tr = bc.transform;
             Vector3 c = tr.TransformPoint(bc.center), half = Vector3.Scale(bc.size, tr.lossyScale) * 0.5f, dir = tr.forward;
-            float best = float.MaxValue;
+            Physics.SyncTransforms();
+            float best = float.MaxValue; Collider first = null;
             foreach (var h in Physics.BoxCastAll(c, half, dir, tr.rotation, 20f, ~0, QueryTriggerInteraction.Ignore))
-                if (h.distance > 0f && h.collider.GetComponentInParent<VehicleHitbox>() == lab.hitbox) best = Mathf.Min(best, h.distance);
-            if (best == float.MaxValue) return float.NaN;
+                if (h.distance > 0f && h.collider.GetComponentInParent<VehicleHitbox>() == lab.hitbox && h.distance < best)
+                { best = h.distance; first = h.collider; }
+            var result = new SweptTouch { outward = float.NaN, collider = first,
+                parkedCenter = lab.car.transform.InverseTransformPoint(c),
+                half = AdaptiveContactValidation.ProjectedHalfExtents(Quaternion.Inverse(lab.car.rotation) * tr.rotation, half) };
+            if (best == float.MaxValue) return result;
             Vector3 lead = lab.car.transform.InverseTransformPoint(c + dir * (half.z + best));
-            return -Vector3.Dot(lead, CollisionLabController.Direction(t.d).normalized);
+            result.outward = -Vector3.Dot(lead, CollisionLabController.Direction(t.d).normalized);
+            return result;
         }
 
         static float FaceValue(VehicleHitbox hb, Target t) { var f = hb.FaceOf(t.region, t.axis, t.sign); return f != null ? f.current : float.NaN; }
@@ -165,33 +178,42 @@ namespace DamageLab.EditorTools
                 sb.AppendLine("  A. COVERAGE (narrow block, 15 m/s, 1500 kg; Repair Car before each target). Depth = where the block first touches the car's physical");
                 sb.AppendLine("     hitbox (parked block swept along its launch path), outward along the approach. For reference: the recorded impactor pose and the");
                 sb.AppendLine("     averaged PhysX contact point, both reported after a 30 cm physics step, so 0-15 cm past the true first touch depending on step phase.");
+                sb.AppendLine("     Acceptance unchanged: >3 cm deeper, <6 cm from expected first physical surface, >5 cm regional retraction; cabin matches measured protection within 1 mm.");
+                sb.AppendLine("     Solver contact/recorded poses are diagnostics. A swept footprint overlapping the intact protected cabin must stop there.");
                 sb.AppendLine("     target                      region       hit1 touch  face before->after hit1   hit2 touch (deeper by)   pose 1->2       contact 1->2    region retract  result");
                 bool coverageOk = true;
                 foreach (var t in Targets)
                 {
                     lab.RepairCar();
-                    float s1 = SweptFirstTouch(t);
+                    var touch1 = SweptFirstTouch(t); float s1 = touch1.outward;
                     var r1 = Hit(t.d, 15f, 1500f, true, Off(t), out _);
                     float i1 = ImpactorFront(t.d);
                     float fBefore = FaceOriginal(hb, t), fAfter = FaceValue(hb, t);
                     string cornerFaces = "";
                     if (t.axis < 0)
                         foreach (var f in hb.Faces) if (f.region.name == t.region) cornerFaces += $"{f.Label} {f.sign * f.original:0.000}->{f.sign * f.current:0.000} ";
-                    float s2 = SweptFirstTouch(t);
+                    var touch2 = SweptFirstTouch(t); float s2 = touch2.outward;
+                    // Independently measured protection, not the potentially misplaced actual collider's bounds.
+                    Bounds protectedCabin = AdaptiveContactValidation.ProtectedCabin(lab.Geometry, lab.CurrentVehicle.cabinBoxScale);
+                    var cabin = hb.cabin;
+                    bool cabinIntact = AdaptiveContactValidation.CabinMatches(cabin, lab.car.transform, protectedCabin);
+                    bool cabinFirst = false;
+                    float expected = t.axis < 0 ? s2 : AdaptiveContactValidation.ExpectedFace(fAfter, protectedCabin,
+                        touch2.parkedCenter, touch2.half, t.axis, t.sign, out cabinFirst);
+                    bool surfaceIdentity = t.axis < 0 || touch2.collider == (cabinFirst ? cabin : hb.Find(t.region).box);
                     var r2 = Hit(t.d, 15f, 1500f, true, Off(t), out _);
                     float i2 = ImpactorFront(t.d);
                     float c1 = Outward(r1, t.d), c2 = Outward(r2, t.d);
-                    bool deeper = s2 < s1 - 0.03f;
-                    bool follows = t.axis < 0 || Mathf.Abs(t.sign * (t.axis == 2 ? r2.contactPoint.z : r2.contactPoint.x) - fAfter) < 0.06f;
-                    bool retracted = RegionRetract(hb, t.region) > 0.05f;
-                    bool ok = r1.applied && r2.applied && deeper && follows && retracted;
+                    bool ok = AdaptiveContactValidation.Accept(s1, s2, expected, RegionRetract(hb, t.region),
+                        r1.applied && r2.applied, surfaceIdentity, cabinIntact);
                     coverageOk &= ok;
                     sb.AppendLine($"     {t.name,-27} {t.region,-12} {s1,8:0.000}   " +
                                   $"{(t.axis < 0 ? "   (two faces)        " : $"{fBefore,6:0.000} -> {fAfter,6:0.000}      ")}" +
                                   $"{s2,8:0.000} ({(s1 - s2) * 100f,5:0.0} cm)    {i1,6:0.000}->{i2,6:0.000}   {c1,6:0.000}->{c2,6:0.000}   {RegionRetract(hb, t.region) * 100f,6:0.0} cm      {P(ok)}  [{r1.carCollider} -> {r2.carCollider}]");
+                    if (t.axis >= 0) sb.AppendLine($"        swept surface {touch2.collider?.name}, expected {(cabinFirst ? "protected cabin" : "adaptive face")} {expected:0.000}; sweep error {(s2 - expected) * 1000f:0.0} mm; cabin geometry intact {cabinIntact}");
                     if (cornerFaces.Length > 0) sb.AppendLine($"        corner faces after hit 1: {cornerFaces}");
                 }
-                sb.AppendLine($"  Coverage: every region's second identical hit lands deeper, at the retracted face {P(coverageOk)}");
+                sb.AppendLine($"  Coverage: every region's second identical hit lands deeper, at the retracted face or independently expected protected cabin {P(coverageOk)}");
 
                 // ---------------------------------------------------------------- B. locality + C. saturation
                 sb.AppendLine("  B/C. LOCALITY + SATURATION (30 m/s, 4000 kg, narrow unless noted):");

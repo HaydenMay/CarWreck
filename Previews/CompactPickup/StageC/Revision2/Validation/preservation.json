@@ -1,0 +1,8 @@
+{
+  "approved_a_b_files_checked": 71,
+  "approved_a_b_all_unchanged": true,
+  "prior_baseline_files_checked": 97,
+  "prior_baseline_changed": [],
+  "extension_runtime_and_existing_vehicle_changed_paths": [],
+  "scope": "SHA-256 protected checkpoint manifests; runtime/existing vehicles compared to extension-start HEAD. Hatch sensitivity remains a test failure."
+}
