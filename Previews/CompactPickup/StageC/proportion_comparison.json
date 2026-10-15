@@ -1,0 +1,337 @@
+{
+  "rows": [
+    {
+      "metric": "Wheelbase / length",
+      "reference": 0.62669,
+      "model": 0.62474,
+      "difference_percent": -0.31,
+      "flag": false,
+      "threshold_percent": 3,
+      "source_pixels": "Photo3 side: x=111,482; bumpers=22,614",
+      "reference_uncertainty": "~1.5%",
+      "approved_b": 0.62474,
+      "final": 0.62474,
+      "b_drift_percent": 0.0,
+      "b_drift_flag": false
+    },
+    {
+      "metric": "Front overhang / length",
+      "reference": 0.15034,
+      "model": 0.1529,
+      "difference_percent": 1.71,
+      "flag": false,
+      "threshold_percent": 3,
+      "source_pixels": "Photo3 side: x=22..111",
+      "reference_uncertainty": "~2%",
+      "approved_b": 0.1529,
+      "final": 0.1529,
+      "b_drift_percent": 0.0,
+      "b_drift_flag": false
+    },
+    {
+      "metric": "Rear overhang / length",
+      "reference": 0.22297,
+      "model": 0.22236,
+      "difference_percent": -0.27,
+      "flag": false,
+      "threshold_percent": 3,
+      "source_pixels": "Photo3 side: x=482..614",
+      "reference_uncertainty": "~2%",
+      "approved_b": 0.22236,
+      "final": 0.22236,
+      "b_drift_percent": 0.0,
+      "b_drift_flag": false
+    },
+    {
+      "metric": "Height / length",
+      "reference": 0.38682,
+      "model": 0.38566,
+      "difference_percent": -0.3,
+      "flag": false,
+      "threshold_percent": 5,
+      "source_pixels": "Photo3 side: roof=486, ground=715",
+      "reference_uncertainty": "~2%",
+      "approved_b": 0.38566,
+      "final": 0.38566,
+      "b_drift_percent": 0.0,
+      "b_drift_flag": false
+    },
+    {
+      "metric": "Tire diameter / length",
+      "reference": 0.18243,
+      "model": 0.17836,
+      "difference_percent": -2.23,
+      "flag": false,
+      "threshold_percent": 5,
+      "source_pixels": "Photo3 side: diameter ~108 px",
+      "reference_uncertainty": "~3%",
+      "approved_b": 0.17836,
+      "final": 0.17836,
+      "b_drift_percent": 0.0,
+      "b_drift_flag": false
+    },
+    {
+      "metric": "Wheel center height / length",
+      "reference": 0.09122,
+      "model": 0.08918,
+      "difference_percent": -2.23,
+      "flag": false,
+      "threshold_percent": 5,
+      "source_pixels": "Photo3 side: ground715, center661",
+      "reference_uncertainty": "~3%",
+      "approved_b": 0.08918,
+      "final": 0.08918,
+      "b_drift_percent": 0.0,
+      "b_drift_flag": false
+    },
+    {
+      "metric": "Bed rail height / length",
+      "reference": 0.27872,
+      "model": 0.27766,
+      "difference_percent": -0.38,
+      "flag": false,
+      "threshold_percent": 5,
+      "source_pixels": "Photo3 side: rail550, ground715",
+      "reference_uncertainty": "~2%",
+      "approved_b": 0.27766,
+      "final": 0.27766,
+      "b_drift_percent": 0.0,
+      "b_drift_flag": false
+    },
+    {
+      "metric": "Hood incl. front bumper / length",
+      "reference": 0.29054,
+      "model": 0.29267,
+      "difference_percent": 0.73,
+      "flag": false,
+      "threshold_percent": 5,
+      "source_pixels": "Photo3 side: front22, screen base194",
+      "reference_uncertainty": "~3%",
+      "approved_b": 0.29267,
+      "final": 0.29267,
+      "b_drift_percent": 0.0,
+      "b_drift_flag": false
+    },
+    {
+      "metric": "Greenhouse base length / length",
+      "reference": 0.27196,
+      "model": 0.26472,
+      "difference_percent": -2.66,
+      "flag": false,
+      "threshold_percent": 5,
+      "source_pixels": "Photo3 side: base194..355",
+      "reference_uncertainty": "~3%",
+      "approved_b": 0.26472,
+      "final": 0.26472,
+      "b_drift_percent": 0.0,
+      "b_drift_flag": false
+    },
+    {
+      "metric": "Roof length / length",
+      "reference": 0.15878,
+      "model": 0.15248,
+      "difference_percent": -3.97,
+      "flag": false,
+      "threshold_percent": 5,
+      "source_pixels": "Photo3 side: roof249..343",
+      "reference_uncertainty": "~4%",
+      "approved_b": 0.15248,
+      "final": 0.15248,
+      "b_drift_percent": 0.0,
+      "b_drift_flag": false
+    },
+    {
+      "metric": "Bed side length / length",
+      "reference": 0.41216,
+      "model": 0.4119,
+      "difference_percent": -0.06,
+      "flag": false,
+      "threshold_percent": 5,
+      "source_pixels": "Photo3 side: bed360..604",
+      "reference_uncertainty": "~3%",
+      "approved_b": 0.4119,
+      "final": 0.4119,
+      "b_drift_percent": 0.0,
+      "b_drift_flag": false
+    },
+    {
+      "metric": "Body width / length - plan",
+      "reference": 0.4143,
+      "model": 0.41084,
+      "difference_percent": -0.84,
+      "flag": false,
+      "threshold_percent": 5,
+      "source_pixels": "Photo2 top: body y83..390; x21..762",
+      "reference_uncertainty": "~3%",
+      "approved_b": 0.41084,
+      "final": 0.41084,
+      "b_drift_percent": 0.0,
+      "b_drift_flag": false
+    },
+    {
+      "metric": "Grille frame / body width",
+      "reference": 0.60225,
+      "model": 0.6134,
+      "difference_percent": 1.85,
+      "flag": false,
+      "threshold_percent": 5,
+      "source_pixels": "Photo2 front: grille x116..384 / body width445",
+      "reference_uncertainty": "~3%",
+      "approved_b": 0.6134,
+      "final": 0.6134,
+      "b_drift_percent": 0.0,
+      "b_drift_flag": false
+    },
+    {
+      "metric": "Track / body width",
+      "reference": 0.8764,
+      "model": 0.91753,
+      "difference_percent": 4.69,
+      "flag": true,
+      "threshold_percent": 3,
+      "source_pixels": "Photo2 front: tire centers ~57,447 / body width445",
+      "reference_uncertainty": "~4%",
+      "approved_b": 0.91753,
+      "final": 0.91753,
+      "b_drift_percent": 0.0,
+      "b_drift_flag": false
+    },
+    {
+      "metric": "Cream boundary height / length",
+      "reference": 0.17061,
+      "model": 0.17071,
+      "difference_percent": 0.06,
+      "flag": false,
+      "threshold_percent": 5,
+      "source_pixels": "Photo3 side: boundary614, ground715",
+      "reference_uncertainty": "~3%",
+      "approved_b": 0.17071,
+      "final": 0.17071,
+      "b_drift_percent": 0.0,
+      "b_drift_flag": false
+    },
+    {
+      "metric": "Rocker height / length",
+      "reference": 0.10473,
+      "model": 0.10718,
+      "difference_percent": 2.34,
+      "flag": false,
+      "threshold_percent": 5,
+      "source_pixels": "Photo3 side: rocker653, ground715",
+      "reference_uncertainty": "~4%",
+      "approved_b": 0.10718,
+      "final": 0.10718,
+      "b_drift_percent": 0.0,
+      "b_drift_flag": false
+    },
+    {
+      "metric": "Front axle location / length",
+      "reference": 0.15034,
+      "model": 0.1529,
+      "difference_percent": 1.71,
+      "flag": false,
+      "threshold_percent": 3,
+      "source_pixels": "Photo3 side; measured from nose",
+      "reference_uncertainty": "~2%",
+      "approved_b": 0.1529,
+      "final": 0.1529,
+      "b_drift_percent": 0.0,
+      "b_drift_flag": false
+    },
+    {
+      "metric": "Rear axle location / length",
+      "reference": 0.77703,
+      "model": 0.77764,
+      "difference_percent": 0.08,
+      "flag": false,
+      "threshold_percent": 3,
+      "source_pixels": "Photo3 side; measured from nose",
+      "reference_uncertainty": "~2%",
+      "approved_b": 0.77764,
+      "final": 0.77764,
+      "b_drift_percent": 0.0,
+      "b_drift_flag": false
+    },
+    {
+      "metric": "Windscreen rake from vertical deg",
+      "reference": 44.48384,
+      "model": 42.33011,
+      "difference_percent": -4.84,
+      "flag": false,
+      "threshold_percent": 5,
+      "source_pixels": "Photo3 side: approx dx55 / dz56",
+      "reference_uncertainty": "~5 degrees",
+      "approved_b": 42.33011,
+      "final": 42.33011,
+      "b_drift_percent": 0.0,
+      "b_drift_flag": false
+    },
+    {
+      "metric": "Secondary: bed / length - plan",
+      "reference": 0.44399,
+      "model": 0.4119,
+      "difference_percent": -7.23,
+      "flag": true,
+      "threshold_percent": 5,
+      "source_pixels": "Photo2 top: bed426..755; x21..762",
+      "reference_uncertainty": "~3%; differs from Photo3",
+      "approved_b": 0.4119,
+      "final": 0.4119,
+      "b_drift_percent": 0.0,
+      "b_drift_flag": false
+    }
+  ],
+  "dimensions": {
+    "length_m": {
+      "approved_b": 4.7220001220703125,
+      "final": 4.7220001220703125,
+      "drift_percent": 0.0
+    },
+    "body_width_m": {
+      "approved_b": 1.940000057220459,
+      "final": 1.940000057220459,
+      "drift_percent": 0.0
+    },
+    "mirror_width_m": {
+      "approved_b": 2.254999876022339,
+      "final": 2.254999876022339,
+      "drift_percent": 0.0
+    },
+    "height_m": {
+      "approved_b": 1.8211060464382172,
+      "final": 1.8211060464382172,
+      "drift_percent": 0.0
+    },
+    "wheelbase_m": {
+      "approved_b": 2.9500000178813934,
+      "final": 2.9500000178813934,
+      "drift_percent": 0.0
+    },
+    "tire_diameter_m": {
+      "approved_b": 0.8422119915485382,
+      "final": 0.8422119915485382,
+      "drift_percent": 0.0
+    },
+    "bed_side_length_m": {
+      "approved_b": 1.9449999928474426,
+      "final": 1.9449999928474426,
+      "drift_percent": 0.0
+    },
+    "bed_inside_depth_m": {
+      "approved_b": 0.3899999260902405,
+      "final": 0.3899999260902405,
+      "drift_percent": 0.0
+    },
+    "roof_length_m": {
+      "approved_b": 0.7199999839067459,
+      "final": 0.7199999839067459,
+      "drift_percent": 0.0
+    },
+    "roof_width_m": {
+      "approved_b": 1.6440000534057617,
+      "final": 1.6440000534057617,
+      "drift_percent": 0.0
+    }
+  },
+  "max_b_ratio_drift_percent": 0.0
+}

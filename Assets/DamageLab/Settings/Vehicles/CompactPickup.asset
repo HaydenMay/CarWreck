@@ -1,0 +1,418 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3cbd3e93ddb31f547aaeb5bb9afb5bb6, type: 3}
+  m_Name: CompactPickup
+  m_EditorClassIdentifier: Assembly-CSharp::DamageLab.Vehicle.VehicleDefinition
+  displayName: Compact Pickup
+  model: {fileID: 919132149155446097, guid: 9f990f80c50612945949c6cf0caaab60, type: 3}
+  mass: 1350
+  profile: {fileID: 11400000, guid: 0fe171c6165a1954883956b0066a5338, type: 2}
+  components:
+  - nameContains: BedFloor
+    match: 1
+    role: 5
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: BedFrontWall
+    match: 1
+    role: 1
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: BedLiner_Floor
+    match: 1
+    role: 8
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: BedLiner_FrontWall
+    match: 1
+    role: 8
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: BedLiner_Side_L
+    match: 1
+    role: 8
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: BedLiner_Side_R
+    match: 1
+    role: 8
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: BedLiner_Tailgate
+    match: 1
+    role: 8
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: BedLiner_WheelTub_L
+    match: 1
+    role: 8
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: BedLiner_WheelTub_R
+    match: 1
+    role: 8
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: BedRail_L
+    match: 1
+    role: 5
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: BedRail_R
+    match: 1
+    role: 5
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: BedRail_Rear
+    match: 1
+    role: 5
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: BedSide_L
+    match: 1
+    role: 1
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: BedSide_R
+    match: 1
+    role: 1
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Body_CabRear
+    match: 1
+    role: 1
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Body_Hood
+    match: 1
+    role: 1
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Body_Nose
+    match: 1
+    role: 1
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: BumperMarker_L
+    match: 1
+    role: 7
+    mode: 0
+    crumple: 0.45
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: BumperMarker_R
+    match: 1
+    role: 7
+    mode: 0
+    crumple: 0.45
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Bumper_Front
+    match: 1
+    role: 2
+    mode: 0
+    crumple: 0.25
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Bumper_Rear
+    match: 1
+    role: 2
+    mode: 0
+    crumple: 0.25
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: CabTrim_MirrorsHandles
+    match: 1
+    role: 8
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Cabin_RearDivider
+    match: 1
+    role: 3
+    mode: 0
+    crumple: 0.85
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Cabin_RearGlass
+    match: 1
+    role: 3
+    mode: 0
+    crumple: 0.85
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Cabin_Roof
+    match: 1
+    role: 3
+    mode: 0
+    crumple: 0.85
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Cabin_RoofEdges
+    match: 1
+    role: 3
+    mode: 0
+    crumple: 0.85
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Cabin_SideGlass_L
+    match: 1
+    role: 3
+    mode: 0
+    crumple: 0.85
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Cabin_SideGlass_R
+    match: 1
+    role: 3
+    mode: 0
+    crumple: 0.85
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Cabin_Windshield
+    match: 1
+    role: 3
+    mode: 0
+    crumple: 0.85
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Door_L
+    match: 1
+    role: 1
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Door_R
+    match: 1
+    role: 1
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: FrontFender_L
+    match: 1
+    role: 1
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: FrontFender_R
+    match: 1
+    role: 1
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: FrontIndicator_L
+    match: 1
+    role: 7
+    mode: 0
+    crumple: 0.45
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: FrontIndicator_R
+    match: 1
+    role: 7
+    mode: 0
+    crumple: 0.45
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: FrontPlate
+    match: 1
+    role: 8
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Grille_Frame
+    match: 1
+    role: 6
+    mode: 0
+    crumple: 0.55
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Grille_Inset
+    match: 1
+    role: 6
+    mode: 0
+    crumple: 0.55
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: HeadlightHousing_L
+    match: 1
+    role: 7
+    mode: 0
+    crumple: 0.45
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: HeadlightHousing_R
+    match: 1
+    role: 7
+    mode: 0
+    crumple: 0.45
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Headlight_L
+    match: 1
+    role: 7
+    mode: 0
+    crumple: 0.45
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Headlight_R
+    match: 1
+    role: 7
+    mode: 0
+    crumple: 0.45
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: RearPlate
+    match: 1
+    role: 8
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Suspension_Front
+    match: 1
+    role: 9
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Suspension_Rear
+    match: 1
+    role: 9
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Tailgate
+    match: 1
+    role: 1
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: TailgateHandle
+    match: 1
+    role: 8
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Taillight_L
+    match: 1
+    role: 7
+    mode: 0
+    crumple: 0.45
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Taillight_R
+    match: 1
+    role: 7
+    mode: 0
+    crumple: 0.45
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Underbody_Frame
+    match: 1
+    role: 9
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Wheel_FL
+    match: 1
+    role: 4
+    mode: 1
+    crumple: 0
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Wheel_FR
+    match: 1
+    role: 4
+    mode: 1
+    crumple: 0
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Wheel_RL
+    match: 1
+    role: 4
+    mode: 1
+    crumple: 0
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Wheel_RR
+    match: 1
+    role: 4
+    mode: 1
+    crumple: 0
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Wheelhouse_Inner
+    match: 1
+    role: 9
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  - nameContains: Wipers
+    match: 1
+    role: 8
+    mode: 0
+    crumple: 1
+    rigidFollow: 0.75
+    definesImpactFaces: 0
+  unknownComponentCrumple: 1
+  frontSectionDepth: 0
+  rearSectionDepth: 0
+  sideSectionDepth: 0
+  cabinBoxScale: {x: 0.92, y: 0.85}
+  impactHeight: 0
+  maxImpactRecords: 24

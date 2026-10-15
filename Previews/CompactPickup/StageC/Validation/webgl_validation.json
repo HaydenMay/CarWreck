@@ -1,0 +1,27 @@
+{
+  "scope": "Observed browser UI, final rebuilt WebGL player; not a replacement for standard Editor acceptance tests",
+  "build": {
+    "size_mb": 21.2,
+    "errors": 0,
+    "seconds": 66
+  },
+  "pickup_loaded": true,
+  "two_tone_paint_visible": true,
+  "front_impact_visible": true,
+  "random_launch_visible": true,
+  "speed_m_s": 20,
+  "mass_kg": 2500,
+  "chaos": {
+    "seed": 2026,
+    "requested": 50,
+    "launched": 50,
+    "hit": 50,
+    "missed": 0,
+    "random_block_width": true
+  },
+  "repair_restored_appearance": true,
+  "application_console_errors": [],
+  "application_console_warnings": [],
+  "initial_blank_viewport": "An earlier build/session showed no 3D geometry for muscle car or pickup. Final rebuild and reload rendered both correctly; cause not established. Initial screenshot retained separately.",
+  "limitations": "Default pigment has the Collision Lab blue reflection cast. Independent color property edits were validated in Editor; this browser UI exposes no paint editor. Extreme damage still has known visual defects."
+}

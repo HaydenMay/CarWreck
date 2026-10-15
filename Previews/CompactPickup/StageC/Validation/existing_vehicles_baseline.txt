@@ -1,0 +1,108 @@
+[CollisionLab] Vehicle integration: Muscle Car (real PhysX, anchored)
+  model: 12 deforming parts, 62,014 deforming vertices, 152,276 triangles, 4 wheels at (-0.80, 0.40, 1.36) (0.80, 0.40, 1.36) (-0.80, 0.40, -1.36) (0.80, 0.40, -1.36)
+  geometry: body (2.053, 0.713, 4.988) (min (-1.03, 0.32, -2.47) max (1.03, 1.04, 2.51)), beltline 1.035, cabin top 1.470, lift 0.018; profile cabin line 1.05-1.40; crush-field bounds (2.053, 0.713, 4.988) centre y 0.679
+  physics: 14 boxes; nose/tail depth 0.70/0.70 m, side 0.45 m, impact height 0.70 m; faces FrontLeft +Z 2.474; FrontLeft -X -0.992; FrontCentre +Z 2.474; FrontRight +Z 2.474; FrontRight +X 0.992; RearLeft -Z -2.452; RearLeft -X -0.985; RearCentre -Z -2.474; RearRight -Z -2.452; RearRight +X 0.985; LeftRear -X -0.956; RightRear +X 0.956; LeftMid -X -0.938; RightMid +X 0.938; LeftFront -X -0.965; RightFront +X 0.965
+  validation warnings: 0
+  SINGLE IMPACTS (wide sled, 15 m/s, 1500 kg, from a repaired car):
+    Front                          applied yes str  93.8 contact (0.00, 0.59, 2.42) moved 0.273 m deform  94.9 ms (resolve 43.3, accumulate 38.0 [9/12], rebuild 10.0 [9/12]) NaN 0 folded 490 (0.32%) layer drift p95 0.3 max 1.4 cm | hitbox: FrontRight +Z -20 cm, FrontCentre +Z -20 cm, FrontLeft +Z -20 cm
+      folded by part: Grille 288/23364, Body 76/62564, Trim 38/1240, HoodScoop 30/2772, Bumper_Front 29/3068, Headlights 29/2112
+    Rear                           applied yes str  93.8 contact (0.00, 0.59, -2.37) moved 0.267 m deform  62.9 ms (resolve 28.1, accumulate 27.0 [7/12], rebuild 7.7 [7/12]) NaN 0 folded 187 (0.12%) layer drift p95 0.4 max 1.0 cm | hitbox: RearCentre -Z -22 cm, RearLeft -Z -20 cm, RearRight -Z -19 cm
+      folded by part: Body 56/62564, Spoiler 47/7640, Trim 46/1240, Bumper_Rear 27/2332, Taillights 11/8380
+    Left side                      applied yes str  93.8 contact (-0.93, 0.59, 0.02) moved 0.234 m deform  32.7 ms (resolve 14.2, accumulate 11.5 [8/12], rebuild 6.9 [8/12]) NaN 0 folded 146 (0.10%) layer drift p95 0.0 max 0.7 cm | hitbox: LeftFront -X -15 cm, LeftRear -X -15 cm, LeftMid -X -12 cm
+      folded by part: Mirrors 85/1824, Body 47/62564, Trim 13/1240, Cabin 1/6252
+    Right side                     applied yes str  93.8 contact (0.93, 0.59, 0.02) moved 0.251 m deform  38.4 ms (resolve 19.2, accumulate 11.7 [8/12], rebuild 7.4 [8/12]) NaN 0 folded 108 (0.07%) layer drift p95 0.0 max 0.7 cm | hitbox: RightFront +X -16 cm, RightRear +X -14 cm, RightMid +X -12 cm
+      folded by part: Mirrors 70/1824, Body 38/62564
+    Front-left corner (angled)     applied yes str  93.8 contact (-0.95, 0.74, 2.47) moved 0.317 m deform  52.0 ms (resolve 24.2, accumulate 19.0 [9/12], rebuild 8.7 [9/12]) NaN 0 folded 472 (0.31%) layer drift p95 0.3 max 1.1 cm | hitbox: FrontLeft +Z -22 cm, FrontLeft -X -10 cm
+      folded by part: Grille 326/23364, HoodScoop 52/2772, Body 41/62564, Bumper_Front 38/3068, Headlights 12/2112, Trim 3/1240
+    Rear-right corner (angled)     applied yes str  93.8 contact (0.93, 0.74, -2.44) moved 0.305 m deform  55.6 ms (resolve 25.3, accumulate 22.6 [7/12], rebuild 7.6 [7/12]) NaN 0 folded 289 (0.19%) layer drift p95 0.5 max 1.2 cm | hitbox: RearRight -Z -15 cm, RearRight +X -6 cm, RearCentre -Z -1 cm
+      folded by part: Spoiler 152/7640, Taillights 56/8380, Body 48/62564, Bumper_Rear 30/2332, Trim 3/1240
+  REPEATED narrow front hits (12 m/s, same start pose) - contact must move into the dent:
+      hit 1 (FrontCentre face 2.170) applied yes str  83.1 contact (0.00, 0.59, 2.47) moved 0.372 m deform  60.3 ms (resolve 30.3, accumulate 21.0 [9/12], rebuild 8.8 [9/12]) NaN 0 folded 673 (0.44%) layer drift p95 0.4 max 28.4 cm | hitbox: FrontCentre +Z -30 cm, FrontLeft +Z -3 cm
+      hit 2 (FrontCentre face 2.127) applied yes str  83.1 contact (0.00, 0.59, 2.08) moved 0.226 m deform  62.3 ms (resolve 34.4, accumulate 18.5 [9/12], rebuild 9.2 [9/12]) NaN 0 folded 962 (0.63%) layer drift p95 3.4 max 32.6 cm | hitbox: FrontCentre +Z -4 cm
+      hit 3 (FrontCentre face 2.124) applied yes str  83.1 contact (0.00, 0.59, 2.06) moved 0.109 m deform  62.7 ms (resolve 35.1, accumulate 18.3 [9/12], rebuild 8.9 [9/12]) NaN 0 folded 1149 (0.75%) layer drift p95 4.6 max 34.4 cm | hitbox: FrontCentre +Z -4 cm
+    contact deepens each hit PASS (2.474 -> 2.060)
+  CUMULATIVE (no repair, 20 m/s):
+    LeftSide wide +0.0             applied yes str  99.3 contact (-0.85, 0.59, 0.02) moved 0.278 m deform  38.9 ms (resolve 15.3, accumulate 15.1 [9/12], rebuild 7.9 [9/12]) NaN 0 folded 1383 (0.91%) layer drift p95 4.6 max 34.4 cm | hitbox: LeftMid -X -21 cm, LeftRear -X -20 cm, LeftFront -X -18 cm
+    RightSide narrow +0.2          applied yes str  99.3 contact (0.94, 0.60, 0.13) moved 0.387 m deform  33.6 ms (resolve 9.3, accumulate 17.3 [6/12], rebuild 6.6 [6/12]) NaN 0 folded 1533 (1.01%) layer drift p95 4.6 max 34.4 cm | hitbox: RightMid +X -23 cm
+    Rear narrow -0.6               applied yes str  91.6 contact (-0.48, 0.59, -2.35) moved 0.384 m deform  61.0 ms (resolve 29.8, accumulate 22.9 [7/12], rebuild 7.8 [7/12]) NaN 0 folded 2248 (1.48%) layer drift p95 4.6 max 34.4 cm | hitbox: RearLeft -Z -28 cm, RearLeft -X -6 cm
+    RearCornerAngled wide +0.0     applied yes str  99.3 contact (0.93, 0.74, -2.44) moved 0.354 m deform  60.5 ms (resolve 28.6, accumulate 23.7 [7/12], rebuild 7.7 [7/12]) NaN 0 folded 2789 (1.83%) layer drift p95 4.6 max 34.4 cm | hitbox: RearRight -Z -22 cm, RearRight +X -12 cm, RearCentre -Z -4 cm
+    FrontCornerAngled wide +0.0    applied yes str  99.3 contact (-0.97, 0.74, 2.44) moved 0.424 m deform  64.4 ms (resolve 33.6, accumulate 20.5 [9/12], rebuild 9.6 [9/12]) NaN 0 folded 3246 (2.13%) layer drift p95 5.2 max 34.4 cm | hitbox: FrontLeft +Z -27 cm, FrontLeft -X -16 cm
+    Front narrow +0.6              applied yes str  99.3 contact (0.60, 0.59, 2.35) moved 0.434 m deform  55.7 ms (resolve 23.6, accumulate 22.0 [9/12], rebuild 9.4 [9/12]) NaN 0 folded 4001 (2.63%) layer drift p95 5.2 max 13.6 cm | hitbox: FrontRight +Z -32 cm
+    after 9 hits, folded by part: Body 1300/62564, Grille 1167/23364, Spoiler 501/7640, HoodScoop 374/2772, Taillights 223/8380, Bumper_Front 107/3068, Trim 106/1240; worst layer drift: Body~Bumper_Front 13.6cm, Bumper_Front~Body 13.6cm, Body~Grille 7.9cm, HoodScoop~Body 7.8cm, Grille~Bumper_Front 5.7cm, Bumper_Front~Grille 5.7cm
+  stripe/paint UVs unchanged by deformation (runtime meshes vs source) PASS
+  SATURATION front centre x12 at 30 m/s 4000 kg: moved per hit 0.434 / 0.177 / 0.090 ... 0.015 / 0.019 / 0.013 m, max disp 0.498 m, FrontCentre retracted 35.0 cm, NaN 0, folded 1.3% PASS
+  every hit applied PASS; deformation per hit 55.7 ms avg / 94.9 ms max over 15
+  DAMAGE LAB PATHS:
+    slider front 100   max disp 0.829 m, rebuild 13.8 ms, NaN 0, folded 2229 (1.46%), layer drift p95 4.4 max 11.8 cm
+    slider rear 100    max disp 0.819 m, rebuild 13.3 ms, NaN 0, folded 126 (0.08%), layer drift p95 6.5 max 15.1 cm
+    slider left 100    max disp 0.533 m, rebuild 15.3 ms, NaN 0, folded 102 (0.07%), layer drift p95 0.3 max 8.8 cm
+    all sliders 100    max disp 0.830 m, rebuild 28.6 ms, NaN 0, folded 2483 (1.63%), layer drift p95 7.3 max 15.1 cm
+      folded by part: Grille 2010/23364, Body 413/62564, Headlights 32/2112, Trim 23/1240, Taillights 5/8380
+    dent hood from above          at (0.23, 0.97, 1.75) applied True moved 0.332 m, NaN 0, folded 0 [none]
+    dent roof from above          at (0.00, 1.47, -0.15) applied True moved 0.302 m, NaN 0, folded 0 [none]
+    dent door from the side       at (-0.94, 0.73, -0.16) applied True moved 0.328 m, NaN 0, folded 0 [none]
+    dent rear from behind/above   at (0.00, 1.03, -1.88) applied True moved 0.324 m, NaN 0, folded 4 [Spoiler 4/7640]
+  Reset All: vertex error 0.0E+000, normal error 0.0E+000 PASS
+  PART FOLD OUTLIERS (> 5 % of a part folded by one 15 m/s wide hit; Body > 20 folds under a click dent): none PASS
+  REBUILD OPTIMISATION (9 recorded impacts replayed): before 32.5 ms/impact (parts evaluated 12.0, rebuilt 12.0 of 12); after 28.8 ms/impact (evaluated 8.2, rebuilt 8.2); identical mesh: max difference 0.0E+000 m PASS; matches the live run 0.0E+000 m
+
+[CollisionLab] Vehicle integration: Compact Hatchback (real PhysX, anchored)
+  model: 72 deforming parts, 80,108 deforming vertices, 136,316 triangles, 4 wheels at (-0.75, 0.33, 1.16) (0.75, 0.33, 1.16) (-0.75, 0.33, -1.16) (0.75, 0.33, -1.16)
+  geometry: body (1.851, 0.714, 4.014) (min (-0.93, 0.22, -2.00) max (0.93, 0.93, 2.01)), beltline 0.929, cabin top 1.425, lift 0.002; profile cabin line 0.93-1.35; crush-field bounds (1.851, 0.714, 4.014) centre y 0.572
+  physics: 14 boxes; nose/tail depth 0.56/0.56 m, side 0.41 m, impact height 0.60 m; faces FrontLeft +Z 2.006; FrontLeft -X -0.882; FrontCentre +Z 2.009; FrontRight +Z 2.006; FrontRight +X 0.882; RearLeft -Z -1.981; RearLeft -X -0.874; RearCentre -Z -1.962; RearRight -Z -1.944; RearRight +X 0.874; LeftRear -X -0.839; RightRear +X 0.839; LeftMid -X -0.821; RightMid +X 0.821; LeftFront -X -0.847; RightFront +X 0.847
+  validation warnings: 0
+  SINGLE IMPACTS (wide sled, 15 m/s, 1500 kg, from a repaired car):
+    Front                          applied yes str  93.8 contact (0.00, 0.49, 1.91) moved 0.285 m deform 125.6 ms (resolve 45.2, accumulate 69.1 [50/72], rebuild 11.3 [50/72]) NaN 0 folded 1823 (1.37%) layer drift p95 0.4 max 1.9 cm | hitbox: FrontCentre +Z -20 cm, FrontRight +Z -20 cm, FrontLeft +Z -19 cm
+      folded by part: FrontValance 558/3248, Body 382/61168, Grille 93/188, GrilleSurround 89/1712, HeadlightHousing.001 79/704, GrilleSlat.003 67/188, FogHousing.001 64/512
+    Rear                           applied yes str  93.8 contact (0.00, 0.49, -1.90) moved 0.260 m deform  83.1 ms (resolve 34.7, accumulate 38.1 [41/72], rebuild 10.3 [41/72]) NaN 0 folded 767 (0.58%) layer drift p95 0.4 max 1.6 cm | hitbox: RearLeft -Z -19 cm, RearCentre -Z -18 cm, RearRight -Z -17 cm
+      folded by part: Body 274/61168, LicenseRecess 177/1088, TaillightHousing 70/944, TaillightHousing.001 58/944, HatchLock 33/188, ReverseLight.001 30/188, ReverseLight 29/188
+    Left side                      applied yes str  93.8 contact (-0.83, 0.49, 0.00) moved 0.238 m deform  60.2 ms (resolve 24.1, accumulate 23.1 [72/72], rebuild 13.0 [72/72]) NaN 0 folded 361 (0.27%) layer drift p95 0.0 max 0.7 cm | hitbox: LeftFront -X -11 cm, LeftRear -X -11 cm, LeftMid -X -9 cm
+      folded by part: Body 195/61168, MirrorGlass 64/188, SideIndicator 33/188, Cabin 32/27496, DoorSeam 23/80, Mirror 6/188, DoorHandle 4/188
+    Right side                     applied yes str  93.8 contact (0.83, 0.49, 0.00) moved 0.240 m deform  67.0 ms (resolve 29.9, accumulate 24.2 [72/72], rebuild 12.8 [72/72]) NaN 0 folded 415 (0.31%) layer drift p95 0.0 max 0.9 cm | hitbox: RightRear +X -12 cm, RightFront +X -12 cm, RightMid +X -9 cm
+      folded by part: Body 171/61168, Cabin 85/27496, MirrorGlass.001 62/188, SideIndicator.001 55/188, DoorSeam.001 35/80, Mirror.001 3/188, DoorHandle.001 1/188
+    Front-left corner (angled)     applied yes str  93.8 contact (-0.86, 0.64, 2.01) moved 0.332 m deform  87.4 ms (resolve 33.8, accumulate 42.4 [50/72], rebuild 11.2 [50/72]) NaN 0 folded 1477 (1.11%) layer drift p95 0.5 max 3.9 cm | hitbox: FrontLeft +Z -17 cm, FrontLeft -X -7 cm
+      folded by part: FrontValance 424/3248, Body 256/61168, GrilleSurround 98/1712, MirrorGlass 60/188, SideIndicator 57/188, FrontSplitter 49/2144, Bumper_Front 47/2408
+    Rear-right corner (angled)     applied yes str  93.8 contact (0.60, 0.64, -1.80) moved 0.296 m deform  72.8 ms (resolve 32.3, accumulate 30.1 [45/72], rebuild 10.4 [45/72]) NaN 0 folded 982 (0.74%) layer drift p95 0.4 max 2.9 cm | hitbox: RearRight -Z -14 cm, RearRight +X -8 cm
+      folded by part: Body 319/61168, LicenseRecess 179/1088, Cabin 86/27496, TaillightHousing.001 83/944, Bumper_Rear 47/2408, BlankPlate 41/188, RearValance 40/2060
+  REPEATED narrow front hits (12 m/s, same start pose) - contact must move into the dent:
+      hit 1 (FrontCentre face 1.739) applied yes str  83.1 contact (0.00, 0.49, 1.99) moved 0.355 m deform  90.7 ms (resolve 34.1, accumulate 45.6 [50/72], rebuild 11.0 [50/72]) NaN 0 folded 546 (0.41%) layer drift p95 0.1 max 1.0 cm | hitbox: FrontCentre +Z -27 cm, FrontLeft +Z -6 cm
+      hit 2 (FrontCentre face 1.661) applied yes str  83.1 contact (0.00, 0.49, 1.74) moved 0.255 m deform  92.3 ms (resolve 37.9, accumulate 43.2 [50/72], rebuild 11.2 [50/72]) NaN 0 folded 802 (0.60%) layer drift p95 0.2 max 2.8 cm | hitbox: FrontCentre +Z -8 cm
+      hit 3 (FrontCentre face 1.657) applied yes str  83.1 contact (0.00, 0.49, 1.49) moved 0.123 m deform  87.9 ms (resolve 36.4, accumulate 40.0 [50/72], rebuild 11.6 [50/72]) NaN 0 folded 1038 (0.78%) layer drift p95 0.3 max 6.7 cm | hitbox: FrontCentre +Z -8 cm
+    contact deepens each hit PASS (1.990 -> 1.491)
+  CUMULATIVE (no repair, 20 m/s):
+    LeftSide wide +0.0             applied yes str  99.3 contact (-0.73, 0.49, 0.00) moved 0.275 m deform  68.5 ms (resolve 26.5, accumulate 28.0 [72/72], rebuild 14.0 [72/72]) NaN 0 folded 1280 (0.96%) layer drift p95 0.4 max 6.7 cm | hitbox: LeftMid -X -22 cm, LeftFront -X -20 cm, LeftRear -X -20 cm
+    RightSide narrow +0.2          applied yes str  99.3 contact (0.82, 0.53, 0.10) moved 0.400 m deform  52.5 ms (resolve 17.0, accumulate 25.9 [29/72], rebuild 9.7 [29/72]) NaN 0 folded 1791 (1.35%) layer drift p95 0.4 max 6.7 cm | hitbox: RightMid +X -24 cm, RightFront +X -5 cm
+    Rear narrow -0.6               applied yes str  99.3 contact (-0.60, 0.53, -1.98) moved 0.368 m deform  62.8 ms (resolve 21.5, accumulate 30.4 [45/72], rebuild 10.9 [45/72]) NaN 0 folded 2438 (1.84%) layer drift p95 0.7 max 6.7 cm | hitbox: RearLeft -Z -30 cm, RearCentre -Z -6 cm
+    RearCornerAngled wide +0.0     applied yes str  99.3 contact (0.39, 0.55, -1.82) moved 0.325 m deform  93.9 ms (resolve 48.0, accumulate 35.0 [45/72], rebuild 10.9 [45/72]) NaN 0 folded 3278 (2.47%) layer drift p95 1.1 max 6.7 cm | hitbox: RearRight -Z -19 cm, RearRight +X -11 cm, RearCentre -Z -4 cm
+    FrontCornerAngled wide +0.0    applied yes str  99.3 contact (-0.48, 0.49, 1.77) moved 0.410 m deform 108.8 ms (resolve 48.2, accumulate 48.1 [56/72], rebuild 12.5 [56/72]) NaN 0 folded 4601 (3.47%) layer drift p95 2.0 max 8.3 cm | hitbox: FrontLeft +Z -24 cm, FrontLeft -X -14 cm
+    Front narrow +0.6              applied yes str  99.3 contact (0.60, 0.53, 2.01) moved 0.413 m deform  79.3 ms (resolve 23.4, accumulate 39.9 [54/72], rebuild 16.0 [54/72]) NaN 0 folded 5674 (4.28%) layer drift p95 3.0 max 8.3 cm | hitbox: FrontRight +Z -33 cm, FrontRight +X -2 cm
+    after 9 hits, folded by part: Body 2414/61168, Cabin 651/27496, FrontValance 606/3248, GrilleSurround 215/1712, LicenseRecess 185/1088, RearValance 102/2060, TaillightHousing 95/944; worst layer drift: Body~Bumper_Front 8.3cm, Bumper_Front~Body 8.3cm, Bumper_Front~SideMoulding.002 7.2cm, Body~FrontSplitter 6.7cm, FogHousing~FrontValance 5.2cm, FogHousing.001~FrontValance 5.2cm
+  stripe/paint UVs unchanged by deformation (runtime meshes vs source) PASS
+  SATURATION front centre x12 at 30 m/s 4000 kg: moved per hit 0.389 / 0.215 / 0.080 ... 0.015 / 0.019 / 0.013 m, max disp 0.495 m, FrontCentre retracted 37.6 cm, NaN 0, folded 1.6% PASS
+  every hit applied PASS; deformation per hit 82.2 ms avg / 125.6 ms max over 15
+  DAMAGE LAB PATHS:
+    slider front 100   max disp 0.855 m, rebuild 17.0 ms, NaN 0, folded 1236 (0.93%), layer drift p95 6.0 max 10.4 cm
+    slider rear 100    max disp 0.816 m, rebuild 16.1 ms, NaN 0, folded 673 (0.51%), layer drift p95 5.1 max 15.1 cm
+    slider left 100    max disp 0.541 m, rebuild 20.1 ms, NaN 0, folded 381 (0.29%), layer drift p95 0.6 max 10.6 cm
+    all sliders 100    max disp 0.857 m, rebuild 38.1 ms, NaN 0, folded 2113 (1.59%), layer drift p95 8.0 max 15.1 cm
+      folded by part: Body 929/61168, FrontValance 435/3248, Cabin 83/27496, GrilleSurround 64/1712, HeadlightHousing 64/704, TaillightHousing 64/944, TaillightHousing.001 64/944
+    dent hood from above          at (0.22, 0.88, 1.38) applied True moved 0.329 m, NaN 0, folded 173 [Body 142/61168, GrilleSurround 18/1712, HeadlightHousing.001 11/704, FrontValance 2/3248]
+    dent roof from above          at (0.00, 1.42, -0.57) applied True moved 0.300 m, NaN 0, folded 2 [Cabin 2/27496]
+    dent door from the side       at (-0.81, 0.58, -0.17) applied True moved 0.326 m, NaN 0, folded 66 [Body 57/61168, DoorSeam 9/80]
+    dent rear from behind/above   at (-0.06, 1.09, -1.52) applied True moved 0.302 m, NaN 0, folded 145 [Body 83/61168, LicenseRecess 38/1088, TaillightHousing 10/944, TaillightHousing.001 9/944, ReverseLight.001 5/188]
+  Reset All: vertex error 0.0E+000, normal error 0.0E+000 PASS
+  PART FOLD OUTLIERS (> 5 % of a part folded by one 15 m/s wide hit; Body > 20 folds under a click dent): Grille 93/188 (49%, Front), DoorSeam.001 35/80 (44%, Right side), HatchSeam 18/48 (38%, Rear-right corner (angled)), GrilleSlat.003 67/188 (36%, Front), MirrorGlass 64/188 (34%, Left side), GrilleSlat.002 62/188 (33%, Front), MirrorGlass.001 62/188 (33%, Right side), GrilleSlat.001 60/188 (32%, Front), GrilleSlat.004 58/188 (31%, Front), SideIndicator 57/188 (30%, Front-left corner (angled)), SideIndicator.001 55/188 (29%, Right side), DoorSeam 23/80 (29%, Left side), GrilleSlat 51/188 (27%, Front), BlankPlate 41/188 (22%, Rear-right corner (angled)), LowerIntake 38/188 (20%, Front), Headlight.001 36/188 (19%, Front), HatchLock 33/188 (18%, Rear), FrontValance 558/3248 (17%, Front), LicenseRecess 179/1088 (16%, Rear-right corner (angled)), ReverseLight.001 30/188 (16%, Rear), FogLight.001 29/188 (15%, Front), ReverseLight 29/188 (15%, Rear), Taillight 24/188 (13%, Rear), FogHousing.001 64/512 (13%, Front), HeadlightHousing.001 79/704 (11%, Front), LowerSlat 21/188 (11%, Front), MirrorStem 21/188 (11%, Front-left corner (angled)), DoorHandle.001 19/188 (10%, Rear-right corner (angled)), FogLight 17/188 (9%, Front), RearIndicator.001 17/188 (9%, Rear), TaillightHousing.001 83/944 (9%, Rear-right corner (angled)), LowerSlat.001 15/188 (8%, Front-left corner (angled)), Mirror 15/188 (8%, Front-left corner (angled)), TaillightHousing 70/944 (7%, Rear), HeadlightHousing 52/704 (7%, Front), FogHousing 35/512 (7%, Front), SideMoulding.003 16/240 (7%, Rear-right corner (angled)), GrilleSurround 98/1712 (6%, Front-left corner (angled)), SideMoulding.001 13/240 (5%, Front-left corner (angled)), Body 142 under the hood from above dent, Body 57 under the door from the side dent, Body 83 under the rear from behind/above dent REVIEW
+  REBUILD OPTIMISATION (9 recorded impacts replayed): before 52.6 ms/impact (parts evaluated 72.0, rebuilt 72.0 of 72); after 48.0 ms/impact (evaluated 50.1, rebuilt 50.1); identical mesh: max difference 0.0E+000 m PASS; matches the live run 0.0E+000 m
+
+[CollisionLab] Vehicle switching (real PhysX, anchored)
+  muscle car damaged: 3 impacts, max disp 0.434 m, hitbox retracted 136 cm in total
+  switch -> Compact Hatchback: old car destroyed True, damage models/receivers/hitboxes in scene 1/1/1, stray car colliders 0, definition+profile+mass (950 kg) True, impacts 0, mesh vs pristine source 0.0E+000 m, hitbox faces original True, body (1.851, 0.714, 4.014) = measured True, impact height 0.60 m, front aim z 2.011 on body front True, panel shows it / no stale report True PASS
+    first hit on it: applied True, impact #1, moved 0.388 m, footprint z 2.048 (body front 2.011) PASS
+  switch -> Muscle Car: old car destroyed True, damage models/receivers/hitboxes in scene 1/1/1, stray car colliders 0, definition+profile+mass (1400 kg) True, impacts 0, mesh vs pristine source 0.0E+000 m, hitbox faces original True, body (2.053, 0.713, 4.988) = measured True, impact height 0.70 m, front aim z 2.514 on body front True, panel shows it / no stale report True PASS
+    first hit on it: applied True, impact #1, moved 0.428 m, footprint z 2.477 (body front 2.514) PASS
+    muscle car after switching back and repairing that hit: identical to the original undamaged car 0.0E+000 m PASS
+  switch -> Compact Hatchback: old car destroyed True, damage models/receivers/hitboxes in scene 1/1/1, stray car colliders 0, definition+profile+mass (950 kg) True, impacts 0, mesh vs pristine source 0.0E+000 m, hitbox faces original True, body (1.851, 0.714, 4.014) = measured True, impact height 0.60 m, front aim z 2.011 on body front True, panel shows it / no stale report True PASS
+    first hit on it: applied True, impact #1, moved 0.388 m, footprint z 2.048 (body front 2.011) PASS
+  switch -> Muscle Car: old car destroyed True, damage models/receivers/hitboxes in scene 1/1/1, stray car colliders 0, definition+profile+mass (1400 kg) True, impacts 0, mesh vs pristine source 0.0E+000 m, hitbox faces original True, body (2.053, 0.713, 4.988) = measured True, impact height 0.70 m, front aim z 2.514 on body front True, panel shows it / no stale report True PASS
+    first hit on it: applied True, impact #1, moved 0.428 m, footprint z 2.477 (body front 2.514) PASS
+  Vehicle switching carries no damage, colliders or reports between vehicles PASS

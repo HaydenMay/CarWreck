@@ -1,0 +1,2041 @@
+{
+  "manifest": "Assets/Vehicles/CompactPickup/vehicle.json",
+  "blend": "C:\\Users\\mayha\\.codex\\worktrees\\vehicle-compact-pickup\\CarWreck\\Blender\\CompactPickup.blend",
+  "mandatory_failures": [],
+  "recommended_warnings": [
+    "Cabin_RearDivider: small part (31 cm) with only 384 triangles deforms with crumple 0.85: consider a denser mesh, a lower crumple, or Rigid",
+    "TailgateHandle: small part (16 cm) with only 244 triangles deforms with crumple 1: consider a denser mesh, a lower crumple, or Rigid"
+  ],
+  "info": {
+    "wheelbase_m": 2.9499999284744263,
+    "track_m": 1.7519999742507935,
+    "deformable_vertices": 84068,
+    "deformable_parts": 52,
+    "dimensions_xyz_m": [
+      2.254999876022339,
+      4.7220001220703125,
+      1.8211060762405396
+    ],
+    "beltline_m": 1.3414852619171143,
+    "cabin_top_m": 1.8200000524520874
+  },
+  "parts": {
+    "BedFloor": {
+      "vertices": 2376,
+      "faces": 2374,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.054375022649765015,
+      "edge_p90_m": 0.054571449756622314,
+      "edge_max_m": 0.05457162857055664,
+      "long_edges": 0,
+      "triangles": 4748,
+      "sliver_triangles": 0,
+      "thin_shell_fraction": 0.0,
+      "size_m": [
+        1.7370710372924805,
+        1.9070709347724915,
+        0.0549999475479126
+      ],
+      "bounds": [
+        [
+          -0.8685355186462402,
+          -2.2385354042053223,
+          0.8395000100135803
+        ],
+        [
+          0.8685355186462402,
+          -0.3314644694328308,
+          0.8944999575614929
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Panel",
+      "crumple": 1,
+      "mode": "Deform"
+    },
+    "BedFrontWall": {
+      "vertices": 2768,
+      "faces": 2766,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.025588274002075195,
+      "edge_p90_m": 0.02591550350189209,
+      "edge_max_m": 0.025915533304214478,
+      "long_edges": 0,
+      "triangles": 5532,
+      "sliver_triangles": 0,
+      "thin_shell_fraction": 0.0,
+      "size_m": [
+        1.8399999141693115,
+        0.0350000262260437,
+        0.434999942779541
+      ],
+      "bounds": [
+        [
+          -0.9199999570846558,
+          -0.351500004529953,
+          0.8725000619888306
+        ],
+        [
+          0.9199999570846558,
+          -0.3164999783039093,
+          1.3075000047683716
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Body",
+      "crumple": 1,
+      "mode": "Deform"
+    },
+    "BedLiner_Floor": {
+      "vertices": 5626,
+      "faces": 5472,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.014099723659455776,
+      "edge_p90_m": 0.0350000262260437,
+      "edge_max_m": 0.03500008583068848,
+      "long_edges": 0,
+      "triangles": 10944,
+      "sliver_triangles": 0,
+      "thin_shell_fraction": 0.0,
+      "size_m": [
+        1.1399999856948853,
+        1.8550001084804535,
+        0.009999990463256836
+      ],
+      "bounds": [
+        [
+          -0.5699999928474426,
+          -2.2125000953674316,
+          0.9100000262260437
+        ],
+        [
+          0.5699999928474426,
+          -0.35749998688697815,
+          0.9200000166893005
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Trim",
+      "crumple": 1,
+      "mode": "Deform"
+    },
+    "BedLiner_FrontWall": {
+      "vertices": 1859,
+      "faces": 1704,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.012870405800640583,
+      "edge_p90_m": 0.03149998188018799,
+      "edge_max_m": 0.03150010108947754,
+      "long_edges": 0,
+      "triangles": 3408,
+      "sliver_triangles": 0,
+      "thin_shell_fraction": 0.0,
+      "size_m": [
+        1.7000000476837158,
+        0.004999995231628418,
+        0.3779999613761902
+      ],
+      "bounds": [
+        [
+          -0.8500000238418579,
+          -0.3619999885559082,
+          0.9120000004768372
+        ],
+        [
+          0.8500000238418579,
+          -0.3569999933242798,
+          1.2899999618530273
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Trim",
+      "crumple": 1,
+      "mode": "Deform"
+    },
+    "BedLiner_Side_L": {
+      "vertices": 2212,
+      "faces": 2041,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.01258271373808384,
+      "edge_p90_m": 0.02984619140625,
+      "edge_max_m": 0.02984619140625,
+      "long_edges": 0,
+      "triangles": 4082,
+      "sliver_triangles": 0,
+      "thin_shell_fraction": 0.0,
+      "size_m": [
+        0.0040000081062316895,
+        1.872999906539917,
+        0.387999951839447
+      ],
+      "bounds": [
+        [
+          -0.8650000095367432,
+          -2.2149999141693115,
+          0.9100000262260437
+        ],
+        [
+          -0.8610000014305115,
+          -0.34200000762939453,
+          1.2979999780654907
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Trim",
+      "crumple": 1,
+      "mode": "Deform"
+    },
+    "BedLiner_Side_R": {
+      "vertices": 2212,
+      "faces": 2041,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.01258271373808384,
+      "edge_p90_m": 0.02984619140625,
+      "edge_max_m": 0.02984619140625,
+      "long_edges": 0,
+      "triangles": 4082,
+      "sliver_triangles": 0,
+      "thin_shell_fraction": 0.0,
+      "size_m": [
+        0.0040000081062316895,
+        1.872999906539917,
+        0.387999951839447
+      ],
+      "bounds": [
+        [
+          0.8610000014305115,
+          -2.2149999141693115,
+          0.9100000262260437
+        ],
+        [
+          0.8650000095367432,
+          -0.34200000762939453,
+          1.2979999780654907
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Trim",
+      "crumple": 1,
+      "mode": "Deform"
+    },
+    "BedLiner_Tailgate": {
+      "vertices": 1859,
+      "faces": 1704,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.01287034060806036,
+      "edge_p90_m": 0.03149998188018799,
+      "edge_max_m": 0.03150010108947754,
+      "long_edges": 0,
+      "triangles": 3408,
+      "sliver_triangles": 0,
+      "thin_shell_fraction": 0.0,
+      "size_m": [
+        1.7000000476837158,
+        0.004999876022338867,
+        0.3779999613761902
+      ],
+      "bounds": [
+        [
+          -0.8500000238418579,
+          -2.2049999237060547,
+          0.9120000004768372
+        ],
+        [
+          0.8500000238418579,
+          -2.200000047683716,
+          1.2899999618530273
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Trim",
+      "crumple": 1,
+      "mode": "Deform"
+    },
+    "BedLiner_WheelTub_L": {
+      "vertices": 1566,
+      "faces": 1482,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.023127878084778786,
+      "edge_p90_m": 0.035381682217121124,
+      "edge_max_m": 0.08784814178943634,
+      "long_edges": 0,
+      "triangles": 2964,
+      "sliver_triangles": 4,
+      "thin_shell_fraction": 0.0,
+      "size_m": [
+        0.29500001668930054,
+        1.8550001084804535,
+        0.1899999976158142
+      ],
+      "bounds": [
+        [
+          -0.8650000095367432,
+          -2.2125000953674316,
+          0.9100000262260437
+        ],
+        [
+          -0.5699999928474426,
+          -0.35749998688697815,
+          1.100000023841858
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Trim",
+      "crumple": 1,
+      "mode": "Deform"
+    },
+    "BedLiner_WheelTub_R": {
+      "vertices": 1566,
+      "faces": 1482,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.023127878084778786,
+      "edge_p90_m": 0.035381682217121124,
+      "edge_max_m": 0.08784814178943634,
+      "long_edges": 0,
+      "triangles": 2964,
+      "sliver_triangles": 4,
+      "thin_shell_fraction": 0.0,
+      "size_m": [
+        0.29500001668930054,
+        1.8550001084804535,
+        0.1899999976158142
+      ],
+      "bounds": [
+        [
+          0.5699999928474426,
+          -2.2125000953674316,
+          0.9100000262260437
+        ],
+        [
+          0.8650000095367432,
+          -0.35749998688697815,
+          1.100000023841858
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Trim",
+      "crumple": 1,
+      "mode": "Deform"
+    },
+    "BedRail_L": {
+      "vertices": 592,
+      "faces": 584,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.026671230792999268,
+      "edge_p90_m": 0.06000000238418579,
+      "edge_max_m": 0.06200003623962402,
+      "long_edges": 0,
+      "triangles": 1168,
+      "sliver_triangles": 0,
+      "thin_shell_fraction": 0.0,
+      "size_m": [
+        0.10399997234344482,
+        1.9469999969005585,
+        0.04900002479553223
+      ],
+      "bounds": [
+        [
+          -0.9739999771118164,
+          -2.259999990463257,
+          1.281000018119812
+        ],
+        [
+          -0.8700000047683716,
+          -0.31299999356269836,
+          1.3300000429153442
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Panel",
+      "crumple": 1,
+      "mode": "Deform"
+    },
+    "BedRail_R": {
+      "vertices": 592,
+      "faces": 584,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.026671230792999268,
+      "edge_p90_m": 0.06000000238418579,
+      "edge_max_m": 0.06200003623962402,
+      "long_edges": 0,
+      "triangles": 1168,
+      "sliver_triangles": 0,
+      "thin_shell_fraction": 0.0,
+      "size_m": [
+        0.10399997234344482,
+        1.9469999969005585,
+        0.04900002479553223
+      ],
+      "bounds": [
+        [
+          0.8700000047683716,
+          -2.259999990463257,
+          1.281000018119812
+        ],
+        [
+          0.9739999771118164,
+          -0.31299999356269836,
+          1.3300000429153442
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Panel",
+      "crumple": 1,
+      "mode": "Deform"
+    },
+    "BedRail_Rear": {
+      "vertices": 600,
+      "faces": 523,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.025890395045280457,
+      "edge_p90_m": 0.02589040994644165,
+      "edge_max_m": 0.025890439748764038,
+      "long_edges": 0,
+      "triangles": 1046,
+      "sliver_triangles": 0,
+      "thin_shell_fraction": 0.0,
+      "size_m": [
+        1.8900001049041748,
+        0.05499982833862305,
+        0.03394973278045654
+      ],
+      "bounds": [
+        [
+          -0.9450000524520874,
+          -2.2644999027252197,
+          1.2940502166748047
+        ],
+        [
+          0.9450000524520874,
+          -2.2095000743865967,
+          1.3279999494552612
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Panel",
+      "crumple": 1,
+      "mode": "Deform"
+    },
+    "BedSide_L": {
+      "vertices": 3192,
+      "faces": 3051,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.017955318093299866,
+      "edge_p90_m": 0.03473210334777832,
+      "edge_max_m": 0.06705230474472046,
+      "long_edges": 0,
+      "triangles": 6102,
+      "sliver_triangles": 10,
+      "thin_shell_fraction": 0.0012531328320802004,
+      "size_m": [
+        0.07281827926635742,
+        1.9449999928474426,
+        0.8049999475479126
+      ],
+      "bounds": [
+        [
+          -0.9700000286102295,
+          -2.259999990463257,
+          0.5049999952316284
+        ],
+        [
+          -0.8971817493438721,
+          -0.3149999976158142,
+          1.309999942779541
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Body",
+      "crumple": 1,
+      "mode": "Deform"
+    },
+    "BedSide_R": {
+      "vertices": 3192,
+      "faces": 3051,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.017955318093299866,
+      "edge_p90_m": 0.03473210334777832,
+      "edge_max_m": 0.06705230474472046,
+      "long_edges": 0,
+      "triangles": 6102,
+      "sliver_triangles": 10,
+      "thin_shell_fraction": 0.0012531328320802004,
+      "size_m": [
+        0.07281827926635742,
+        1.9449999928474426,
+        0.8049999475479126
+      ],
+      "bounds": [
+        [
+          0.8971817493438721,
+          -2.259999990463257,
+          0.5049999952316284
+        ],
+        [
+          0.9700000286102295,
+          -0.3149999976158142,
+          1.309999942779541
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Body",
+      "crumple": 1,
+      "mode": "Deform"
+    },
+    "Body_CabRear": {
+      "vertices": 1404,
+      "faces": 1402,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.049411773681640625,
+      "edge_p90_m": 0.050000011920928955,
+      "edge_max_m": 0.050000011920928955,
+      "long_edges": 0,
+      "triangles": 2804,
+      "sliver_triangles": 0,
+      "thin_shell_fraction": 0.0,
+      "size_m": [
+        1.8929705619812012,
+        0.04499998688697815,
+        0.8329704999923706
+      ],
+      "bounds": [
+        [
+          -0.9464852809906006,
+          -0.2694999873638153,
+          0.5085147619247437
+        ],
+        [
+          0.9464852809906006,
+          -0.22450000047683716,
+          1.3414852619171143
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Body",
+      "crumple": 1,
+      "mode": "Deform"
+    },
+    "Body_Hood": {
+      "vertices": 4350,
+      "faces": 4214,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.02587777003645897,
+      "edge_p90_m": 0.026016833260655403,
+      "edge_max_m": 0.026867762207984924,
+      "long_edges": 0,
+      "triangles": 8428,
+      "sliver_triangles": 0,
+      "thin_shell_fraction": 0.0,
+      "size_m": [
+        1.940000057220459,
+        1.2699999809265137,
+        0.13456058502197266
+      ],
+      "bounds": [
+        [
+          -0.9700000286102295,
+          0.9800000190734863,
+          1.1784393787384033
+        ],
+        [
+          0.9700000286102295,
+          2.25,
+          1.312999963760376
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Body",
+      "crumple": 1,
+      "mode": "Deform"
+    },
+    "Body_Nose": {
+      "vertices": 2799,
+      "faces": 2692,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.023750007152557373,
+      "edge_p90_m": 0.027647078037261963,
+      "edge_max_m": 0.027647078037261963,
+      "long_edges": 0,
+      "triangles": 5384,
+      "sliver_triangles": 0,
+      "thin_shell_fraction": 0.0,
+      "size_m": [
+        1.8799999952316284,
+        0.07000017166137695,
+        0.37999993562698364
+      ],
+      "bounds": [
+        [
+          -0.9399999976158142,
+          2.184999942779541,
+          0.7950000166893005
+        ],
+        [
+          0.9399999976158142,
+          2.255000114440918,
+          1.1749999523162842
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Body",
+      "crumple": 1,
+      "mode": "Deform"
+    },
+    "Bumper_Front": {
+      "vertices": 1568,
+      "faces": 1566,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.033571481704711914,
+      "edge_p90_m": 0.034912288188934326,
+      "edge_max_m": 0.04943538084626198,
+      "long_edges": 0,
+      "triangles": 3132,
+      "sliver_triangles": 0,
+      "thin_shell_fraction": 0.0,
+      "size_m": [
+        1.9900000095367432,
+        0.18799996376037598,
+        0.23500001430511475
+      ],
+      "bounds": [
+        [
+          -0.9950000047683716,
+          2.1619999408721924,
+          0.5795000195503235
+        ],
+        [
+          0.9950000047683716,
+          2.3499999046325684,
+          0.8145000338554382
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Bumper",
+      "crumple": 0.25,
+      "mode": "Deform"
+    },
+    "Bumper_Rear": {
+      "vertices": 1316,
+      "faces": 1314,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.03333336114883423,
+      "edge_p90_m": 0.034912288188934326,
+      "edge_max_m": 0.03962242975831032,
+      "long_edges": 0,
+      "triangles": 2628,
+      "sliver_triangles": 0,
+      "thin_shell_fraction": 0.0,
+      "size_m": [
+        1.9900000095367432,
+        0.1640000343322754,
+        0.20000004768371582
+      ],
+      "bounds": [
+        [
+          -0.9950000047683716,
+          -2.3499999046325684,
+          0.5239999890327454
+        ],
+        [
+          0.9950000047683716,
+          -2.185999870300293,
+          0.7240000367164612
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Bumper",
+      "crumple": 0.25,
+      "mode": "Deform"
+    },
+    "BumperMarker_L": {
+      "vertices": 766,
+      "faces": 764,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.009000003337860107,
+      "edge_p90_m": 0.024062443524599075,
+      "edge_max_m": 0.04900002479553223,
+      "long_edges": 0,
+      "triangles": 1528,
+      "sliver_triangles": 0,
+      "thin_shell_fraction": 0.005221932114882507,
+      "size_m": [
+        0.20399999618530273,
+        0.07200002670288086,
+        0.10000002384185791
+      ],
+      "bounds": [
+        [
+          -0.871999979019165,
+          2.2880001068115234,
+          0.6570000052452087
+        ],
+        [
+          -0.6679999828338623,
+          2.3600001335144043,
+          0.7570000290870667
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Light",
+      "crumple": 0.45,
+      "mode": "Deform"
+    },
+    "BumperMarker_R": {
+      "vertices": 766,
+      "faces": 764,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.009000003337860107,
+      "edge_p90_m": 0.024062443524599075,
+      "edge_max_m": 0.04900002479553223,
+      "long_edges": 0,
+      "triangles": 1528,
+      "sliver_triangles": 0,
+      "thin_shell_fraction": 0.005221932114882507,
+      "size_m": [
+        0.20399999618530273,
+        0.07200002670288086,
+        0.10000002384185791
+      ],
+      "bounds": [
+        [
+          0.6679999828338623,
+          2.2880001068115234,
+          0.6570000052452087
+        ],
+        [
+          0.871999979019165,
+          2.3600001335144043,
+          0.7570000290870667
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Light",
+      "crumple": 0.45,
+      "mode": "Deform"
+    },
+    "Cabin_RearDivider": {
+      "vertices": 194,
+      "faces": 192,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.007915610447525978,
+      "edge_p90_m": 0.013478279113769531,
+      "edge_max_m": 0.013478279113769531,
+      "long_edges": 0,
+      "triangles": 384,
+      "sliver_triangles": 0,
+      "thin_shell_fraction": 0.0,
+      "size_m": [
+        0.01600000075995922,
+        0.01799999177455902,
+        0.309999942779541
+      ],
+      "bounds": [
+        [
+          -0.00800000037997961,
+          -0.25099998712539673,
+          1.3949999809265137
+        ],
+        [
+          0.00800000037997961,
+          -0.2329999953508377,
+          1.7049999237060547
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Cabin",
+      "crumple": 0.85,
+      "mode": "Deform"
+    },
+    "Cabin_RearGlass": {
+      "vertices": 1080,
+      "faces": 1012,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.030718356370925903,
+      "edge_p90_m": 0.046785689890384674,
+      "edge_max_m": 0.0477500855922699,
+      "long_edges": 0,
+      "triangles": 2024,
+      "sliver_triangles": 0,
+      "thin_shell_fraction": 0.0,
+      "size_m": [
+        1.909999966621399,
+        0.07000000774860382,
+        0.5049999952316284
+      ],
+      "bounds": [
+        [
+          -0.9549999833106995,
+          -0.27000001072883606,
+          1.284999966621399
+        ],
+        [
+          0.9549999833106995,
+          -0.20000000298023224,
+          1.7899999618530273
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Cabin",
+      "crumple": 0.85,
+      "mode": "Deform"
+    },
+    "Cabin_Roof": {
+      "vertices": 1885,
+      "faces": 1792,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.025714989751577377,
+      "edge_p90_m": 0.025830477476119995,
+      "edge_max_m": 0.02593274973332882,
+      "long_edges": 0,
+      "triangles": 3584,
+      "sliver_triangles": 0,
+      "thin_shell_fraction": 0.0,
+      "size_m": [
+        1.6440000534057617,
+        0.7199999839067459,
+        0.03000009059906006
+      ],
+      "bounds": [
+        [
+          -0.8220000267028809,
+          -0.20000000298023224,
+          1.7899999618530273
+        ],
+        [
+          0.8220000267028809,
+          0.5199999809265137,
+          1.8200000524520874
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Cabin",
+      "crumple": 0.85,
+      "mode": "Deform"
+    },
+    "Cabin_RoofEdges": {
+      "vertices": 468,
+      "faces": 480,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.00799997802823782,
+      "edge_p90_m": 0.02428571879863739,
+      "edge_max_m": 0.024285733699798584,
+      "long_edges": 0,
+      "triangles": 928,
+      "sliver_triangles": 0,
+      "thin_shell_fraction": 0.0,
+      "size_m": [
+        1.6440000534057617,
+        0.6800000071525574,
+        0.016000032424926758
+      ],
+      "bounds": [
+        [
+          -0.8220000267028809,
+          -0.18000000715255737,
+          1.784000039100647
+        ],
+        [
+          0.8220000267028809,
+          0.5,
+          1.8000000715255737
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Cabin",
+      "crumple": 0.85,
+      "mode": "Deform"
+    },
+    "Cabin_SideGlass_L": {
+      "vertices": 1080,
+      "faces": 1012,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.02423565462231636,
+      "edge_p90_m": 0.03461991250514984,
+      "edge_max_m": 0.040828630328178406,
+      "long_edges": 0,
+      "triangles": 2024,
+      "sliver_triangles": 0,
+      "thin_shell_fraction": 0.0,
+      "size_m": [
+        0.1329999566078186,
+        1.2500000298023224,
+        0.5049999952316284
+      ],
+      "bounds": [
+        [
+          -0.9549999833106995,
+          -0.27000001072883606,
+          1.284999966621399
+        ],
+        [
+          -0.8220000267028809,
+          0.9800000190734863,
+          1.7899999618530273
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Cabin",
+      "crumple": 0.85,
+      "mode": "Deform"
+    },
+    "Cabin_SideGlass_R": {
+      "vertices": 1080,
+      "faces": 1012,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.02423565462231636,
+      "edge_p90_m": 0.03461991250514984,
+      "edge_max_m": 0.040828630328178406,
+      "long_edges": 0,
+      "triangles": 2024,
+      "sliver_triangles": 0,
+      "thin_shell_fraction": 0.0,
+      "size_m": [
+        0.1329999566078186,
+        1.2500000298023224,
+        0.5049999952316284
+      ],
+      "bounds": [
+        [
+          0.8220000267028809,
+          -0.27000001072883606,
+          1.284999966621399
+        ],
+        [
+          0.9549999833106995,
+          0.9800000190734863,
+          1.7899999618530273
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Cabin",
+      "crumple": 0.85,
+      "mode": "Deform"
+    },
+    "Cabin_Windshield": {
+      "vertices": 1080,
+      "faces": 1012,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.04059704765677452,
+      "edge_p90_m": 0.04635816812515259,
+      "edge_max_m": 0.04725012183189392,
+      "long_edges": 0,
+      "triangles": 2024,
+      "sliver_triangles": 0,
+      "thin_shell_fraction": 0.0,
+      "size_m": [
+        1.8899999856948853,
+        0.46000003814697266,
+        0.5049999952316284
+      ],
+      "bounds": [
+        [
+          -0.9449999928474426,
+          0.5199999809265137,
+          1.284999966621399
+        ],
+        [
+          0.9449999928474426,
+          0.9800000190734863,
+          1.7899999618530273
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Cabin",
+      "crumple": 0.85,
+      "mode": "Deform"
+    },
+    "CabTrim_MirrorsHandles": {
+      "vertices": 1688,
+      "faces": 1696,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.014875054359436035,
+      "edge_p90_m": 0.01777780055999756,
+      "edge_max_m": 0.02809031307697296,
+      "long_edges": 0,
+      "triangles": 3344,
+      "sliver_triangles": 0,
+      "thin_shell_fraction": 0.001184834123222749,
+      "size_m": [
+        2.254999876022339,
+        0.9969999492168427,
+        0.32749998569488525
+      ],
+      "bounds": [
+        [
+          -1.1274999380111694,
+          -0.1444999873638153,
+          1.1725000143051147
+        ],
+        [
+          1.1274999380111694,
+          0.8524999618530273,
+          1.5
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Trim",
+      "crumple": 1,
+      "mode": "Deform"
+    },
+    "Door_L": {
+      "vertices": 1025,
+      "faces": 960,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.03287257254123688,
+      "edge_p90_m": 0.0347222276031971,
+      "edge_max_m": 0.03472226858139038,
+      "long_edges": 0,
+      "triangles": 1920,
+      "sliver_triangles": 0,
+      "thin_shell_fraction": 0.0,
+      "size_m": [
+        0.03781825304031372,
+        1.2500000298023224,
+        0.7849999666213989
+      ],
+      "bounds": [
+        [
+          -0.9700000286102295,
+          -0.27000001072883606,
+          0.5049999952316284
+        ],
+        [
+          -0.9321817755699158,
+          0.9800000190734863,
+          1.2899999618530273
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Body",
+      "crumple": 1,
+      "mode": "Deform"
+    },
+    "Door_R": {
+      "vertices": 1025,
+      "faces": 960,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.03287257254123688,
+      "edge_p90_m": 0.0347222276031971,
+      "edge_max_m": 0.03472226858139038,
+      "long_edges": 0,
+      "triangles": 1920,
+      "sliver_triangles": 0,
+      "thin_shell_fraction": 0.0,
+      "size_m": [
+        0.03781825304031372,
+        1.2500000298023224,
+        0.7849999666213989
+      ],
+      "bounds": [
+        [
+          0.9321817755699158,
+          -0.27000001072883606,
+          0.5049999952316284
+        ],
+        [
+          0.9700000286102295,
+          0.9800000190734863,
+          1.2899999618530273
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Body",
+      "crumple": 1,
+      "mode": "Deform"
+    },
+    "FrontFender_L": {
+      "vertices": 2688,
+      "faces": 2565,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.014368996024131775,
+      "edge_p90_m": 0.030298151075839996,
+      "edge_max_m": 0.07176539301872253,
+      "long_edges": 0,
+      "triangles": 5130,
+      "sliver_triangles": 14,
+      "thin_shell_fraction": 0.002976190476190476,
+      "size_m": [
+        0.10722994804382324,
+        1.2699999809265137,
+        0.7863157987594604
+      ],
+      "bounds": [
+        [
+          -0.9699628949165344,
+          0.9800000190734863,
+          0.5049999952316284
+        ],
+        [
+          -0.8627329468727112,
+          2.25,
+          1.2913157939910889
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Body",
+      "crumple": 1,
+      "mode": "Deform"
+    },
+    "FrontFender_R": {
+      "vertices": 2688,
+      "faces": 2565,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.014368996024131775,
+      "edge_p90_m": 0.030298151075839996,
+      "edge_max_m": 0.07176539301872253,
+      "long_edges": 0,
+      "triangles": 5130,
+      "sliver_triangles": 14,
+      "thin_shell_fraction": 0.002976190476190476,
+      "size_m": [
+        0.10722994804382324,
+        1.2699999809265137,
+        0.7863157987594604
+      ],
+      "bounds": [
+        [
+          0.8627329468727112,
+          0.9800000190734863,
+          0.5049999952316284
+        ],
+        [
+          0.9699628949165344,
+          2.25,
+          1.2913157939910889
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Body",
+      "crumple": 1,
+      "mode": "Deform"
+    },
+    "FrontIndicator_L": {
+      "vertices": 248,
+      "faces": 210,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.008571445941925049,
+      "edge_p90_m": 0.008900046348571777,
+      "edge_max_m": 0.008900046348571777,
+      "long_edges": 0,
+      "triangles": 420,
+      "sliver_triangles": 0,
+      "thin_shell_fraction": 0.0,
+      "size_m": [
+        0.05179893970489502,
+        0.0,
+        0.2587990164756775
+      ],
+      "bounds": [
+        [
+          -0.9598994851112366,
+          2.301500082015991,
+          0.8866005539894104
+        ],
+        [
+          -0.9081005454063416,
+          2.301500082015991,
+          1.145399570465088
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Light",
+      "crumple": 0.45,
+      "mode": "Deform"
+    },
+    "FrontIndicator_R": {
+      "vertices": 248,
+      "faces": 210,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.008571445941925049,
+      "edge_p90_m": 0.008900046348571777,
+      "edge_max_m": 0.008900046348571777,
+      "long_edges": 0,
+      "triangles": 420,
+      "sliver_triangles": 0,
+      "thin_shell_fraction": 0.0,
+      "size_m": [
+        0.05179893970489502,
+        0.0,
+        0.2587990164756775
+      ],
+      "bounds": [
+        [
+          0.9081005454063416,
+          2.301500082015991,
+          0.8866005539894104
+        ],
+        [
+          0.9598994851112366,
+          2.301500082015991,
+          1.145399570465088
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Light",
+      "crumple": 0.45,
+      "mode": "Deform"
+    },
+    "FrontPlate": {
+      "vertices": 440,
+      "faces": 438,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.017619049176573753,
+      "edge_p90_m": 0.01777780055999756,
+      "edge_max_m": 0.01777780055999756,
+      "long_edges": 0,
+      "triangles": 876,
+      "sliver_triangles": 0,
+      "thin_shell_fraction": 0.0,
+      "size_m": [
+        0.3676568567752838,
+        0.012000083923339844,
+        0.15765678882598877
+      ],
+      "bounds": [
+        [
+          -0.1838284283876419,
+          2.3499999046325684,
+          0.5811716318130493
+        ],
+        [
+          0.1838284283876419,
+          2.361999988555908,
+          0.7388284206390381
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Trim",
+      "crumple": 1,
+      "mode": "Deform"
+    },
+    "Grille_Frame": {
+      "vertices": 864,
+      "faces": 864,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.022159993648529053,
+      "edge_p90_m": 0.04699993133544922,
+      "edge_max_m": 0.04900002479553223,
+      "long_edges": 0,
+      "triangles": 1728,
+      "sliver_triangles": 0,
+      "thin_shell_fraction": 0.0,
+      "size_m": [
+        1.190000057220459,
+        0.06400012969970703,
+        0.2850000262260437
+      ],
+      "bounds": [
+        [
+          -0.5950000286102295,
+          2.2209999561309814,
+          0.862500011920929
+        ],
+        [
+          0.5950000286102295,
+          2.2850000858306885,
+          1.1475000381469727
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Fascia",
+      "crumple": 0.55,
+      "mode": "Deform"
+    },
+    "Grille_Inset": {
+      "vertices": 2226,
+      "faces": 2214,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.021960794925689697,
+      "edge_p90_m": 0.024891305714845657,
+      "edge_max_m": 0.024891316890716553,
+      "long_edges": 0,
+      "triangles": 4428,
+      "sliver_triangles": 0,
+      "thin_shell_fraction": 0.0,
+      "size_m": [
+        1.1449999809265137,
+        0.07824277877807617,
+        0.24799996614456177
+      ],
+      "bounds": [
+        [
+          -0.5724999904632568,
+          2.1599998474121094,
+          0.8809999823570251
+        ],
+        [
+          0.5724999904632568,
+          2.2382426261901855,
+          1.128999948501587
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Fascia",
+      "crumple": 0.55,
+      "mode": "Deform"
+    },
+    "Headlight_L": {
+      "vertices": 342,
+      "faces": 306,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.013333380222320557,
+      "edge_p90_m": 0.013529419898986816,
+      "edge_max_m": 0.013529479503631592,
+      "long_edges": 0,
+      "triangles": 612,
+      "sliver_triangles": 0,
+      "thin_shell_fraction": 0.0,
+      "size_m": [
+        0.232619047164917,
+        0.0,
+        0.22261905670166016
+      ],
+      "bounds": [
+        [
+          -0.8583095073699951,
+          2.313999891281128,
+          0.9056904315948486
+        ],
+        [
+          -0.6256904602050781,
+          2.313999891281128,
+          1.1283094882965088
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Light",
+      "crumple": 0.45,
+      "mode": "Deform"
+    },
+    "Headlight_R": {
+      "vertices": 342,
+      "faces": 306,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.013333380222320557,
+      "edge_p90_m": 0.013529419898986816,
+      "edge_max_m": 0.013529479503631592,
+      "long_edges": 0,
+      "triangles": 612,
+      "sliver_triangles": 0,
+      "thin_shell_fraction": 0.0,
+      "size_m": [
+        0.232619047164917,
+        0.0,
+        0.22261905670166016
+      ],
+      "bounds": [
+        [
+          0.6256904602050781,
+          2.313999891281128,
+          0.9056904315948486
+        ],
+        [
+          0.8583095073699951,
+          2.313999891281128,
+          1.1283094882965088
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Light",
+      "crumple": 0.45,
+      "mode": "Deform"
+    },
+    "HeadlightHousing_L": {
+      "vertices": 408,
+      "faces": 408,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.01726345717906952,
+      "edge_p90_m": 0.04699993133544922,
+      "edge_max_m": 0.04900002479553223,
+      "long_edges": 0,
+      "triangles": 816,
+      "sliver_triangles": 0,
+      "thin_shell_fraction": 0.0,
+      "size_m": [
+        0.2800000309944153,
+        0.06400012969970703,
+        0.2850000262260437
+      ],
+      "bounds": [
+        [
+          -0.8820000290870667,
+          2.2209999561309814,
+          0.8705000281333923
+        ],
+        [
+          -0.6019999980926514,
+          2.2850000858306885,
+          1.155500054359436
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Light",
+      "crumple": 0.45,
+      "mode": "Deform"
+    },
+    "HeadlightHousing_R": {
+      "vertices": 408,
+      "faces": 408,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.01726345717906952,
+      "edge_p90_m": 0.04699993133544922,
+      "edge_max_m": 0.04900002479553223,
+      "long_edges": 0,
+      "triangles": 816,
+      "sliver_triangles": 0,
+      "thin_shell_fraction": 0.0,
+      "size_m": [
+        0.2800000309944153,
+        0.06400012969970703,
+        0.2850000262260437
+      ],
+      "bounds": [
+        [
+          0.6019999980926514,
+          2.2209999561309814,
+          0.8705000281333923
+        ],
+        [
+          0.8820000290870667,
+          2.2850000858306885,
+          1.155500054359436
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Light",
+      "crumple": 0.45,
+      "mode": "Deform"
+    },
+    "RearPlate": {
+      "vertices": 414,
+      "faces": 412,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.01772727258503437,
+      "edge_p90_m": 0.01787501573562622,
+      "edge_max_m": 0.01787501573562622,
+      "long_edges": 0,
+      "triangles": 824,
+      "sliver_triangles": 0,
+      "thin_shell_fraction": 0.0,
+      "size_m": [
+        0.3876568377017975,
+        0.012000083923339844,
+        0.14065682888031006
+      ],
+      "bounds": [
+        [
+          -0.19382841885089874,
+          -2.3600001335144043,
+          0.5556715726852417
+        ],
+        [
+          0.19382841885089874,
+          -2.3480000495910645,
+          0.6963284015655518
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Trim",
+      "crumple": 1,
+      "mode": "Deform"
+    },
+    "Suspension_Front": {
+      "vertices": 4430,
+      "faces": 4544,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.010937966406345367,
+      "edge_p90_m": 0.029999971389770508,
+      "edge_max_m": 0.10111875832080841,
+      "long_edges": 64,
+      "triangles": 8832,
+      "sliver_triangles": 0,
+      "thin_shell_fraction": 0.017155756207674944,
+      "size_m": [
+        1.6799999475479126,
+        0.2612159252166748,
+        0.569861650466919
+      ],
+      "bounds": [
+        [
+          -0.8399999737739563,
+          1.5199999809265137,
+          0.30000001192092896
+        ],
+        [
+          0.8399999737739563,
+          1.7812159061431885,
+          0.8698616623878479
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Underbody",
+      "crumple": 1,
+      "mode": "Deform"
+    },
+    "Suspension_Rear": {
+      "vertices": 2682,
+      "faces": 2752,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.028346361592411995,
+      "edge_p90_m": 0.050000011920928955,
+      "edge_max_m": 0.10111875087022781,
+      "long_edges": 64,
+      "triangles": 5280,
+      "sliver_triangles": 0,
+      "thin_shell_fraction": 0.017897091722595078,
+      "size_m": [
+        1.6799999475479126,
+        1.100000023841858,
+        0.5668919086456299
+      ],
+      "bounds": [
+        [
+          -0.8399999737739563,
+          -1.8600000143051147,
+          0.30000001192092896
+        ],
+        [
+          0.8399999737739563,
+          -0.7599999904632568,
+          0.8668919205665588
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Underbody",
+      "crumple": 1,
+      "mode": "Deform"
+    },
+    "Tailgate": {
+      "vertices": 1394,
+      "faces": 1392,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.04725003242492676,
+      "edge_p90_m": 0.047500014305114746,
+      "edge_max_m": 0.05082406848669052,
+      "long_edges": 0,
+      "triangles": 2784,
+      "sliver_triangles": 0,
+      "thin_shell_fraction": 0.0,
+      "size_m": [
+        1.8829705715179443,
+        0.04699993133544922,
+        0.7529705762863159
+      ],
+      "bounds": [
+        [
+          -0.9414852857589722,
+          -2.260499954223633,
+          0.5535147190093994
+        ],
+        [
+          0.9414852857589722,
+          -2.2135000228881836,
+          1.3064852952957153
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Body",
+      "crumple": 1,
+      "mode": "Deform"
+    },
+    "TailgateHandle": {
+      "vertices": 124,
+      "faces": 122,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.012458130717277527,
+      "edge_p90_m": 0.014090909622609615,
+      "edge_max_m": 0.01409091055393219,
+      "long_edges": 0,
+      "triangles": 244,
+      "sliver_triangles": 0,
+      "thin_shell_fraction": 0.0,
+      "size_m": [
+        0.1550000011920929,
+        0.019999980926513672,
+        0.039999961853027344
+      ],
+      "bounds": [
+        [
+          -0.07750000059604645,
+          -2.259999990463257,
+          1.1399999856948853
+        ],
+        [
+          0.07750000059604645,
+          -2.240000009536743,
+          1.1799999475479126
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Trim",
+      "crumple": 1,
+      "mode": "Deform"
+    },
+    "Taillight_L": {
+      "vertices": 1864,
+      "faces": 1854,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.008333325386047363,
+      "edge_p90_m": 0.015399932861328125,
+      "edge_max_m": 0.015400052070617676,
+      "long_edges": 0,
+      "triangles": 3708,
+      "sliver_triangles": 0,
+      "thin_shell_fraction": 0.0037553648068669528,
+      "size_m": [
+        0.12000000476837158,
+        0.051000118255615234,
+        0.38499999046325684
+      ],
+      "bounds": [
+        [
+          -0.953000009059906,
+          -2.2880001068115234,
+          0.8535000085830688
+        ],
+        [
+          -0.8330000042915344,
+          -2.236999988555908,
+          1.2384999990463257
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Light",
+      "crumple": 0.45,
+      "mode": "Deform"
+    },
+    "Taillight_R": {
+      "vertices": 1864,
+      "faces": 1854,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.008333325386047363,
+      "edge_p90_m": 0.015399932861328125,
+      "edge_max_m": 0.015400052070617676,
+      "long_edges": 0,
+      "triangles": 3708,
+      "sliver_triangles": 0,
+      "thin_shell_fraction": 0.0037553648068669528,
+      "size_m": [
+        0.12000000476837158,
+        0.051000118255615234,
+        0.38499999046325684
+      ],
+      "bounds": [
+        [
+          0.8330000042915344,
+          -2.2880001068115234,
+          0.8535000085830688
+        ],
+        [
+          0.953000009059906,
+          -2.236999988555908,
+          1.2384999990463257
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Light",
+      "crumple": 0.45,
+      "mode": "Deform"
+    },
+    "Underbody_Frame": {
+      "vertices": 4508,
+      "faces": 4516,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.046617988497018814,
+      "edge_p90_m": 0.05500000715255737,
+      "edge_max_m": 0.05500006675720215,
+      "long_edges": 0,
+      "triangles": 9000,
+      "sliver_triangles": 0,
+      "thin_shell_fraction": 0.0,
+      "size_m": [
+        1.6399999856948853,
+        4.200000286102295,
+        0.1600000262260437
+      ],
+      "bounds": [
+        [
+          -0.8199999928474426,
+          -2.1700000762939453,
+          0.39299994707107544
+        ],
+        [
+          0.8199999928474426,
+          2.0300002098083496,
+          0.5529999732971191
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Underbody",
+      "crumple": 1,
+      "mode": "Deform"
+    },
+    "Wheel_FL": {
+      "vertices": 8474,
+      "faces": 8928,
+      "nonmanifold_edges": 160,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.022221066057682037,
+      "edge_p90_m": 0.04004992917180061,
+      "edge_max_m": 0.2639999985694885,
+      "long_edges": 256,
+      "triangles": 15288,
+      "sliver_triangles": 320,
+      "thin_shell_fraction": 0.07551622418879056,
+      "size_m": [
+        0.34400004148483276,
+        0.8422119617462158,
+        0.8422119915485382
+      ],
+      "bounds": [
+        [
+          -1.062000036239624,
+          1.2188940048217773,
+          -0.0011059939861297607
+        ],
+        [
+          -0.7179999947547913,
+          2.061105966567993,
+          0.8411059975624084
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Wheel",
+      "crumple": 0,
+      "mode": "Rigid"
+    },
+    "Wheel_FR": {
+      "vertices": 8474,
+      "faces": 8928,
+      "nonmanifold_edges": 160,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.022221066057682037,
+      "edge_p90_m": 0.04004992917180061,
+      "edge_max_m": 0.2639999985694885,
+      "long_edges": 256,
+      "triangles": 15288,
+      "sliver_triangles": 320,
+      "thin_shell_fraction": 0.07551622418879056,
+      "size_m": [
+        0.34400004148483276,
+        0.8422119617462158,
+        0.8422119915485382
+      ],
+      "bounds": [
+        [
+          0.7179999947547913,
+          1.2188940048217773,
+          -0.0011059939861297607
+        ],
+        [
+          1.062000036239624,
+          2.061105966567993,
+          0.8411059975624084
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Wheel",
+      "crumple": 0,
+      "mode": "Rigid"
+    },
+    "Wheel_RL": {
+      "vertices": 8474,
+      "faces": 8928,
+      "nonmanifold_edges": 160,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.02222106233239174,
+      "edge_p90_m": 0.04004994407296181,
+      "edge_max_m": 0.2639999985694885,
+      "long_edges": 256,
+      "triangles": 15288,
+      "sliver_triangles": 320,
+      "thin_shell_fraction": 0.07551622418879056,
+      "size_m": [
+        0.34400004148483276,
+        0.8422120213508606,
+        0.8422119915485382
+      ],
+      "bounds": [
+        [
+          -1.062000036239624,
+          -1.7311060428619385,
+          -0.0011059939861297607
+        ],
+        [
+          -0.7179999947547913,
+          -0.8888940215110779,
+          0.8411059975624084
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Wheel",
+      "crumple": 0,
+      "mode": "Rigid"
+    },
+    "Wheel_RR": {
+      "vertices": 8474,
+      "faces": 8928,
+      "nonmanifold_edges": 160,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.02222106233239174,
+      "edge_p90_m": 0.04004994407296181,
+      "edge_max_m": 0.2639999985694885,
+      "long_edges": 256,
+      "triangles": 15288,
+      "sliver_triangles": 320,
+      "thin_shell_fraction": 0.07551622418879056,
+      "size_m": [
+        0.34400004148483276,
+        0.8422120213508606,
+        0.8422119915485382
+      ],
+      "bounds": [
+        [
+          0.7179999947547913,
+          -1.7311060428619385,
+          -0.0011059939861297607
+        ],
+        [
+          1.062000036239624,
+          -0.8888940215110779,
+          0.8411059975624084
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Wheel",
+      "crumple": 0,
+      "mode": "Rigid"
+    },
+    "Wheelhouse_Inner": {
+      "vertices": 1804,
+      "faces": 1600,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.02499997615814209,
+      "edge_p90_m": 0.03244189918041229,
+      "edge_max_m": 0.0594966784119606,
+      "long_edges": 0,
+      "triangles": 3200,
+      "sliver_triangles": 0,
+      "thin_shell_fraction": 0.0,
+      "size_m": [
+        1.850000023841858,
+        3.950000047683716,
+        0.210241436958313
+      ],
+      "bounds": [
+        [
+          -0.925000011920929,
+          -1.809999942779541,
+          0.786758542060852
+        ],
+        [
+          0.925000011920929,
+          2.140000104904175,
+          0.996999979019165
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Underbody",
+      "crumple": 1,
+      "mode": "Deform"
+    },
+    "Wipers": {
+      "vertices": 296,
+      "faces": 220,
+      "nonmanifold_edges": 0,
+      "zero_area_faces": 0,
+      "ngons": 0,
+      "edge_p50_m": 0.015898950397968292,
+      "edge_p90_m": 0.028254028409719467,
+      "edge_max_m": 0.028254086151719093,
+      "long_edges": 0,
+      "triangles": 420,
+      "sliver_triangles": 0,
+      "thin_shell_fraction": 0.04054054054054054,
+      "size_m": [
+        1.181797981262207,
+        0.036952972412109375,
+        0.047774553298950195
+      ],
+      "bounds": [
+        [
+          -0.5908989906311035,
+          0.9170235395431519,
+          1.3259087800979614
+        ],
+        [
+          0.5908989906311035,
+          0.9539765119552612,
+          1.3736833333969116
+        ]
+      ],
+      "has_uvmap": true,
+      "has_stripe_projection": true,
+      "role": "Trim",
+      "crumple": 1,
+      "mode": "Deform"
+    }
+  },
+  "scope": "Blender asset QA only: no Unity import, no destruction test"
+}

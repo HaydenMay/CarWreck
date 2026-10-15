@@ -1,0 +1,20 @@
+[DamageLab] Vehicle manifest Assets/Vehicles/CompactPickup/vehicle.json (dry run: nothing written)
+  imported size (2.255, 1.821, 4.722) m vs generator (2.255, 1.821, 4.722) m (Unity x, y, z): worst 0.0 cm
+  wheel origins: 4 checked against the generator (2 cm tolerance)
+  attachment sockets: 7 group(s), 20 socket(s) (metadata only; Unity does not use them yet)
+  Compact Pickup (carwreck.compact_pickup r2): 56 components, 114,694 deformable vertices, 56 rules, mass 1350 kg
+  measured body (1.990, 0.836, 4.700), beltline 1.34 m, cabin top 1.82 m -> cabin line 1.34-1.75 m; shell 0.66/0.66/0.44 m, impact height 0.92 m
+  classification: 0 unclassified, 0 ambiguous; warnings 0
+  RESULT: PASS (configuration)
+
+[DamageLab] Vehicle manifest Assets/Vehicles/CompactPickup/vehicle.json
+  materials: 14 (Pickup_Paint uses the two-colour paint shader)
+  model import settings applied (readable, uncompressed, vertex order kept, imported normals, metre scale, axis conversion baked)
+  imported size (2.255, 1.821, 4.722) m vs generator (2.255, 1.821, 4.722) m (Unity x, y, z): worst 0.0 cm
+  wheel origins: 4 checked against the generator (2 cm tolerance)
+  attachment sockets: 7 group(s), 20 socket(s) (metadata only; Unity does not use them yet)
+  Compact Pickup (carwreck.compact_pickup r2): 56 components, 114,694 deformable vertices, 56 rules, mass 1350 kg
+  measured body (1.990, 0.836, 4.700), beltline 1.34 m, cabin top 1.82 m -> cabin line 1.34-1.75 m; shell 0.66/0.66/0.44 m, impact height 0.92 m
+  classification: 0 unclassified, 0 ambiguous; warnings 0
+  wrote Assets/DamageLab/Settings/Vehicles/CompactPickup.asset and Assets/DamageLab/Settings/Vehicles/CompactPickupDamageProfile.asset; rebuild the Collision Lab scene (collision-build) to add it to the vehicle selector
+  RESULT: PASS (configuration)

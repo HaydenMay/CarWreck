@@ -1,6 +1,8 @@
 # Compact Pickup — Checkpoint B review
 
-**Status: detailed model complete for review; awaiting user approval.**
+**Status: approved by the user at `156d2673008b63212f53db4b23784e5bc78c617e`.**
+The user authorized production configuration, QA and Unity integration through Checkpoint C.
+All approved images and authoring source are protected by [the B approval record](../approved_checkpoint_b.json).
 Feature branch: `feature/vehicle-compact-pickup`. Approved baseline:
 [`f230c5a`](https://github.com/HaydenMay/CarWreck/tree/f230c5a58f52547844f2e07ef79263e9b0d65bb4/Previews/CompactPickup/StageA).
 The [approval record](../approved_checkpoint_a.json) protects 25 A source, image,
@@ -164,4 +166,4 @@ review only; it has not been merged. Approved A images remain protected and
 available. Pending B evidence stays available, and approved checkpoint evidence
 will be retained through completion and merge. Cleanup removes only unapproved drafts.
 
-**Checkpoint B — wait for user approval before production configuration, QA or Unity integration.**
+**Checkpoint B approved. Continue through C; preserve the approved visual design and wait for final review before any merge.**

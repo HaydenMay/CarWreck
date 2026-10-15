@@ -1,0 +1,36 @@
+{
+  "baseline_revision": "156d2673008b63212f53db4b23784e5bc78c617e",
+  "baseline_files_checked": 295,
+  "unchanged_baseline_files": 294,
+  "intentional_changes": [
+    "Assets/DamageLab/Scenes/VehicleCollisionLab.unity"
+  ],
+  "unexpected_changes": [],
+  "approved_checkpoints": {
+    "a": {
+      "files": 25,
+      "all_match": true
+    },
+    "b": {
+      "files": 46,
+      "all_match": true
+    }
+  },
+  "shared_runtime_existing_editor_tests_QA_and_workflow_unchanged": true,
+  "checked_paths": [
+    "Assets/DamageLab/Scripts",
+    "Assets/DamageLab/Editor",
+    "Blender/Scripts/vehicle_asset_qa.py",
+    "Docs/VehicleProduction",
+    ".agents/skills/addacar"
+  ],
+  "existing_vehicle_assets_definitions_profiles_unchanged": true,
+  "new_definition_automatic_shell": {
+    "frontDepth": 0,
+    "rearDepth": 0,
+    "sideDepth": 0,
+    "impactHeight": 0
+  },
+  "rigid_parts_only_wheels": true,
+  "note": "Generated selector scene intentionally rebuilt. Known pre-existing dirty URP tutorial icon was not changed. Existing PhysX functional tests pass before/after; separate runs are not bit-repeatable. Tool-generated materials/settings and existing screenshot overwrites restored."
+}

@@ -1,7 +1,8 @@
 # Compact Pickup — Checkpoint B
 
-**Detailed model ready for review; approval pending.** Published on
-`feature/vehicle-compact-pickup`. Unity integration starts only after B approval.
+**Approved by the user.** Approved revision: `156d2673008b63212f53db4b23784e5bc78c617e`.
+Published on `feature/vehicle-compact-pickup`; source/image hashes are protected in
+[the B approval record](../approved_checkpoint_b.json). The user authorized work through C.
 
 The approved 2.950 m wheelbase, wheel positions, cab/bed relationship, lifted stance
 and green/cream layout are preserved. Size: **4.722 × 1.940 × 1.821 m** (body width).
