@@ -135,6 +135,10 @@ namespace DamageLab.EditorTools
                     break;
                 case "vehicle-import-check":   // reference manifest vs the hand-written hatchback definition
                     Debug.Log(VehicleManifestImporter.CheckAgainstExisting("Docs/VehicleProduction/examples/compact_hatchback.vehicle.json", VehicleDefinitionSetup.HatchPath));
+                    Debug.Log(VehicleManifestImporter.CheckAgainstExisting("Docs/VehicleProduction/examples/muscle_car.vehicle.json", VehicleDefinitionSetup.MusclePath));
+                    break;
+                case "vehicle-import-roundtrip":
+                    Debug.Log(CollisionPersistenceValidation.RunManifestRoundtrip());
                     break;
                 case "hatch-defects":
                     Debug.Log(CollisionPersistenceValidation.RunHatchbackDefects());

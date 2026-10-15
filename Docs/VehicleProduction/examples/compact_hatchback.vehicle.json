@@ -304,9 +304,51 @@
       "crumple": 1
     }
   ],
+  "expected": {
+    "note": "Written by the generator in Blender vehicle space (+X right, +Y forward, +Z up); vehicle-import checks the imported model against it.",
+    "dimensionsM": [
+      1.892,
+      4.0504,
+      1.425
+    ],
+    "wheels": [
+      {
+        "name": "Wheel_FL",
+        "position": [
+          -0.745,
+          1.16,
+          0.325
+        ]
+      },
+      {
+        "name": "Wheel_FR",
+        "position": [
+          0.745,
+          1.16,
+          0.325
+        ]
+      },
+      {
+        "name": "Wheel_RL",
+        "position": [
+          -0.745,
+          -1.16,
+          0.325
+        ]
+      },
+      {
+        "name": "Wheel_RR",
+        "position": [
+          0.745,
+          -1.16,
+          0.325
+        ]
+      }
+    ]
+  },
   "sockets": {
     "coordinates": "Blender vehicle-local metres: +X right, +Y forward, +Z up",
-    "runtime": "not consumed by Unity yet (see vehicle-asset-spec.md, Attachment sockets)",
+    "runtime_ready": false,
     "groups": []
   }
 }

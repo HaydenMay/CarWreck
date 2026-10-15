@@ -175,6 +175,7 @@ namespace DamageLab.CollisionTest
         {
             if (vehicles == null || vehicles.Length == 0) return;
             StopChaos(true);
+            ClearRandomDiagnostics();
             index = Mathf.Clamp(index, 0, vehicles.Length - 1);
             UnsubscribeVehicle();
             if (car != null)
@@ -293,6 +294,7 @@ namespace DamageLab.CollisionTest
         public void ResetAll()
         {
             StopChaos(true);
+            ClearRandomDiagnostics();
             if (model != null)
             {
                 model.ResetAll();
@@ -342,9 +344,9 @@ namespace DamageLab.CollisionTest
         // Single-argument entry points for SendMessage (browser tests drive the WebGL build with these).
         public void SetDirectionIndex(int d) => SetDirection((ImpactDirection)Mathf.Clamp(d, 0, System.Enum.GetValues(typeof(ImpactDirection)).Length - 1));
         public void SetNarrowIndex(int narrow) => SetNarrowImpactor(narrow != 0);
-        public void SetSpeed(float v) { speed = Mathf.Clamp(v, 0f, 30f); RefreshDirectionButtons(); }
-        public void SetMass(float m) { mass = Mathf.Clamp(m, 100f, 4000f); RefreshDirectionButtons(); }
-        public void SetAimOffset(float o) { aimOffset = Mathf.Clamp(o, -1.5f, 1.5f); if (!launched) PlaceSled(); }
+        public void SetSpeed(float v) { speed = Mathf.Clamp(v, 0f, 30f); RefreshValues(); }
+        public void SetMass(float m) { mass = Mathf.Clamp(m, 100f, 4000f); RefreshValues(); }
+        public void SetAimOffset(float o) { aimOffset = Mathf.Clamp(o, -1.5f, 1.5f); if (!launched) PlaceSled(); RefreshValues(); }
 
         public void SetNarrowImpactor(bool narrow)
         {

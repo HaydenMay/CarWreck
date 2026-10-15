@@ -31,6 +31,7 @@ namespace DamageLab.CollisionTest
         public Button[] chaosCountButtons;
         public Button newSeedButton;
         public Text seedText;
+        public InputField seedField;
         public Toggle varyWidthToggle;
 
         /// <summary>Outcome of one shot of a Chaos Run (or a single Random Launch).</summary>
@@ -120,6 +121,42 @@ namespace DamageLab.CollisionTest
             randomSeed = RandomImpact.NewSeed();
             NextShot = 0;
             RefreshRandomUI();
+        }
+
+        /// <summary>Forget the last random launch and chaos-run summary (a new vehicle or a reset experiment starts clean;
+        /// the seed and the next shot index are kept).</summary>
+        void ClearRandomDiagnostics()
+        {
+            LastRandom = null;
+            chaosTotal = chaosDone = 0;
+            ChaosImpacts = ChaosContactOnly = ChaosMisses = 0; ChaosDeformMsTotal = 0f;
+            chaosRegions.Clear(); chaosColliders.Clear(); ChaosRecords.Clear();
+            RefreshRandomUI();
+        }
+
+        /// <summary>Runtime sanity after a run: non-finite vertices in the deformed meshes and invalid hitbox boxes.</summary>
+        public string SanitySummary()
+        {
+            int bad = 0, verts = 0;
+            if (model != null)
+                foreach (var p in model.Parts)
+                {
+                    if (p.RuntimeMesh == null) continue;
+                    foreach (var v in p.RuntimeMesh.vertices)
+                    {
+                        verts++;
+                        if (float.IsNaN(v.x + v.y + v.z) || float.IsInfinity(v.x + v.y + v.z)) bad++;
+                    }
+                }
+            int badBoxes = 0, boxes = 0;
+            if (hitbox != null)
+                foreach (var r in hitbox.regions)
+                {
+                    boxes++;
+                    Vector3 c = r.box.center, s = r.box.size;
+                    if (float.IsNaN(c.x + c.y + c.z + s.x + s.y + s.z) || s.x <= 0.01f || s.y <= 0.01f || s.z <= 0.01f) badBoxes++;
+                }
+            return $"non-finite vertices {bad} of {verts:N0}, invalid hitbox boxes {badBoxes} of {boxes}";
         }
 
         /// <summary>Whether the parked block overlaps any of the car's colliders (validation).</summary>
@@ -278,6 +315,8 @@ namespace DamageLab.CollisionTest
                 default: ChaosMisses++; break;
             }
             ChaosRecords.Add(rec);
+            Debug.Log($"[CollisionLab] Chaos shot {chaosDone + 1}/{chaosTotal} (seed {rec.shot.seed}, shot {rec.shot.shot}): approach {rec.shot.approachDeg:0.0}°, offset {rec.shot.lateral:+0.00;-0.00}, {(rec.shot.narrow ? "narrow" : "wide")} -> {rec.outcome}" +
+                      (rec.outcome == ShotOutcome.Miss ? "" : $" at {rec.region} [{rec.carCollider}] strength {rec.strength * 100f:0}, deform {rec.deformMs:0.0} ms, hitbox {rec.hitboxMs:0.0} ms") + $", impacts on car {model.TotalImpactCount} ({model.ImpactCount} stored, {model.MergedImpactCount} merged)");
             LastRandom = rec;
             chaosDone++;
             ResetBlock();
@@ -292,10 +331,10 @@ namespace DamageLab.CollisionTest
             if (chaosState == ChaosState.Flying) { if (hitbox != null) hitbox.ApplyPending(); ResetBlock(); }
             chaosState = ChaosState.Idle;
             chaosStopRequested = false;
-            SetStatus($"{status}: {chaosDone} launched, {ChaosImpacts} impacts, {ChaosContactOnly} contact only, {ChaosMisses} missed");
+            SetStatus($"{status}: {chaosDone} launched · {ChaosImpacts} hit · {ChaosContactOnly + ChaosMisses} missed");
             Debug.Log($"[CollisionLab] {status}: seed {randomSeed}, {chaosDone}/{chaosTotal} launched, {ChaosImpacts} impacts, {ChaosContactOnly} contact only, {ChaosMisses} missed, " +
                       $"{chaosRegions.Count} regions / {chaosColliders.Count} hitbox boxes struck, deformation {(ChaosImpacts > 0 ? ChaosDeformMsTotal / ChaosImpacts : 0f):0.0} ms avg, " +
-                      $"impacts on car {model.TotalImpactCount} ({model.ImpactCount} stored, {model.MergedImpactCount} merged)");
+                      $"impacts on car {model.TotalImpactCount} ({model.ImpactCount} stored, {model.MergedImpactCount} merged); {SanitySummary()}");
             RefreshRandomUI();
             RefreshDiagnostics();
         }
@@ -308,6 +347,8 @@ namespace DamageLab.CollisionTest
             if (chaosButton != null) chaosButton.onClick.AddListener(StartChaosSelected);
             if (stopButton != null) stopButton.onClick.AddListener(() => StopChaos());
             if (newSeedButton != null) newSeedButton.onClick.AddListener(NewSeed);
+            if (seedField != null)
+                seedField.onEndEdit.AddListener(t => { if (int.TryParse(t, out int s) && s > 0) SetSeed(Mathf.Min(s, 999999)); else RefreshRandomUI(); });
             if (chaosCountButtons != null)
                 for (int i = 0; i < chaosCountButtons.Length; i++)
                 {
@@ -325,7 +366,9 @@ namespace DamageLab.CollisionTest
         void RefreshRandomUI()
         {
             if (seedText != null)
-                seedText.text = ChaosRunning ? $"Seed {randomSeed} · shot {Mathf.Min(chaosDone + 1, chaosTotal)} of {chaosTotal}" : $"Seed {randomSeed} · next shot {NextShot}";
+                seedText.text = ChaosRunning ? $"Chaos run impacts · shot {Mathf.Min(chaosDone + 1, chaosTotal)} of {chaosTotal}" : $"Chaos run impacts · seed {randomSeed}, next shot {NextShot}";
+            if (seedField != null && !seedField.isFocused) seedField.SetTextWithoutNotify(randomSeed.ToString());
+            if (seedField != null) seedField.interactable = !ChaosRunning;
             if (chaosCountButtons != null)
                 for (int i = 0; i < chaosCountButtons.Length; i++)
                     if (chaosCountButtons[i] != null && chaosCountButtons[i].targetGraphic != null)

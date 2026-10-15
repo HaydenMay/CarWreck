@@ -385,10 +385,22 @@ namespace DamageLab.EditorTools
             var counts = Grid("ChaosCounts", new Vector2(128, 38));
             lab.chaosCountButtons = new Button[lab.chaosCounts.Length];
             for (int i = 0; i < lab.chaosCounts.Length; i++) lab.chaosCountButtons[i] = SmallButton(counts, "Count" + lab.chaosCounts[i], lab.chaosCounts[i].ToString());
-            var seedRow = Grid("SeedRow", new Vector2(128, 38));
-            lab.seedText = Label("Seed", seedRow, "Seed", 14, TextMain, FontStyle.Normal, TextAnchor.MiddleLeft);
-            seedRow.GetComponent<GridLayoutGroup>().cellSize = new Vector2(264, 38);
+            lab.seedText = ch;   // "Chaos run impacts · next shot N" (kept up to date by the lab)
+            var seedRow = Grid("SeedRow", new Vector2(196, 38));
             seedRow.GetComponent<GridLayoutGroup>().constraintCount = 2;
+            // Editable seed (the same seed replays the same random selections), next to NEW SEED.
+            var seedBg = Img("SeedField", seedRow, Well, DamageLabAssets.GetSprite("RoundedRectSmall"), sliced: true);
+            var seedLabel = Label("Text", seedBg.transform, lab.randomSeed.ToString(), 17, TextMain, FontStyle.Bold, TextAnchor.MiddleCenter);
+            Stretch(seedLabel.rectTransform, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+            seedLabel.supportRichText = false;
+            lab.seedField = seedBg.gameObject.AddComponent<InputField>();
+            lab.seedField.textComponent = seedLabel;
+            lab.seedField.contentType = InputField.ContentType.IntegerNumber;
+            lab.seedField.characterLimit = 6;
+            lab.seedField.targetGraphic = seedBg;
+            lab.seedField.text = lab.randomSeed.ToString();
+            lab.seedField.caretColor = Accent;
+            lab.seedField.selectionColor = new Color(Accent.r, Accent.g, Accent.b, 0.4f);
             lab.newSeedButton = SmallButton(seedRow, "NewSeedButton", "NEW SEED");
             lab.varyWidthToggle = CheckToggle(Row(rndCard.transform, "VaryWidthRow", 42), "Random Block Width");
             lab.varyWidthToggle.isOn = lab.randomOptions.varyWidth;
@@ -399,7 +411,7 @@ namespace DamageLab.EditorTools
             Layout(dgh.gameObject, 28);
             lab.diagnosticsText = Label("Text", diag.transform, "No collision yet.", 15, TextMain, FontStyle.Normal, TextAnchor.UpperLeft);
             lab.diagnosticsText.supportRichText = false;
-            Layout(lab.diagnosticsText.gameObject, 380);
+            Layout(lab.diagnosticsText.gameObject, 450);
 
             // Controls hint (top-left)
             var hint = Img("ControlsHint", root, new Color(0.11f, 0.12f, 0.13f, 0.86f), DamageLabAssets.RoundedRectSprite, sliced: true);

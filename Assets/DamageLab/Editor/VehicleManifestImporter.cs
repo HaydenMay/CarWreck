@@ -27,6 +27,11 @@ namespace DamageLab.EditorTools
         [Serializable] public class CabinLine { public float start, end; }
         [Serializable] public class Shell { public float frontDepth, rearDepth, sideDepth, impactHeight; }
         [Serializable] public class Paint { public string material, stripeMask; }
+        [Serializable] public class WheelPos { public string name; public float[] position; }
+        [Serializable] public class Expected { public float[] dimensionsM; public WheelPos[] wheels; }   // Blender vehicle space (+X right, +Y forward, +Z up)
+        [Serializable] public class Socket { public string id; public float[] origin, direction, expected_normal; }
+        [Serializable] public class SocketGroup { public string socket_group, mount_mode, mesh_role; public Socket[] sockets; }
+        [Serializable] public class Sockets { public string coordinates; public bool runtime_ready; public SocketGroup[] groups; }
         [Serializable]
         public class Manifest
         {
@@ -39,6 +44,8 @@ namespace DamageLab.EditorTools
             public Shell shell = new Shell();
             public Paint paint = new Paint();
             public Component[] components = new Component[0];
+            public Expected expected;
+            public Sockets sockets;
         }
         [Serializable] class PaletteEntry { public string name; public float[] color_linear, primary_srgb, secondary_srgb, emission_linear; public float metallic, smoothness, emission_strength; }
         [Serializable] class Palette { public PaletteEntry[] materials; }
@@ -113,8 +120,59 @@ namespace DamageLab.EditorTools
                     if (rule == null || rule.mode == PartMode.Deform) deformVerts += f.sharedMesh != null ? f.sharedMesh.vertexCount : 0;
                     if (f.sharedMesh != null && !f.sharedMesh.isReadable) warnings.Add($"mesh '{f.name}' is not readable");
                 }
+                // Scale and orientation through the actual import: wheel roots (FL forward of RL, left at -X) and,
+                // when the generator recorded them, its dimensions and wheel centres (Blender x, y, z = Unity x, z, y).
+                Transform T(string n) => inst.GetComponentsInChildren<Transform>(true).FirstOrDefault(t => t.name == n);
+                var fl = T("Wheel_FL"); var rl = T("Wheel_RL");
+                if (fl == null || rl == null) errors.Add("wheel roots Wheel_FL / Wheel_RL not found in the imported model");
+                else
+                {
+                    if (!(fl.position.z > rl.position.z)) errors.Add("imported model does not face +Z (Wheel_FL is not forward of Wheel_RL)");
+                    if (!(fl.position.x < 0f)) errors.Add("imported model has left at +X (Wheel_FL must be at -X)");
+                }
+                if (m.expected != null && m.expected.dimensionsM != null && m.expected.dimensionsM.Length == 3)
+                {
+                    Bounds all = default; bool any = false;
+                    foreach (var r in inst.GetComponentsInChildren<MeshRenderer>(true))
+                    {
+                        var rule = VehiclePartRule.Find(rules, r.name, out _);
+                        if (rule != null && rule.mode == PartMode.Ignore) continue;
+                        if (!any) { all = r.bounds; any = true; } else all.Encapsulate(r.bounds);
+                    }
+                    var e = m.expected.dimensionsM;
+                    Vector3 want = new Vector3(e[0], e[2], e[1]);
+                    Vector3 err = all.size - want;
+                    float worst = Mathf.Max(Mathf.Abs(err.x), Mathf.Abs(err.y), Mathf.Abs(err.z));
+                    sb.AppendLine($"  imported size {all.size.ToString("F3")} m vs generator {want.ToString("F3")} m (Unity x, y, z): worst {worst * 100f:0.0} cm");
+                    if (worst > 0.03f) errors.Add($"imported size differs from the generator's by {worst * 100f:0.0} cm (scale or axis problem)");
+                }
+                if (m.expected != null && m.expected.wheels != null)
+                    foreach (var w in m.expected.wheels)
+                    {
+                        var t = T(w.name);
+                        if (t == null || w.position == null || w.position.Length != 3) { errors.Add($"expected wheel '{w.name}' not found"); continue; }
+                        Vector3 want = new Vector3(w.position[0], w.position[2], w.position[1]);
+                        float d = (t.position - want).magnitude;
+                        if (d > 0.02f) errors.Add($"{w.name} imported at {t.position.ToString("F3")} but the generator put it at {want.ToString("F3")} ({d * 100f:0.0} cm)");
+                    }
+                if (m.expected?.wheels != null) sb.AppendLine($"  wheel origins: {m.expected.wheels.Length} checked against the generator (2 cm tolerance)");
             }
             finally { UnityEngine.Object.DestroyImmediate(inst); }
+            // Attachment sockets: metadata only (not consumed at runtime); structural checks.
+            if (m.sockets?.groups != null && m.sockets.groups.Length > 0)
+            {
+                var ids = new HashSet<string>();
+                foreach (var grp in m.sockets.groups)
+                {
+                    if (string.IsNullOrEmpty(grp.socket_group) || !grp.socket_group.Contains(".")) errors.Add($"socket group '{grp.socket_group}' needs a dotted semantic name (e.g. roof.rack)");
+                    if (!new[] { "chassis_rigid", "panel_follow", "multi_point_rigid" }.Contains(grp.mount_mode)) errors.Add($"socket group '{grp.socket_group}': mount_mode '{grp.mount_mode}' is not chassis_rigid / panel_follow / multi_point_rigid");
+                    if (!rules.Any(r => r.Matches(grp.mesh_role ?? "") || r.role.ToString() == grp.mesh_role)) errors.Add($"socket group '{grp.socket_group}': mesh_role '{grp.mesh_role}' is not a classified component or role");
+                    foreach (var s in grp.sockets ?? new Socket[0])
+                        if (!ids.Add(grp.socket_group + "/" + s.id)) errors.Add($"duplicate socket id {grp.socket_group}/{s.id}");
+                }
+                if (m.sockets.runtime_ready) errors.Add("sockets.runtime_ready must be false until the Unity attachment runtime exists");
+                sb.AppendLine($"  attachment sockets: {m.sockets.groups.Length} group(s), {ids.Count} socket(s) (metadata only; Unity does not use them yet)");
+            }
             profile.roofLineStart = m.cabinLine.start > 0f ? m.cabinLine.start : Mathf.Round(g.Beltline * 100f) / 100f;
             profile.roofLineEnd = m.cabinLine.end > 0f ? m.cabinLine.end : Mathf.Round((g.cabin.max.y - 0.07f) * 100f) / 100f;
             var inst2 = UnityEngine.Object.Instantiate(prefab);
@@ -220,14 +278,28 @@ namespace DamageLab.EditorTools
             var report = Import(manifestPath, true, out var def, out var errors);
             var existing = AssetDatabase.LoadAssetAtPath<VehicleDefinition>(existingDefinitionPath);
             if (def == null || existing == null) return report + "  comparison skipped (missing definition)\n";
-            var a = def.components; var b = existing.components;
+            // Runtime-only Ignore rules (the muscle car keeps a legacy "Wireframe" helper rule) are not asset components.
+            var a = def.components.Where(r => r.mode != PartMode.Ignore).ToList();
+            var b = existing.components.Where(r => r.mode != PartMode.Ignore).ToList();
             int same = 0;
             for (int i = 0; i < Mathf.Min(a.Count, b.Count); i++)
                 if (a[i].nameContains == b[i].nameContains && a[i].role == b[i].role && a[i].mode == b[i].mode && a[i].match == b[i].match && Mathf.Approximately(a[i].crumple, b[i].crumple)) same++;
             bool rulesSame = a.Count == b.Count && same == a.Count;
-            bool rest = Mathf.Approximately(def.mass, existing.mass) && Mathf.Approximately(def.profile.roofLineStart, existing.profile.roofLineStart)
-                        && Mathf.Approximately(def.profile.roofLineEnd, existing.profile.roofLineEnd) && def.model == existing.model;
-            return report + $"  manifest vs {existingDefinitionPath}: rules identical {rulesSame} ({same}/{b.Count}), mass/model/cabin line identical {rest} {(rulesSame && rest && errors.Count == 0 ? "PASS" : "FAIL")}\n";
+            bool rest = Mathf.Approximately(def.mass, existing.mass) && def.model == existing.model
+                        && Mathf.Approximately(def.profile.roofLineStart, existing.profile.roofLineStart) && Mathf.Approximately(def.profile.roofLineEnd, existing.profile.roofLineEnd);
+            bool shell = Mathf.Approximately(def.frontSectionDepth, existing.frontSectionDepth) && Mathf.Approximately(def.rearSectionDepth, existing.rearSectionDepth)
+                         && Mathf.Approximately(def.sideSectionDepth, existing.sideSectionDepth) && Mathf.Approximately(def.impactHeight, existing.impactHeight)
+                         && Mathf.Approximately(def.unknownComponentCrumple, existing.unknownComponentCrumple) && def.maxImpactRecords == existing.maxImpactRecords;
+            // The damage profile must be the shared tuning: identical to the existing vehicle apart from the cabin line.
+            var tmp = ScriptableObject.CreateInstance<VehicleDamageProfile>();
+            JsonUtility.FromJsonOverwrite(JsonUtility.ToJson(existing.profile), tmp);
+            tmp.roofLineStart = def.profile.roofLineStart; tmp.roofLineEnd = def.profile.roofLineEnd;
+            bool profileSame = JsonUtility.ToJson(tmp) == JsonUtility.ToJson(def.profile);
+            UnityEngine.Object.DestroyImmediate(tmp);
+            int ignored = existing.components.Count - b.Count;
+            bool ok = rulesSame && rest && shell && profileSame && errors.Count == 0;
+            return report + $"  manifest vs {existingDefinitionPath}: rules identical {rulesSame} ({same}/{b.Count}{(ignored > 0 ? $", {ignored} runtime-only Ignore rule not compared" : "")}), " +
+                   $"mass/model/cabin line {rest}, shell/impact height/limits {shell}, damage tuning identical {profileSame} {(ok ? "PASS" : "FAIL")}\n";
         }
     }
 }
