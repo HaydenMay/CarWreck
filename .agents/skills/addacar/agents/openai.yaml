@@ -3,4 +3,6 @@ interface:
   short_description: "Create a new destructible CarWreck vehicle"
   default_prompt: "Use $addacar to create a new destructible vehicle for CarWreck."
 policy:
-  allow_implicit_invocation: false
+  # Implicit invocation is allowed so explicit plain-language requests ("Use the CarWreck vehicle creation workflow")
+  # work; the skill description limits it to explicit requests for this workflow.
+  allow_implicit_invocation: true
