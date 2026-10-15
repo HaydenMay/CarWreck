@@ -183,6 +183,8 @@ namespace DamageLab.EditorTools
             sb.AppendLine($"  classification: {unclassified} unclassified, {ambiguous} ambiguous; warnings {warnings.Count}{(warnings.Count > 0 ? "\n    - " + string.Join("\n    - ", warnings.Take(20)) : "")}");
             if (unclassified > 0) errors.Add($"{unclassified} unclassified components (mandatory: every deformable mesh matches a rule)");
             if (ambiguous > 0) errors.Add($"{ambiguous} ambiguous components");
+            int other = warnings.Count - unclassified - ambiguous;
+            if (other > 0) errors.Add($"{other} validation warning(s) (mandatory: 0, e.g. a misplaced cabin line or missing roles)");
 
             if (!dryRun && errors.Count == 0)
             {

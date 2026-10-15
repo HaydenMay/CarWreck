@@ -69,7 +69,8 @@ Bridge commands take the vehicle's index in the Collision Lab list (0 muscle car
 
 Calibration on the existing cars (measured): AUTO-B flags the hatchback's `DoorSeam` (thin skin, slivers, sparse),
 `MirrorGlass`/`SideIndicator` and the 188-triangle lamp / slat primitives (slivers, small coarse parts) and
-`FrontValance` (slivers), and only 2 recommendations on the muscle car. It does **not** detect `LicenseRecess` or the
+`FrontValance` (slivers), and only 2 recommendations on the muscle car (`Bumper_Rear` slivers, `Grille` thin skin — a
+false positive: that grille folds only 1–2 % in Unity, which is why these are recommendations to review, not failures). It does **not** detect `LicenseRecess` or the
 Body folding under click dents; only the Unity fold-outlier check finds those. That is why the Unity check is mandatory.
 The hatchback itself has documented outliers (asset spec §4) and is accepted as an existing exception.
 

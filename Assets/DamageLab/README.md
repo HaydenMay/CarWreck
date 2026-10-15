@@ -406,7 +406,7 @@ Validation (`collision-random <vehicle> [seed] [count]`, real PhysX, 20 m/s, 250
 | Same seed again: random selections | identical | identical |
 | Replay of the recorded impacts | 0.0 m (exact) | 0.0 m (exact) |
 | 0.1 mm shift of every impactor, replayed | ≤ 14.3 mm | ≤ 12.7 mm |
-| Physics re-run of the whole run (informational) | 28–167 mm | 177 mm |
+| Physics re-run of the whole run (informational) | 28–170 mm | 22–177 mm |
 | NaN / invalid boxes, repair, reset, STOP, switching mid-run | none / exact / exact / PASS / PASS | same |
 | Editor cost | 3.3 s wall for 50 shots; 57 ms deformation per impact | 5.0 s; 89 ms |
 
@@ -415,11 +415,17 @@ Validation (`collision-random <vehicle> [seed] [count]`, real PhysX, 20 m/s, 250
 2. *Deformation for a given impact sequence* — exact (replay difference 0.0 m), and smooth: perturbing every impactor by
    0.1 mm moves the mesh by at most 14 mm after 50 heavy hits (before the vehicle engine milestone's fix: hundreds of mm).
 3. *Physical trajectories* — PhysX is not bit-repeatable across runs: the same seed re-run gives the same outcome and
-   region for every shot, but contact points start to differ by a few mm to 2 cm at some shot (8–42 in the runs above),
-   and later heavy hits on slightly different crushed metal carry that forward (28–177 mm at the end). A documented case
-   in the 33-launch overflow test: a square rear hit with the wide sled yaws the block by −1.10° in one run and +1.10° in
-   the other (identical crush depth and area, mirrored footprint centre), a genuine physical bifurcation. These
-   physics re-runs are informational; the deformation checks are (1)–(2).
+   region for every shot, but contact points start to differ by a few mm to 2 cm at some shot (shots 6–42 in seven
+   pairs of runs), and later heavy hits on slightly different crushed metal carry that forward (22–177 mm at the end).
+   The 33-launch overflow test shows the most sensitive case: launch 28, the 1.9 m wide sled square onto the 2.05 m
+   muscle car's rear, whose block edges sit right at the rear corners. The solver yaws the block slightly while it
+   resolves the step's penetration: −1.10° vs +1.10° in one pair of runs, +0.65° vs +1.27° in another (crush depth and
+   area identical, footprint centre 1–5 cm apart). Within a band of the block's length × sin(yaw) from its edge, its
+   leading surface is the side wall, not the front face, so that yaw decides whether the corner metal is under the face
+   (crushed) or beside it: a continuous but very steep function of the block's real geometry, giving 250–280 mm
+   between runs (other pairs: 0.7–4.8 mm; the hatchback 0.02–31 mm). These physics re-runs are informational; the
+   deformation checks are (1)–(2). Using the block's pre-contact orientation for the footprint would remove this
+   sensitivity; it is a possible future change to the shared receiver, not made here.
 
 **WebGL** (Chromium, desktop-app browser pane, 1920 × 1080, real UI clicks; measured from the build's console log):
 
