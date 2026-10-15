@@ -84,12 +84,35 @@ Before presenting anything, the agent reviews its own renders against the refere
 6. **Evidence only.** Never claim a perfect or exact match. Every "matches" needs a measurement or a side-by-side
    image; otherwise say "not verified". Mark estimates as estimates.
 
+## Checkpoint image delivery and cleanup (A, B and C)
+
+Before asking for checkpoint approval, commit and push the current vehicle's review package to its
+`feature/vehicle-<slug>` branch: required renders, reference comparisons, measurements, report and the source/scripts
+needed to reproduce them. Keep images under `Previews/<Vehicle>/<Stage>/` (Git LFS for binaries); add a short
+`README.md` gallery with relative image links so the checkpoint can be reviewed on the repository host.
+Stage only the relevant vehicle and workflow files; leave unrelated working changes out of the commit.
+
+Confirm the remote branch contains the commit and the image content is available, then provide browser links to
+the hosted gallery, comparison sheets and report in the checkpoint message. Local file links and inline chat images
+are supplementary. If the configured remote or authentication is unavailable, report the publishing limitation and
+provide the local files; do not claim the images were uploaded or use a different/public host without authorization.
+Pushing review evidence does not approve the checkpoint or authorize a merge.
+
+Keep images for the active checkpoint until the user has approved it. After approval, remove superseded drafts and
+redundant temporary images once they are no longer needed for the next comparison. Preserve the approved Stage A
+baseline through the Stage B comparison and the approved Stage B baseline through final validation. When all
+checkpoints are approved, clean intermediate review uploads from the branch, retaining the source/generators,
+reference catalogue, measurements/reports and a compact final render/comparison/QA evidence set. Update gallery and
+report links when removing images. Use ordinary follow-up deletion commits, not Git/LFS history rewriting; list
+what was cleaned and push the cleanup. Do not clean another vehicle's evidence or the current pending review.
+
 ## Phase 3 — Blockout → Checkpoint A (initial blockout)
 
 - Write `Blender/Scripts/build_<slug>.py` following the hatchback generator's structure; produce the blockout.
 - Render `Previews/<Vehicle>/StageA/`: front ¾, side, rear ¾, plus the matched reference views.
 - Run the reference self-review. Present: the three renders, the comparison sheet, the proportion table, the feature
   checklist and the remaining differences.
+- Publish the checkpoint package and hosted gallery links using the delivery rules above.
 - **CHECKPOINT A — WAIT FOR USER APPROVAL.** Iterate on feedback (re-run the self-review each time). No detailed
   modelling before approval.
 
@@ -105,6 +128,8 @@ Meet [the asset spec](vehicle-asset-spec.md) §1–§6:
 Then render `Previews/<Vehicle>/StageB/` (same views as Stage A) and run the self-review **against the references and
 against the approved blockout**: the proportion table shows reference, Stage A and Stage B values; any drift from the
 approved blockout above 2 % is called out and explained or corrected.
+
+Publish the checkpoint package and hosted gallery links using the delivery rules above.
 
 **CHECKPOINT B — WAIT FOR USER APPROVAL** before configuration, QA and Unity work.
 
@@ -157,6 +182,7 @@ Present the finished vehicle and a report:
 6. **Sockets** — groups provided (metadata only, not runtime-validated).
 7. **Known limitations and what was not done.**
 
-Commit and push `feature/vehicle-<slug>` (Git LFS for binaries).
+Commit and push `feature/vehicle-<slug>` (Git LFS for binaries), including the final checkpoint gallery and evidence
+links as described above. After approval, perform the review-image cleanup described above before merging.
 
 **CHECKPOINT C — WAIT FOR USER APPROVAL.** Never merge into `main` without the user's explicit approval.

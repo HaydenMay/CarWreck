@@ -121,6 +121,7 @@ way (a ±1.1° yaw bifurcation on a square rear hit is documented). Replays of r
 | ☐ | Proportion table at each checkpoint: reference vs model ratios (wheelbase, overhangs, height, wheel size and centre height, beltline, hood, cabin/roof length, glass rake, track/width, feature positions), model values measured from the geometry; > 5 % (wheelbase / wheel placement > 3 %) flagged | M · VISUAL (model values from the generator) |
 | ☐ | Feature checklist at each checkpoint: silhouette, proportions, hood and cabin, wheelbase and wheels, front design, rear design, fenders and body curvature, distinctive features | M · VISUAL |
 | ☐ | Discrepancies fixed or listed **before** asking for approval; no "perfect match" claim without a measurement or side-by-side image; estimates marked | M · VISUAL |
+| ☐ | At each checkpoint, renders/comparisons/report committed and pushed to the vehicle feature branch; hosted gallery/image links verified and supplied. After approval, temporary images cleaned when no longer needed; approved comparison baselines and final evidence preserved | M · review |
 | ☐ | **Checkpoint A** (blockout: front ¾, side, rear ¾ + comparison) approved by the user before detailed modelling | M · VISUAL |
 | ☐ | **Checkpoint B** (detailed model vs references **and** the approved blockout; drift > 2 % explained) approved before configuration and Unity work | M · VISUAL |
 | ☐ | **Checkpoint C** (final renders, comparison, QA results, Unity destruction screenshots when available, known limitations) approved before any merge | M · VISUAL |

@@ -1,0 +1,623 @@
+{
+  "stage": "A",
+  "units": "metres",
+  "orientation": "+X right, +Y forward, +Z up",
+  "bounds": {
+    "min": [
+      -1.1274999380111694,
+      -2.3600001335144043,
+      -0.0011060237884521484
+    ],
+    "max": [
+      1.1274999380111694,
+      2.361999988555908,
+      1.8200000524520874
+    ]
+  },
+  "wheel_bounds": {
+    "Wheel_FL": {
+      "min": [
+        -1.0619999170303345,
+        1.2188940048217773,
+        -0.0011060237884521484
+      ],
+      "max": [
+        -0.718000054359436,
+        2.061105966567993,
+        0.8411060571670532
+      ]
+    },
+    "Wheel_FR": {
+      "min": [
+        0.718000054359436,
+        1.2188940048217773,
+        -0.0011060237884521484
+      ],
+      "max": [
+        1.0619999170303345,
+        2.061105966567993,
+        0.8411060571670532
+      ]
+    },
+    "Wheel_RL": {
+      "min": [
+        -1.0619999170303345,
+        -1.7311060428619385,
+        -0.0011060237884521484
+      ],
+      "max": [
+        -0.718000054359436,
+        -0.8888939619064331,
+        0.8411060571670532
+      ]
+    },
+    "Wheel_RR": {
+      "min": [
+        0.718000054359436,
+        -1.7311060428619385,
+        -0.0011060237884521484
+      ],
+      "max": [
+        1.0619999170303345,
+        -0.8888939619064331,
+        0.8411060571670532
+      ]
+    }
+  },
+  "wheel_centers": {
+    "Wheel_FL": [
+      -0.8899999856948853,
+      1.6399999856948853,
+      0.42000001668930054
+    ],
+    "Wheel_FR": [
+      0.8899999856948853,
+      1.6399999856948853,
+      0.42000001668930054
+    ],
+    "Wheel_RL": [
+      -0.8899999856948853,
+      -1.3100000023841858,
+      0.42000001668930054
+    ],
+    "Wheel_RR": [
+      0.8899999856948853,
+      -1.3100000023841858,
+      0.42000001668930054
+    ]
+  },
+  "cabin_bounds": {
+    "min": [
+      -0.9549999833106995,
+      -0.27000001072883606,
+      1.284999966621399
+    ],
+    "max": [
+      0.9549999833106995,
+      0.9800000190734863,
+      1.8200000524520874
+    ]
+  },
+  "roof_bounds": {
+    "min": [
+      -0.8220000267028809,
+      -0.20000000298023224,
+      1.7899999618530273
+    ],
+    "max": [
+      0.8220000267028809,
+      0.5199999809265137,
+      1.8200000524520874
+    ]
+  },
+  "bed_bounds": {
+    "min": [
+      -0.9700000286102295,
+      -2.259999990463257,
+      0.5049999952316284
+    ],
+    "max": [
+      0.9700000286102295,
+      -0.3149999976158142,
+      1.309999942779541
+    ]
+  },
+  "hood_bounds": {
+    "min": [
+      -0.9700000286102295,
+      0.9800000190734863,
+      1.1784393787384033
+    ],
+    "max": [
+      0.9700000286102295,
+      2.25,
+      1.312999963760376
+    ]
+  },
+  "body_bounds": {
+    "min": [
+      -0.9700000286102295,
+      -2.259999990463257,
+      0.5049999952316284
+    ],
+    "max": [
+      0.9700000286102295,
+      2.25,
+      1.309999942779541
+    ]
+  },
+  "liner_floor_bounds": {
+    "min": [
+      -0.8399999737739563,
+      -2.2125000953674316,
+      0.8920000195503235
+    ],
+    "max": [
+      0.8399999737739563,
+      -0.35749995708465576,
+      0.9100000262260437
+    ]
+  },
+  "grille_bounds": {
+    "min": [
+      -0.5950000286102295,
+      2.239000082015991,
+      0.862500011920929
+    ],
+    "max": [
+      0.5950000286102295,
+      2.2869999408721924,
+      1.1475000381469727
+    ]
+  },
+  "rocker_bottom_m": 0.5049999952316284,
+  "lower_paint_boundary_m": 0.805,
+  "front_differential_bounds": {
+    "min": [
+      -0.15000008046627045,
+      1.524999976158142,
+      0.29999998211860657
+    ],
+    "max": [
+      0.15000002086162567,
+      1.7549999952316284,
+      0.5399999618530273
+    ]
+  },
+  "meshes": 85,
+  "vertices": 20056,
+  "components": [
+    {
+      "name": "BedFloor",
+      "proposed_role": "Panel",
+      "vertices": 96
+    },
+    {
+      "name": "BedFrontWall",
+      "proposed_role": "Body",
+      "vertices": 96
+    },
+    {
+      "name": "BedLiner_Floor",
+      "proposed_role": "Trim",
+      "vertices": 96
+    },
+    {
+      "name": "BedLiner_FrontWall",
+      "proposed_role": "Trim",
+      "vertices": 96
+    },
+    {
+      "name": "BedLiner_Ribs",
+      "proposed_role": "Trim",
+      "vertices": 2208
+    },
+    {
+      "name": "BedLiner_Side_L",
+      "proposed_role": "Trim",
+      "vertices": 96
+    },
+    {
+      "name": "BedLiner_Side_R",
+      "proposed_role": "Trim",
+      "vertices": 96
+    },
+    {
+      "name": "BedLiner_Tailgate",
+      "proposed_role": "Trim",
+      "vertices": 96
+    },
+    {
+      "name": "BedLiner_WheelTub_L",
+      "proposed_role": "Trim",
+      "vertices": 95
+    },
+    {
+      "name": "BedLiner_WheelTub_R",
+      "proposed_role": "Trim",
+      "vertices": 95
+    },
+    {
+      "name": "BedRail_L",
+      "proposed_role": "Panel",
+      "vertices": 96
+    },
+    {
+      "name": "BedRail_R",
+      "proposed_role": "Panel",
+      "vertices": 96
+    },
+    {
+      "name": "BedRail_Rear",
+      "proposed_role": "Panel",
+      "vertices": 96
+    },
+    {
+      "name": "BedSide_L",
+      "proposed_role": "Body",
+      "vertices": 518
+    },
+    {
+      "name": "BedSide_R",
+      "proposed_role": "Body",
+      "vertices": 518
+    },
+    {
+      "name": "Body_CabRear",
+      "proposed_role": "Body",
+      "vertices": 96
+    },
+    {
+      "name": "Body_Hood",
+      "proposed_role": "Body",
+      "vertices": 957
+    },
+    {
+      "name": "Body_Nose",
+      "proposed_role": "Body",
+      "vertices": 96
+    },
+    {
+      "name": "Bumper_Front",
+      "proposed_role": "Bumper",
+      "vertices": 96
+    },
+    {
+      "name": "Bumper_Rear",
+      "proposed_role": "Bumper",
+      "vertices": 96
+    },
+    {
+      "name": "BumperMarker_-1",
+      "proposed_role": "Light",
+      "vertices": 96
+    },
+    {
+      "name": "BumperMarker_1",
+      "proposed_role": "Light",
+      "vertices": 96
+    },
+    {
+      "name": "Cabin",
+      "proposed_role": "Cabin",
+      "vertices": 8
+    },
+    {
+      "name": "Cabin_RearGlass",
+      "proposed_role": "Cabin",
+      "vertices": 4
+    },
+    {
+      "name": "Cabin_RearGlass_Seal",
+      "proposed_role": "Cabin",
+      "vertices": 4
+    },
+    {
+      "name": "Cabin_RearGlassDivider",
+      "proposed_role": "Cabin",
+      "vertices": 96
+    },
+    {
+      "name": "Cabin_Roof",
+      "proposed_role": "Cabin",
+      "vertices": 225
+    },
+    {
+      "name": "Cabin_SideGlass_L",
+      "proposed_role": "Cabin",
+      "vertices": 4
+    },
+    {
+      "name": "Cabin_SideGlass_L_Seal",
+      "proposed_role": "Cabin",
+      "vertices": 4
+    },
+    {
+      "name": "Cabin_SideGlass_R",
+      "proposed_role": "Cabin",
+      "vertices": 4
+    },
+    {
+      "name": "Cabin_SideGlass_R_Seal",
+      "proposed_role": "Cabin",
+      "vertices": 4
+    },
+    {
+      "name": "Cabin_Windshield",
+      "proposed_role": "Cabin",
+      "vertices": 4
+    },
+    {
+      "name": "Cabin_Windshield_Seal",
+      "proposed_role": "Cabin",
+      "vertices": 4
+    },
+    {
+      "name": "Door_L",
+      "proposed_role": "Body",
+      "vertices": 336
+    },
+    {
+      "name": "Door_R",
+      "proposed_role": "Body",
+      "vertices": 336
+    },
+    {
+      "name": "DoorHandle_L",
+      "proposed_role": "Trim",
+      "vertices": 96
+    },
+    {
+      "name": "DoorHandle_R",
+      "proposed_role": "Trim",
+      "vertices": 96
+    },
+    {
+      "name": "FrontFender_L",
+      "proposed_role": "Body",
+      "vertices": 350
+    },
+    {
+      "name": "FrontFender_R",
+      "proposed_role": "Body",
+      "vertices": 350
+    },
+    {
+      "name": "FrontIndicator_L",
+      "proposed_role": "Light",
+      "vertices": 96
+    },
+    {
+      "name": "FrontIndicator_R",
+      "proposed_role": "Light",
+      "vertices": 96
+    },
+    {
+      "name": "FrontPlate",
+      "proposed_role": "Trim",
+      "vertices": 96
+    },
+    {
+      "name": "Grille_Frame",
+      "proposed_role": "Fascia",
+      "vertices": 96
+    },
+    {
+      "name": "Grille_Recess",
+      "proposed_role": "Fascia",
+      "vertices": 96
+    },
+    {
+      "name": "Grille_Slat",
+      "proposed_role": "Fascia",
+      "vertices": 96
+    },
+    {
+      "name": "Grille_Slat.001",
+      "proposed_role": "Fascia",
+      "vertices": 96
+    },
+    {
+      "name": "Grille_Slat.002",
+      "proposed_role": "Fascia",
+      "vertices": 96
+    },
+    {
+      "name": "Grille_Support",
+      "proposed_role": "Fascia",
+      "vertices": 96
+    },
+    {
+      "name": "Grille_Support.001",
+      "proposed_role": "Fascia",
+      "vertices": 96
+    },
+    {
+      "name": "Headlight_Housing_L",
+      "proposed_role": "Light",
+      "vertices": 96
+    },
+    {
+      "name": "Headlight_Housing_R",
+      "proposed_role": "Light",
+      "vertices": 96
+    },
+    {
+      "name": "Headlight_L",
+      "proposed_role": "Light",
+      "vertices": 96
+    },
+    {
+      "name": "Headlight_R",
+      "proposed_role": "Light",
+      "vertices": 96
+    },
+    {
+      "name": "Mirror_L",
+      "proposed_role": "Trim",
+      "vertices": 96
+    },
+    {
+      "name": "Mirror_R",
+      "proposed_role": "Trim",
+      "vertices": 96
+    },
+    {
+      "name": "MirrorGlass_L",
+      "proposed_role": "Trim",
+      "vertices": 96
+    },
+    {
+      "name": "MirrorGlass_R",
+      "proposed_role": "Trim",
+      "vertices": 96
+    },
+    {
+      "name": "MirrorStem_L",
+      "proposed_role": "Trim",
+      "vertices": 32
+    },
+    {
+      "name": "MirrorStem_R",
+      "proposed_role": "Trim",
+      "vertices": 32
+    },
+    {
+      "name": "RearPlate",
+      "proposed_role": "Trim",
+      "vertices": 96
+    },
+    {
+      "name": "Suspension_Axle_Front",
+      "proposed_role": "Underbody",
+      "vertices": 32
+    },
+    {
+      "name": "Suspension_Axle_Rear",
+      "proposed_role": "Underbody",
+      "vertices": 32
+    },
+    {
+      "name": "Suspension_Differential_Front",
+      "proposed_role": "Underbody",
+      "vertices": 182
+    },
+    {
+      "name": "Suspension_Differential_Rear",
+      "proposed_role": "Underbody",
+      "vertices": 182
+    },
+    {
+      "name": "Suspension_Shock_Front_-1",
+      "proposed_role": "Underbody",
+      "vertices": 32
+    },
+    {
+      "name": "Suspension_Shock_Front_1",
+      "proposed_role": "Underbody",
+      "vertices": 32
+    },
+    {
+      "name": "Suspension_Shock_Rear_-1",
+      "proposed_role": "Underbody",
+      "vertices": 32
+    },
+    {
+      "name": "Suspension_Shock_Rear_1",
+      "proposed_role": "Underbody",
+      "vertices": 32
+    },
+    {
+      "name": "Tailgate",
+      "proposed_role": "Body",
+      "vertices": 96
+    },
+    {
+      "name": "TailgateHandle",
+      "proposed_role": "Trim",
+      "vertices": 96
+    },
+    {
+      "name": "Taillight_-1",
+      "proposed_role": "Light",
+      "vertices": 96
+    },
+    {
+      "name": "Taillight_-1.001",
+      "proposed_role": "Light",
+      "vertices": 96
+    },
+    {
+      "name": "Taillight_-1.002",
+      "proposed_role": "Light",
+      "vertices": 96
+    },
+    {
+      "name": "Taillight_-1.003",
+      "proposed_role": "Light",
+      "vertices": 96
+    },
+    {
+      "name": "Taillight_1",
+      "proposed_role": "Light",
+      "vertices": 96
+    },
+    {
+      "name": "Taillight_1.001",
+      "proposed_role": "Light",
+      "vertices": 96
+    },
+    {
+      "name": "Taillight_1.002",
+      "proposed_role": "Light",
+      "vertices": 96
+    },
+    {
+      "name": "Taillight_1.003",
+      "proposed_role": "Light",
+      "vertices": 96
+    },
+    {
+      "name": "Underbody_CabFloor",
+      "proposed_role": "Underbody",
+      "vertices": 96
+    },
+    {
+      "name": "Underbody_Frame_-1",
+      "proposed_role": "Underbody",
+      "vertices": 96
+    },
+    {
+      "name": "Underbody_Frame_1",
+      "proposed_role": "Underbody",
+      "vertices": 96
+    },
+    {
+      "name": "Wheel_FL",
+      "proposed_role": "Wheel",
+      "vertices": 2128
+    },
+    {
+      "name": "Wheel_FR",
+      "proposed_role": "Wheel",
+      "vertices": 2128
+    },
+    {
+      "name": "Wheel_RL",
+      "proposed_role": "Wheel",
+      "vertices": 2128
+    },
+    {
+      "name": "Wheel_RR",
+      "proposed_role": "Wheel",
+      "vertices": 2128
+    }
+  ],
+  "production_asset_qa": "NOT RUN - Stage A topology only",
+  "unity_import": "NOT RUN",
+  "destruction_tests": "NOT RUN",
+  "production_manifest_written": false,
+  "runtime_sockets_written": false,
+  "front_arch_bottom_at_axle_m": 0.9849927425384521,
+  "front_tire_to_arch_gap_m": 0.14388668537139893
+}

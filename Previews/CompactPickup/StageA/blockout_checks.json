@@ -1,0 +1,38 @@
+{
+  "stage": "A only",
+  "checks": {
+    "four_unique_wheel_meshes": true,
+    "wheel_origins_within_3cm": true,
+    "finite_vertex_coordinates": true,
+    "explicit_proposed_roles_for_all_meshes": true,
+    "uv_layers_present": true,
+    "open_bed_center_hits_liner_below_rail": true,
+    "cab_bed_gap_open_above_chassis": true,
+    "hood_plan_width_monotone_no_hourglass": true,
+    "tire_ground_error_under_5mm": true,
+    "front_tire_air_gap_over_10cm": true,
+    "grille_within_body_width": true,
+    "all_nine_expected_renders_exist": true
+  },
+  "passed": 12,
+  "total": 12,
+  "bed_center_ray": {
+    "hit": true,
+    "object": "BedLiner_Ribs",
+    "height_m": 0.919999897480011
+  },
+  "cab_gap_ray": {
+    "hit": true,
+    "object": "StudioFloor",
+    "height_m": -0.004999999888241291
+  },
+  "hood_width_range_m": [
+    1.8700000047683716,
+    1.940000057220459
+  ],
+  "front_tire_air_gap_m": 0.14388668537139893,
+  "source_blend_sha256": "41cc87bad47daf4910516c492aed14565adc0e4db027c7a2a7ca7ec67e08b69a",
+  "production_asset_qa": "NOT RUN",
+  "unity_import": "NOT RUN",
+  "destruction_tests": "NOT RUN"
+}
