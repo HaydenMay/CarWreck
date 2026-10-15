@@ -1,7 +1,7 @@
 {
   "format": "carwreck.vehicle.v1",
   "id": "carwreck.compact_pickup",
-  "revision": 2,
+  "revision": 3,
   "displayName": "Compact Pickup",
   "model": "Assets/Vehicles/CompactPickup/Models/CompactPickup.fbx",
   "palette": "Assets/Vehicles/CompactPickup/palette.json",

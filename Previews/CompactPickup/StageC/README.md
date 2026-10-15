@@ -1,3 +1,5 @@
+**Latest focused extension: [Revision 2 report and images](Revision2/README.md). Mandatory failures remain; shared-engine design review required.**
+
 # Compact Pickup — Checkpoint C
 
 **Review package; NOT ACCEPTED.** Mandatory adaptive-contact coverage, part-fold criteria and damaged-lamp appearance still fail. Browser loading, impacts, 50-shot Chaos and repair checks pass. No merge or shared destruction-engine changes have been made.

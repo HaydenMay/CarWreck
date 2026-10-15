@@ -96,11 +96,13 @@ def refine_small_surfaces():
         else:
             remove=[f for f in bm.faces if f.normal.z<-.5 and f.calc_center_median().z<1.30]
         bmesh.ops.delete(bm,geom=remove,context='FACES'); bm.to_mesh(ob.data); bm.free(); ob.data.update()
-    # Broaden the lens corner radius; retain the approved visible depth and reflector.
+    # Keep the visible lens depth and reflector; inset the tall indicators 22 mm into the nose.
+    # Their former outer edge lay beyond the leading face of the standard sled and remained as a fin.
+    # This asset-only correction is 1.1% of body width; functional QA thresholds are unchanged.
     for side in (-1,1):
         name='FrontIndicator_'+('L' if side<0 else 'R'); old=bpy.data.objects[name]
         A.PARTS.remove(old); bpy.data.objects.remove(old,do_unlink=True)
-        mesh=B.Mesh(); mesh.box((side*.934,2.273,1.016),(.060,.057,.267),'Amber',.014,.009)
+        mesh=B.Mesh(); mesh.box((side*(.934-.022),2.273,1.016),(.060,.057,.267),'Amber',.014,.009)
         mesh.object(name,'Light')
     for name in ('FrontIndicator_L','FrontIndicator_R','Headlight_L','Headlight_R'):
         ob=bpy.data.objects[name]; bm=bmesh.new(); bm.from_mesh(ob.data)
@@ -137,19 +139,19 @@ def export(root,out,g):
         'expected':{'dimensionsM':[g['bounds']['max'][i]-g['bounds']['min'][i] for i in range(3)],
                     'wheels':[{'name':n,'position':p} for n,p in g['wheel_origins'].items()]},
         'sockets':{k:sockets[k] for k in ('coordinates','runtime_ready','groups')}}
-    manifest['revision']=2
+    manifest['revision']=3
     write(asset/'vehicle.json',manifest)
 
 
 def main():
     argv=sys.argv[sys.argv.index('--')+1:]; parser=argparse.ArgumentParser()
     parser.add_argument('root',type=Path); parser.add_argument('--render',action='store_true')
-    parser.add_argument('--views',nargs='+'); parser.add_argument('--samples',type=int,default=32)
+    parser.add_argument('--out-dir',default='Previews/CompactPickup/StageC'); parser.add_argument('--views',nargs='+'); parser.add_argument('--samples',type=int,default=32)
     args=parser.parse_args(argv); root=args.root.resolve(); protect(root)
-    out=root/'Previews/CompactPickup/StageC'; out.mkdir(parents=True,exist_ok=True)
+    out=root/args.out_dir; out.mkdir(parents=True,exist_ok=True)
     bpy.ops.wm.open_mainfile(filepath=str(root/'Blender/CompactPickup_StageB.blend'))
     approved=signatures([o for o in bpy.data.objects if o.type=='MESH' and 'engine_role_proposal' in o])
-    corrections={'Body_Hood':.005,'Wipers':.018,'BedRail_Rear':.020,'FrontIndicator_L':.005,'FrontIndicator_R':.005,'Headlight_L':.005,'Headlight_R':.005}
+    corrections={'Body_Hood':.005,'Wipers':.018,'BedRail_Rear':.020,'FrontIndicator_L':.025,'FrontIndicator_R':.025,'Headlight_L':.005,'Headlight_R':.005}
     approved_points={o.name:[list(o.matrix_world@v.co) for v in o.data.vertices] for o in bpy.data.objects if o.name in corrections}
     bpy.ops.wm.read_factory_settings(use_empty=True); A.PARTS.clear(); A.MATS.clear()
     A.ROOT=bpy.data.objects.new('CompactPickup',None); bpy.context.scene.collection.objects.link(A.ROOT)
@@ -176,7 +178,7 @@ def main():
     path=root/'Blender/CompactPickup.blend'; bpy.ops.wm.save_as_mainfile(filepath=str(path))
     write(out/'approved_b_preservation.json',{'approved_revision':'156d2673008b63212f53db4b23784e5bc78c617e',
         'same_geometry_uv_material_slots_and_roles':current==approved,'unchanged_components':len(current)-len(changed),'changed_components':changed,
-        'topology_correction':'Even hood stations retain the approved contour. Hidden wiper backs, lower tailgate-cap skin and concealed rear lens caps removed. Indicator corner returns broadened; approved lens depth, paint, roles and vehicle footprint retained. The planar-lens experiment was rejected after visual review.',
+        'topology_correction':'Even hood stations retain the approved contour. Hidden wiper backs, lower tailgate-cap skin and concealed rear lens caps removed. Indicator returns retain their approved depth and are inset 22 mm to sit within the nose face; exposed corner geometry is otherwise unchanged. Paint, roles and vehicle footprint retained. The planar-lens experiment was rejected after visual review.',
         'surface_changes':surface_changes,'components':current,
         'final_blend_sha256':hashlib.sha256(path.read_bytes()).hexdigest(),'mass_kg':MASS_KG,
         'mass_note':'1350 kg is a game-design assumption for a compact 4x4 pickup, not a measured reference specification.'})

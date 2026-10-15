@@ -1,0 +1,3 @@
+[DamageLab] Vehicle manifest Assets/Vehicles/CompactPickup/vehicle.json (dry run: nothing written)
+  RESULT: PASS (configuration)
+  RESULT: PASS (configuration)

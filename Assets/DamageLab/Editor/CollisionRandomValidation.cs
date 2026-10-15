@@ -17,6 +17,9 @@ namespace DamageLab.EditorTools
     /// </summary>
     public static partial class CollisionPersistenceValidation
     {
+        [System.Serializable] public class ChaosReplayEvidence { public int vehicle, seed; public LocalImpact[] impacts; }
+        public static string ChaosEvidenceDirectory;
+
         struct ChaosStats { public double wallMs; public int steps; public float minQuietAtLaunch; public int pendingAtLaunch; public List<float> moved; }
 
         /// <summary>Run the lab's Chaos Run to completion the way the running lab does (physics, receiver, hitbox safe
@@ -96,7 +99,7 @@ namespace DamageLab.EditorTools
                 var other = RandomImpact.Plan(seed + 1, 0, opts, false);
                 bool differs = other.approachDeg != planA[0].approachDeg;
                 sb.AppendLine($"  1. Selections: generating shots 0-{count - 1} twice gives identical parameters {P(same)}; seed {seed + 1} gives a different sequence {P(differs)}");
-                sb.AppendLine($"     first shots: {string.Join(" | ", planA.Take(4).Select(s => $"{s.approachDeg:0.0}° {s.lateral:+0.00;-0.00} {(s.narrow ? "N" : "W")}"))}");
+                sb.AppendLine($"     first shots: {string.Join(" | ", planA.Take(4).Select(s => $"{s.approachDeg:0.0}Â° {s.lateral:+0.00;-0.00} {(s.narrow ? "N" : "W")}"))}");
                 sb.AppendLine($"     approach octants: {Octants(planA.Select(s => s.approachDeg))}; lateral range {planA.Min(s => s.lateral):+0.00;-0.00}..{planA.Max(s => s.lateral):+0.00;-0.00}; narrow {planA.Count(s => s.narrow)}/{count}");
                 allOk &= same && differs;
 
@@ -141,7 +144,7 @@ namespace DamageLab.EditorTools
                 sb.AppendLine($"     spread over the car (>= 6 regions, >= 8 boxes, >= 6 approach octants) {P(coverage)}");
                 allOk &= coverage;
                 foreach (var m in recs.Where(r => r.outcome != CollisionLabController.ShotOutcome.Impact).Take(6))
-                    sb.AppendLine($"     not an impact: shot {m.shot.shot} {m.shot.approachDeg:0.0}° lateral {m.shot.lateral:+0.00;-0.00} {(m.shot.narrow ? "narrow" : "wide")} -> {m.outcome}{(m.outcome == CollisionLabController.ShotOutcome.ContactOnly ? $" (strength {m.strength * 100f:0}, {m.region})" : "")}, contact predicted {m.predictedContact}");
+                    sb.AppendLine($"     not an impact: shot {m.shot.shot} {m.shot.approachDeg:0.0}Â° lateral {m.shot.lateral:+0.00;-0.00} {(m.shot.narrow ? "narrow" : "wide")} -> {m.outcome}{(m.outcome == CollisionLabController.ShotOutcome.ContactOnly ? $" (strength {m.strength * 100f:0}, {m.region})" : "")}, contact predicted {m.predictedContact}");
 
                 // Saturation: regions hit several times move less each time.
                 var byBox = new Dictionary<string, List<float>>();
@@ -229,12 +232,22 @@ namespace DamageLab.EditorTools
                 sb.AppendLine($"     physics inputs between the two runs: {inputs}");
                 // The deformation-repeatability check proper: perturb every recorded impactor by 0.1 mm and replay
                 // (footprints re-resolved on the replayed surface). The pre-fix crush function amplified this to 100s of mm.
+                string evidence = ChaosEvidenceDirectory;
+                if (!string.IsNullOrEmpty(evidence))
+                {
+                    System.IO.Directory.CreateDirectory(evidence);
+                    System.IO.File.WriteAllText(System.IO.Path.Combine(evidence, $"vehicle{vehicle}_seed{seed}_recorded.json"),
+                        JsonUtility.ToJson(new ChaosReplayEvidence { vehicle = vehicle, seed = seed, impacts = recorded.ToArray() }, true));
+                }
                 var refRe = new List<List<Vector3[]>>();
                 ReplayImpacts(recorded, true, Vector3.zero, null, refRe, null, out _);
                 float worstShift = 0f;
                 foreach (var shift in new[] { new Vector3(1e-4f, 0f, 0f), new Vector3(0f, 0f, 1e-4f) })
                 {
-                    var dB = ReplayImpacts(recorded, true, shift, refRe, null, null, out _);
+                    var dB = ReplayImpacts(recorded, true, shift, refRe, null, null, out var worstParts);
+                    if (!string.IsNullOrEmpty(evidence))
+                        System.IO.File.WriteAllText(System.IO.Path.Combine(evidence, $"vehicle{vehicle}_shift{(shift.x > 0 ? "x" : "z")}.txt"),
+                            Summ(dB, worstParts) + "\n" + string.Join("\n", dB.Select((d, k) => $"{k + 1}: {d * 1000f:F6} mm {(worstParts[k] >= 0 ? filters[worstParts[k]].name : "exact")}")));
                     worstShift = Mathf.Max(worstShift, dB.Max());
                 }
                 sb.AppendLine($"     0.1 mm perturbation of every one of the {recorded.Count} impactors (replayed): worst mesh difference {worstShift * 1000f:0.0} mm {P(worstShift < 0.02f)} (no amplification regression; pre-fix this was 100s of mm)");
