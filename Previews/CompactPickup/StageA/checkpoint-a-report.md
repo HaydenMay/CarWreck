@@ -1,6 +1,7 @@
 # Compact Pickup — Checkpoint A
 
-**Initial blockout; approval pending.** Branch: `feature/vehicle-compact-pickup`,
+**Initial blockout; approved by the user.** Approved revision: `f230c5a`; image/source
+hashes: `../approved_checkpoint_a.json`. Retain all approved images. Branch: `feature/vehicle-compact-pickup`,
 based on main at `f6cf3b3`. No merge. Source: `Blender/CompactPickup_StageA.blend`.
 
 ## Renders and reference evidence
@@ -156,4 +157,6 @@ wheel-hole placeholders, over-wide grille, narrow/tall lamps, excessive camera
 elevation and unequal reference display scaling. The remaining differences are
 listed above rather than presented as an exact match.
 
-**Checkpoint A: wait for user feedback/approval before detailed modeling.**
+**Checkpoint A approved.** Proceed to B while preserving the wheelbase, wheel positions,
+cab/bed relationship, raised stance and two-tone layout. The bed-length and track differences
+were explicitly accepted. No Unity integration until Checkpoint B approval.

@@ -1,0 +1,267 @@
+{
+  "stage": "B authoring only",
+  "materials": [
+    {
+      "name": "Pickup_Paint",
+      "color_linear": [
+        0.007194409146904945,
+        0.03968190774321556,
+        0.018478473648428917,
+        1.0
+      ],
+      "metallic": 0.18000000715255737,
+      "smoothness": 0.6399999856948853,
+      "emission_linear": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "emission_strength": 0.0,
+      "primary_srgb": [
+        0.08,
+        0.22,
+        0.145
+      ],
+      "secondary_srgb": [
+        0.78,
+        0.72,
+        0.6
+      ]
+    },
+    {
+      "name": "Pickup_Rubber",
+      "color_linear": [
+        0.006571403704583645,
+        0.007452868390828371,
+        0.007194409146904945,
+        1.0
+      ],
+      "metallic": 0.0,
+      "smoothness": 0.2200000286102295,
+      "emission_linear": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "emission_strength": 0.0
+    },
+    {
+      "name": "Pickup_Liner",
+      "color_linear": [
+        0.005422868765890598,
+        0.006571403704583645,
+        0.006096539553254843,
+        1.0
+      ],
+      "metallic": 0.029999999329447746,
+      "smoothness": 0.30000001192092896,
+      "emission_linear": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "emission_strength": 0.0
+    },
+    {
+      "name": "Pickup_Bumper",
+      "color_linear": [
+        0.027211781591176987,
+        0.0300741046667099,
+        0.027211781591176987,
+        1.0
+      ],
+      "metallic": 0.5,
+      "smoothness": 0.6200000047683716,
+      "emission_linear": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "emission_strength": 0.0
+    },
+    {
+      "name": "Pickup_Grille",
+      "color_linear": [
+        0.009264310821890831,
+        0.012510408647358418,
+        0.010816383175551891,
+        1.0
+      ],
+      "metallic": 0.20000000298023224,
+      "smoothness": 0.5,
+      "emission_linear": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "emission_strength": 0.0
+    },
+    {
+      "name": "Pickup_Mirror",
+      "color_linear": [
+        0.010022825561463833,
+        0.0134117491543293,
+        0.011645430698990822,
+        1.0
+      ],
+      "metallic": 0.10000000149011612,
+      "smoothness": 0.550000011920929,
+      "emission_linear": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "emission_strength": 0.0
+    },
+    {
+      "name": "Pickup_Steel",
+      "color_linear": [
+        0.34239163994789124,
+        0.3546920716762543,
+        0.295699805021286,
+        1.0
+      ],
+      "metallic": 0.699999988079071,
+      "smoothness": 0.6599999964237213,
+      "emission_linear": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "emission_strength": 0.0
+    },
+    {
+      "name": "Pickup_BrightEdge",
+      "color_linear": [
+        0.23302200436592102,
+        0.2632734179496765,
+        0.23302200436592102,
+        1.0
+      ],
+      "metallic": 0.699999988079071,
+      "smoothness": 0.7199999988079071,
+      "emission_linear": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "emission_strength": 0.0
+    },
+    {
+      "name": "Pickup_Glass",
+      "color_linear": [
+        0.006571403704583645,
+        0.0134117491543293,
+        0.010816383175551891,
+        1.0
+      ],
+      "metallic": 0.2800000011920929,
+      "smoothness": 0.8100000023841858,
+      "emission_linear": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "emission_strength": 0.0
+    },
+    {
+      "name": "Pickup_Headlight",
+      "color_linear": [
+        0.7484140992164612,
+        0.7677687406539917,
+        0.5870163440704346,
+        1.0
+      ],
+      "metallic": 0.05000000074505806,
+      "smoothness": 0.8999999985098839,
+      "emission_linear": [
+        0.7484140992164612,
+        0.7677687406539917,
+        0.5870163440704346,
+        1.0
+      ],
+      "emission_strength": 0.0
+    },
+    {
+      "name": "Pickup_Amber",
+      "color_linear": [
+        0.868899405002594,
+        0.10653922706842422,
+        0.004400849808007479,
+        1.0
+      ],
+      "metallic": 0.10000000149011612,
+      "smoothness": 0.699999988079071,
+      "emission_linear": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "emission_strength": 0.0
+    },
+    {
+      "name": "Pickup_Red",
+      "color_linear": [
+        0.34239163994789124,
+        0.0027089782524853945,
+        0.001934984466060996,
+        1.0
+      ],
+      "metallic": 0.10000000149011612,
+      "smoothness": 0.699999988079071,
+      "emission_linear": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "emission_strength": 0.0
+    },
+    {
+      "name": "Pickup_Chassis",
+      "color_linear": [
+        0.0134117491543293,
+        0.01633814536035061,
+        0.014349875040352345,
+        1.0
+      ],
+      "metallic": 0.44999998807907104,
+      "smoothness": 0.44999998807907104,
+      "emission_linear": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "emission_strength": 0.0
+    },
+    {
+      "name": "Pickup_Seal",
+      "color_linear": [
+        0.001934984466060996,
+        0.0027089782524853945,
+        0.0021671827416867018,
+        1.0
+      ],
+      "metallic": 0.0,
+      "smoothness": 0.2200000286102295,
+      "emission_linear": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "emission_strength": 0.0
+    }
+  ]
+}

@@ -1,6 +1,10 @@
 # Compact Pickup — Checkpoint A
 
-Initial blockout, awaiting feedback. No detailed-model approval or merge has occurred.
+**Approved by the user.** Approved revision: `f230c5a` (images first published in `5aa9b95`).
+The protected image/source hashes are recorded in [the approval record](../approved_checkpoint_a.json).
+The user accepted the bed-length and track differences and requested that the wheelbase,
+cab/bed relationship, raised stance and green/cream layout remain unchanged in Stage B.
+No detailed-model approval or merge has occurred.
 
 Measured size: **4.722 m long × 1.940 m body width × 1.821 m high**,
 **2.950 m wheelbase**. Stage A spatial checks: **12/12 passed**.
@@ -36,6 +40,5 @@ side profile. Tread, suspension, liner and panel details remain blockout forms.
 [Hood / grille](stage_a_nose_top.png) · [Bed interior](stage_a_bed.png) ·
 [Suspension clearance](stage_a_clearance.png) · [Front](stage_a_front.png) · [Rear](stage_a_rear.png)
 
-These files remain available while Checkpoint A is pending. Once approved, the
-approved checkpoint images and comparisons will be kept for later review, including
-after completion and merge. Final cleanup removes only unapproved drafts.
+These approved checkpoint images and comparisons are retained for later review,
+including after completion and merge. Final cleanup removes only unapproved drafts.

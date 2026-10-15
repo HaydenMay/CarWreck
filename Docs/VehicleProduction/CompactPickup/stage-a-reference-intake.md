@@ -37,7 +37,7 @@ No permanent accessories, logos or badges. This task stops at Checkpoint A.
 - [x] Render front three-quarter, side, rear three-quarter, true top, plus inspection views.
 - [x] Compare the supplied references, measure mesh proportions, fix major discrepancies.
 - [x] Save evidence and a feature checklist for Checkpoint A.
-- [ ] User reviews Checkpoint A; await feedback before Stage B.
+- [x] User approved Checkpoint A; preserve approved proportions and images for Stage B.
 
 Reproduce the blockout and renders with:
 
