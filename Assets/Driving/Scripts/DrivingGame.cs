@@ -85,6 +85,18 @@ namespace CarWreck.Driving
         [Tooltip("A pending refit is applied after this long at the latest, however often the car is hit meanwhile.")]
         public float colliderMaxDelay = 1f;
 
+        [Header("Progressive crushing (how each dent is shown; the damage solve and physics are unchanged)")]
+        [Tooltip("Dents crush in over a short time instead of appearing in one frame. Off = instant dents (the arena before progressive crushing).")]
+        public bool progressiveCrush = true;
+        [Tooltip("Crush time (s) of a light dent.")]
+        public float crushTimeLight = 0.06f;
+        [Tooltip("Crush time (s) of the deepest dents.")]
+        public float crushTimeHeavy = 0.24f;
+        [Tooltip("Metal travel (m) that takes the heavy crush time; lighter dents take proportionally less (down to the light time).")]
+        public float crushHeavyTravel = 0.6f;
+        [Tooltip("How much later the metal deep behind the struck surface starts moving than the surface itself (fraction of the crush time).")]
+        [Range(0f, 0.5f)] public float crushStagger = 0.3f;
+
         /// <summary>One built vehicle (player or target).</summary>
         public class Slot
         {
@@ -165,6 +177,10 @@ namespace CarWreck.Driving
             Kill(rig.footprintDebug);
             Kill(rig.colliderDebug);
             rig.model.impactCapacityScale = crushCapacityScale;
+            rig.model.progressiveCrush = new DamageLab.Deformation.ProgressiveCrushSettings
+            {
+                enabled = progressiveCrush, minDuration = crushTimeLight, maxDuration = crushTimeHeavy, fullTravel = crushHeavyTravel, stagger = crushStagger,
+            };
             rig.model.Initialize();
             rig.hitbox.Setup();
             var slot = new Slot { def = def, rig = rig };
@@ -346,7 +362,9 @@ namespace CarWreck.Driving
         /// <summary>
         /// The arena's equivalent of the Collision Lab's safe point (CollisionLabController.AfterPhysicsStep): once a car has been quiet
         /// for <see cref="colliderSettleDelay"/> after a damaging hit (or <see cref="colliderMaxDelay"/> after the first of a burst), its shell is
-        /// refitted to the deformed mesh. Called by FixedUpdate, and by the edit-mode validation after each Physics.Simulate step.
+        /// refitted to the deformed mesh. With progressive crushing the refit also waits until the dent has finished crushing in, so the
+        /// shell never retracts ahead of the visible metal (the hard <see cref="colliderMaxDelay"/> cap still applies).
+        /// Called by FixedUpdate, and by the edit-mode validation after each Physics.Simulate step.
         /// </summary>
         public void AfterPhysicsStep(float dt)
         {
@@ -362,6 +380,7 @@ namespace CarWreck.Driving
             if (!hb.HasPending) { s.refitWait = s.refitAge = 0f; return; }
             s.refitWait += dt; s.refitAge += dt;
             if (s.refitWait < colliderSettleDelay && s.refitAge < colliderMaxDelay) return;
+            if (s.Model != null && s.Model.IsCrushing && s.refitAge < colliderMaxDelay) return;
             hb.ApplyPending();
             s.refitWait = s.refitAge = 0f;
             s.refits++;
@@ -509,6 +528,8 @@ namespace CarWreck.Driving
               .Append(",\"mode\":").Append((int)targetMode).Append(",\"tspeedSet\":").Append(targetSpeedKmh.ToString("0", ci)).Append(",\"tdrv\":\"").Append(Target.driver != null ? Target.driver.Current.ToString() : "-").Append('"')
               .Append(",\"enemy\":\"").Append(Target.enemy != null ? Target.enemy.Current.ToString() : "-").Append("\",\"edist\":").Append(Target.enemy != null ? Target.enemy.DistanceToPlayer.ToString("0", ci) : "0").Append(",\"ehits\":").Append(Target.enemy != null ? Target.enemy.HitsLanded : 0).Append(",\"estuck\":").Append(Target.enemy != null ? Target.enemy.RecoveriesTriggered : 0)
               .Append(",\"prefits\":").Append(Player.refits).Append(",\"trefits\":").Append(Target.refits).Append(",\"pshell\":").Append(ShellRetraction(Player).ToString("0.000", ci)).Append(",\"tshell\":").Append(ShellRetraction(Target).ToString("0.000", ci))
+              .Append(",\"pcrushes\":").Append(Player.Model.CrushStarts).Append(",\"tcrushes\":").Append(Target.Model.CrushStarts)
+              .Append(",\"pcrushMs\":").Append(Player.Model.WorstCrushFrameMilliseconds.ToString("0.00", ci)).Append(",\"tcrushMs\":").Append(Target.Model.WorstCrushFrameMilliseconds.ToString("0.00", ci))
               .Append(",\"vehicle\":\"").Append(PlayerName).Append("\",\"target\":\"").Append(TargetName).Append('"')
               .Append(",\"speedKmh\":").Append(SpeedKmh.ToString("0.0", ci))
               .Append(",\"fwdKmh\":").Append((Player.controller.ForwardSpeed * 3.6f).ToString("0.0", ci))

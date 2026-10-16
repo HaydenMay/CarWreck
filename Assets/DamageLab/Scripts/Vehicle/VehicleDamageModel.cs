@@ -45,6 +45,12 @@ namespace DamageLab.Vehicle
                  "Read when the model is initialized.")]
         public float impactCapacityScale = 1f;
 
+        [Header("Progressive crushing")]
+        [Tooltip("How localized impacts are shown: off = the dent appears in one frame; on = it crushes in over a short time. Display only " +
+                 "(the solve, the logical deformed state and physics are unchanged). Runs in play mode; edit-mode tools see instant dents " +
+                 "unless ProgressiveInEditMode is set and they call AdvanceCrush.")]
+        public ProgressiveCrushSettings progressiveCrush = new ProgressiveCrushSettings();
+
         [Header("Debug")]
         public Material wireframeMaterial;
         [SerializeField] bool wireframe;
@@ -90,6 +96,9 @@ namespace DamageLab.Vehicle
         void Update()
         {
             if (!IsInitialized) return;
+            // A frame longer than MaxCrushFrameStep (the impact solve's own hitch, a browser stall) advances the crush by at most that
+            // much, so the hitch cannot swallow the start of the crush. At 30 fps and above the crush follows elapsed game time exactly.
+            if (crushing.Count > 0) AdvanceCrush(Mathf.Min(Time.deltaTime, MaxCrushFrameStep));
             float t = responseSharpness <= 0f ? 1f : 1f - Mathf.Exp(-responseSharpness * Time.unscaledDeltaTime);
             for (int d = 0; d < DamageDirections.Count; d++)
             {
@@ -251,7 +260,7 @@ namespace DamageLab.Vehicle
             impactWatch.Restart();
             if (IsInitialized) AccumulateImpact(impact);
             LastAccumulateMilliseconds = (float)impactWatch.Elapsed.TotalMilliseconds;
-            OnImpactsChanged();
+            OnImpactsChanged(true);
             return true;
         }
 
@@ -292,6 +301,7 @@ namespace DamageLab.Vehicle
             if (impacts.Count == 0 && mergedImpacts == 0) return;
             mergedImpacts = 0;
             savedImpactSums = null;
+            WorstCrushFrameMilliseconds = 0f;
             impacts.Clear();
             impactField?.Clear();
             foreach (var p in parts) p.ClearImpacts();
@@ -325,11 +335,94 @@ namespace DamageLab.Vehicle
         public float LastResolveMilliseconds { get; private set; }
         public float LastAccumulateMilliseconds { get; private set; }
 
-        void OnImpactsChanged()
+        void OnImpactsChanged(bool added = false)
         {
-            // Impacts appear at once (no easing), so rebuild now rather than next frame.
-            if (IsInitialized) ApplyDeformation();
+            // The new state is solved now rather than next frame. A new impact is shown as a progressive crush when that is enabled;
+            // clearing the impacts (repair / reset) is always immediate.
+            if (IsInitialized) ApplyDeformation(added);
             ImpactsChanged?.Invoke();
+        }
+
+        // ------------------------------------------------------------------ progressive crushing (display)
+
+        /// <summary>Edit-mode tools (Physics.Simulate, no Update) see instant dents unless they set this and call <see cref="AdvanceCrush"/>.</summary>
+        public static bool ProgressiveInEditMode;
+        /// <summary>Longest frame (s) the crush advances by in one Update.</summary>
+        public const float MaxCrushFrameStep = 1f / 30f;
+        /// <summary>The stagger depth is the crush's own travel, but never shallower than this (m).</summary>
+        const float MinStaggerDepth = 0.15f;
+
+        readonly List<DeformablePart> crushing = new List<DeformablePart>();
+        readonly List<DeformablePart> rebuiltNow = new List<DeformablePart>();
+        readonly Stopwatch crushWatch = new Stopwatch();
+        Vector3 crushPoint, crushDirection;
+        float crushElapsed, crushInvDepth;
+
+        bool ProgressiveActive => progressiveCrush != null && progressiveCrush.enabled && (Application.isPlaying || ProgressiveInEditMode);
+        /// <summary>True while a dent is still being shown crushing in (the logical state is already final).</summary>
+        public bool IsCrushing => crushing.Count > 0;
+        /// <summary>Length (s) of the current or last crush.</summary>
+        public float CrushDuration { get; private set; }
+        /// <summary>Time fraction (0..1) of the current crush; 1 when none is running.</summary>
+        public float CrushProgress => crushing.Count > 0 ? Mathf.Clamp01(crushElapsed / CrushDuration) : 1f;
+        /// <summary>Largest vertex travel (m) of the current or last crush.</summary>
+        public float CrushTravel { get; private set; }
+        /// <summary>Crushes started (a hit during a running crush restarts it from what is shown; counted again).</summary>
+        public int CrushStarts { get; private set; }
+        /// <summary>Main-thread time of the last <see cref="AdvanceCrush"/> call (ms), and the vertices it updated.</summary>
+        public float LastCrushFrameMilliseconds { get; private set; }
+        public int LastCrushFrameVertices { get; private set; }
+        /// <summary>Slowest <see cref="AdvanceCrush"/> call since the impacts were last cleared (ms).</summary>
+        public float WorstCrushFrameMilliseconds { get; private set; }
+
+        /// <summary>Advance the displayed crush by <paramref name="dt"/> seconds (Update does this in play mode). At the end the mesh is
+        /// exactly the solved state.</summary>
+        public void AdvanceCrush(float dt)
+        {
+            if (crushing.Count == 0) return;
+            crushWatch.Restart();
+            crushElapsed += Mathf.Max(0f, dt);
+            int verts = 0;
+            if (crushElapsed >= CrushDuration)
+            {
+                foreach (var p in crushing) { verts += p.VertexCount; p.FinishRamp(); }
+                crushing.Clear();
+            }
+            else
+            {
+                float t = crushElapsed / CrushDuration;
+                foreach (var p in crushing) { verts += p.RampVertexCount; p.ShowRamp(t, crushPoint, crushDirection, crushInvDepth, progressiveCrush.stagger); }
+            }
+            crushWatch.Stop();
+            LastCrushFrameMilliseconds = (float)crushWatch.Elapsed.TotalMilliseconds;
+            LastCrushFrameVertices = verts;
+            WorstCrushFrameMilliseconds = Mathf.Max(WorstCrushFrameMilliseconds, LastCrushFrameMilliseconds);
+        }
+
+        /// <summary>Show the solved state now (ends a running crush).</summary>
+        public void CompleteCrush() => AdvanceCrush(float.PositiveInfinity);
+
+        /// <summary>
+        /// After a progressive rebuild: one clock for the whole car. Parts still travelling from an earlier hit restart from what they show
+        /// now, so nothing jumps back and every part heads for the newest solved state. The length follows the largest travel.
+        /// </summary>
+        void StartCrush()
+        {
+            foreach (var p in crushing) if (!rebuiltNow.Contains(p)) p.RestartRamp();
+            crushing.RemoveAll(p => !p.Ramping);
+            foreach (var p in rebuiltNow) if (p.Ramping && !crushing.Contains(p)) crushing.Add(p);
+            if (crushing.Count == 0) return;
+            float travel = 0f;
+            foreach (var p in crushing) travel = Mathf.Max(travel, p.RampTravel);
+            CrushTravel = travel;
+            CrushDuration = progressiveCrush.DurationFor(travel);
+            crushElapsed = 0f;
+            crushInvDepth = 1f / Mathf.Max(MinStaggerDepth, travel);
+            // Stagger frame: the newest impact (its point on the original surface, pushing into the car).
+            var im = impacts[impacts.Count - 1];
+            crushPoint = im.point;
+            crushDirection = im.direction.sqrMagnitude > 1e-8f ? im.direction.normalized : -im.normal.normalized;
+            CrushStarts++;
         }
 
         public bool IsDamaged
@@ -498,6 +591,7 @@ namespace DamageLab.Vehicle
             rigidWireframes.Clear();
             fields = null;
             impactField = null;
+            crushing.Clear();
             IsInitialized = false;
         }
 
@@ -539,7 +633,7 @@ namespace DamageLab.Vehicle
 
         // ------------------------------------------------------------------ deformation
 
-        void ApplyDeformation()
+        void ApplyDeformation(bool progressive = false)
         {
             dirty = false;
             if (!IsInitialized) return;
@@ -551,8 +645,13 @@ namespace DamageLab.Vehicle
             for (int d = 0; d < DamageDirections.Count; d++) if (applied[d] != lastApplied[d]) { slidersChanged = true; lastApplied[d] = applied[d]; }
             forceFullRebuild = false;
             int rebuilt = 0;
-            foreach (var p in parts) if (p.Apply(fields, states, roofStart, roofEnd, impactField, SkipUnchangedParts && !slidersChanged)) rebuilt++;
+            bool ramp = progressive && ProgressiveActive && impacts.Count > 0;
+            rebuiltNow.Clear();
+            foreach (var p in parts)
+                if (p.Apply(fields, states, roofStart, roofEnd, impactField, SkipUnchangedParts && !slidersChanged, ramp)) { rebuilt++; rebuiltNow.Add(p); }
             LastRebuiltParts = rebuilt;
+            if (ramp) StartCrush();
+            else crushing.RemoveAll(p => !p.Ramping);   // parts rebuilt immediately have ended their ramp
             foreach (var rp in rigidParts) rp.Apply(fields, states, roofStart, roofEnd);
             stopwatch.Stop();
             LastDeformMilliseconds = (float)stopwatch.Elapsed.TotalMilliseconds;
