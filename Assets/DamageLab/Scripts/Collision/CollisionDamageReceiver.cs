@@ -40,8 +40,8 @@ namespace DamageLab.CollisionTest
         [Header("Two deformable vehicles (off by default: the Collision Lab is unaffected)")]
         [Tooltip("The energy computed below is what the whole collision dissipates. When the other body is also a damageable vehicle (it has its own receiver) the two cars share it, so each applies only a fraction instead of both applying all of it. Against walls and other non-vehicles the car still takes all of it.")]
         public bool shareEnergyWithVehicles;
-        [Tooltip("Fraction of the dissipated energy this vehicle absorbs when sharing (0.5 = both cars equally soft).")]
-        [Range(0.05f, 1f)] public float sharedEnergyFraction = 0.5f;
+        [Tooltip("How soft this vehicle is when sharing: it absorbs softness / (softness + the other car's softness) of the dissipated energy. Equal values = half each; 1.25 against 0.8 = 61% / 39%.")]
+        [Range(0.2f, 5f)] public float softness = 1f;
 
         [Header("Event filtering")]
         [Tooltip("Seconds after an impact during which the same body cannot create another one.")]
@@ -206,7 +206,7 @@ namespace DamageLab.CollisionTest
             float mu = float.IsInfinity(mOther) && float.IsInfinity(mCar) ? body.mass
                      : float.IsInfinity(mOther) ? mCar : float.IsInfinity(mCar) ? mOther : mCar * mOther / (mCar + mOther);
             float energy = 0.5f * mu * vn * vn;
-            if (shareEnergyWithVehicles && other.TryGetComponent<CollisionDamageReceiver>(out _)) energy *= sharedEnergyFraction;
+            if (shareEnergyWithVehicles && other.TryGetComponent<CollisionDamageReceiver>(out var otherCar)) energy *= softness / (softness + otherCar.softness);
             float strength = energy <= energyThreshold ? 0f : 1f - Mathf.Exp(-(energy - energyThreshold) / Mathf.Max(1f, energyScale));
 
             Vector3 dir = separating ? n : (n * vn + vt * tangentialDirectionWeight).normalized;

@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CarWreck.Driving.DriveProfile
   displayName: Muscle Car
   description: 'Powerful & balanced: strong launch, high top speed'
+  damageSoftness: 1
   acceleration: 13
   maxSpeed: 30
   reverseAcceleration: 11

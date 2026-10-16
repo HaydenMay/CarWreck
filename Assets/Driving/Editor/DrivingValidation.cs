@@ -209,6 +209,10 @@ namespace CarWreck.Driving.EditorTools
                         sb.AppendLine($"  {Names[p],-18}-> {Names[t],-18}{pr.closingSpeed * 3.6f,4:0} | {pEv,2} {pDamage,3} {pr.strength * 100f,3:0} {pr.deformMilliseconds,5:0.0} | " +
                                       $"{tEv,2} {tDamage,3} {tr.strength * 100f,3:0} {tr.deformMilliseconds,5:0.0} | {moved,5:0.0} m {yawD,4:0}° | +{pExtra}/+{tExtra} | +{pSecond}/+{tSecond} | {(pPersist > 0.05f && tPersist > 0.05f ? "yes" : "NO")} | {(resetOk ? "ok" : "NO")}");
                         string key = $"{Names[p]} -> {Names[t]}";
+                        float sp = game.profiles[p].damageSoftness, st = game.profiles[t].damageSoftness;
+                        float want = sp / (sp + st);                       // player's share of the dissipated energy
+                        Check($"{Names[p]} -> {Names[t]}: softer car takes the stronger hit", Mathf.Approximately(sp, st) ? Mathf.Abs(pr.strength - tr.strength) < 0.02f : (sp > st) == (pr.strength > tr.strength),
+                              $"softness {sp:0.00} vs {st:0.00} (player takes {want * 100f:0}% of the energy): strength {pr.strength * 100f:0}% vs {tr.strength * 100f:0}%");
                         Check($"{key}: both vehicles damaged and target pushed", both && (moved > 0.3f || yawD > 3f), $"player impacts {pDamage}, target impacts {tDamage}, target moved {moved:0.0} m / yawed {yawD:0}°");
                         Check($"{key}: damage persists and reset restores both", pPersist > 0.05f && tPersist > 0.05f && resetOk, $"max displacement after 1 s: player {pPersist:0.00} m, target {tPersist:0.00} m; reset ok {resetOk}");
                     }

@@ -136,6 +136,7 @@ namespace CarWreck.Driving
             receiver.energyThreshold = damageEnergyThreshold;
             receiver.energyScale = damageEnergyScale;
             receiver.shareEnergyWithVehicles = shareEnergyBetweenVehicles;
+            receiver.softness = profiles[index].damageSoftness;
             slot.handler = r => OnImpact(slot, isPlayer, r);
             receiver.ImpactRegistered += slot.handler;
             Physics.SyncTransforms();
