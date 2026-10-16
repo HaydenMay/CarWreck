@@ -1,5 +1,7 @@
 # Milestone 3: first enemy driver
 
+> **Superseded in part by [Enemy AI V2](enemy-ai-v2.md)**: the enemy now has a combat loop (LineUp, Reposition, Charge), obstacle-aware approaches and driver profiles. The text below describes V1; V1 driving, the arena-wall check and the stuck recovery are unchanged.
+
 Branch `feature/enemy-driver` (built on `main` at `9c0ecb6`, which includes Opus's car-vs-car dent-width and high-speed crush work). Nothing in `Assets/DamageLab` was changed.
 Preview: https://haydenmay.github.io/CarWreck/ (build `20261016-0741-b062b23`).
 

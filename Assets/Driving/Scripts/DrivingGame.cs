@@ -43,14 +43,14 @@ namespace CarWreck.Driving
         public float enemySpeedKmh = 70f;
         [Tooltip("Seconds before the enemy starts moving after a start or reset.")]
         public float enemyStartDelay = 1.5f;
-        [Tooltip("Heading error (degrees) that gives the enemy full steering lock. Smaller = twitchier.")]
-        public float enemyFullLockAngle = 35f;
-        [Tooltip("Distance (m) inside which an aligned enemy commits to its attack line.")]
-        public float enemyAttackCommitDistance = 14f;
         [Tooltip("Seconds a stuck enemy reverses before pursuing again.")]
         public float enemyRecoverDuration = 1.3f;
-        [Tooltip("How slowly the enemy notices the player changing direction (s). 0 = perfect tracking; larger = easier to fool with a swerve.")]
-        public float enemyReactionTime = 0.4f;
+        [Tooltip("Driver personalities (aggression, skill) for the enemy: Brawler, Hunter, Cautious. Empty = built-in presets with the same numbers. The menu's DRIVER button and enemyProfileIndex pick one.")]
+        public DriverProfile[] driverProfiles;
+        [Tooltip("Which driver profile the enemy uses (index into driverProfiles).")]
+        public int enemyProfileIndex = 0;
+        [Tooltip("The enemy looks for obstacles and routes round them. Off = the V1 enemy (only the stuck recovery).")]
+        public bool enemyObstacleAwareness = true;
 
         [Header("Scene")]
         public ChaseCamera chaseCamera;
@@ -218,7 +218,7 @@ namespace CarWreck.Driving
                 var e = rig.root.AddComponent<EnemyDriver>();
                 e.receiver = receiver;
                 e.player = Player != null ? Player.Body : null;
-                e.startDelay = enemyStartDelay; e.fullLockAngle = enemyFullLockAngle; e.attackCommitDistance = enemyAttackCommitDistance; e.recoverDuration = enemyRecoverDuration; e.reactionTime = enemyReactionTime;
+                e.startDelay = enemyStartDelay; e.recoverDuration = enemyRecoverDuration; e.obstacleAwareness = enemyObstacleAwareness; e.measureCost = true; e.SetProfile(EnemyProfile);
                 e.Begin(enemySpeedKmh / 3.6f);
                 slot.enemy = e;
             }
@@ -308,6 +308,31 @@ namespace CarWreck.Driving
         }
 
         public void StepTargetSpeed(int direction) => SetTargetSpeedKmh(ActiveSpeedKmh + direction * targetSpeedStepKmh);
+
+        // ------------------------------------------------------------------ enemy driver profiles
+
+        DriverProfile[] presetProfiles;
+
+        /// <summary>The assigned profiles, or three built-in presets (Brawler, Hunter, Cautious) when none are assigned.</summary>
+        public DriverProfile[] DriverProfiles
+        {
+            get
+            {
+                if (driverProfiles != null && driverProfiles.Length > 0 && driverProfiles[0] != null) return driverProfiles;
+                if (presetProfiles == null) { presetProfiles = new DriverProfile[DriverProfile.PresetCount]; for (int i = 0; i < presetProfiles.Length; i++) presetProfiles[i] = DriverProfile.CreatePreset(i); }
+                return presetProfiles;
+            }
+        }
+
+        public DriverProfile EnemyProfile { get { var all = DriverProfiles; return all[Mathf.Clamp(enemyProfileIndex, 0, all.Length - 1)]; } }
+        public string EnemyProfileName => EnemyProfile.displayName;
+
+        /// <summary>Menu DRIVER button: next profile (Brawler, Hunter, Cautious, ...). Takes effect at once on a live enemy; a reset restarts it with the new numbers.</summary>
+        public void CycleEnemyProfile()
+        {
+            enemyProfileIndex = (Mathf.Clamp(enemyProfileIndex, 0, DriverProfiles.Length - 1) + 1) % DriverProfiles.Length;
+            if (Target != null && Target.enemy != null) Target.enemy.SetProfile(EnemyProfile);
+        }
 
         public string TargetModeLabel => targetMode == TargetMode.Parked ? "parked" : targetMode == TargetMode.Enemy ? $"ENEMY, top speed {enemySpeedKmh:0} km/h" : targetMode == TargetMode.SameDirection ? $"same direction, {targetSpeedKmh:0} km/h" : $"head-on, {targetSpeedKmh:0} km/h";
 
@@ -527,6 +552,7 @@ namespace CarWreck.Driving
             sb.Append("{\"scene\":\"drive\",\"menu\":").Append(MenuOpen ? "true" : "false")
               .Append(",\"mode\":").Append((int)targetMode).Append(",\"tspeedSet\":").Append(targetSpeedKmh.ToString("0", ci)).Append(",\"tdrv\":\"").Append(Target.driver != null ? Target.driver.Current.ToString() : "-").Append('"')
               .Append(",\"enemy\":\"").Append(Target.enemy != null ? Target.enemy.Current.ToString() : "-").Append("\",\"edist\":").Append(Target.enemy != null ? Target.enemy.DistanceToPlayer.ToString("0", ci) : "0").Append(",\"ehits\":").Append(Target.enemy != null ? Target.enemy.HitsLanded : 0).Append(",\"estuck\":").Append(Target.enemy != null ? Target.enemy.RecoveriesTriggered : 0)
+              .Append(",\"eprof\":\"").Append(Target.enemy != null ? Target.enemy.ProfileName : "-").Append("\",\"echarges\":").Append(Target.enemy != null ? Target.enemy.AttacksCommitted : 0).Append(",\"erepos\":").Append(Target.enemy != null ? Target.enemy.Repositions : 0).Append(",\"edetours\":").Append(Target.enemy != null ? Target.enemy.DetoursPlanned : 0).Append(",\"eobst\":").Append(Target.enemy != null ? Target.enemy.ObstacleHits : 0).Append(",\"edrvMs\":").Append(Target.enemy != null ? Target.enemy.WorstDriveMilliseconds.ToString("0.000", ci) : "0")
               .Append(",\"prefits\":").Append(Player.refits).Append(",\"trefits\":").Append(Target.refits).Append(",\"pshell\":").Append(ShellRetraction(Player).ToString("0.000", ci)).Append(",\"tshell\":").Append(ShellRetraction(Target).ToString("0.000", ci))
               .Append(",\"pcrushes\":").Append(Player.Model.CrushStarts).Append(",\"tcrushes\":").Append(Target.Model.CrushStarts)
               .Append(",\"pcrushMs\":").Append(Player.Model.WorstCrushFrameMilliseconds.ToString("0.00", ci)).Append(",\"tcrushMs\":").Append(Target.Model.WorstCrushFrameMilliseconds.ToString("0.00", ci))

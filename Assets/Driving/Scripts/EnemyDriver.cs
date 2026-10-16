@@ -4,61 +4,113 @@ using UnityEngine;
 namespace CarWreck.Driving
 {
     /// <summary>
-    /// The first enemy: a driver that tries to ram the player. It is not a homing missile and not a new vehicle system: it only supplies the
-    /// same three inputs a player has (steering, throttle/brake) to the car's own <see cref="ArcadeCarController"/>, so the enemy drives, slides,
-    /// collides and deforms exactly like the player's car (its transform is never written).
+    /// The enemy: a driver that tries to ram the player with force. It only supplies the same three inputs a player has (steering, throttle/brake) to the
+    /// car's own <see cref="ArcadeCarController"/>, so it drives, slides, collides and deforms exactly like the player's car (its transform is never written).
     ///
-    /// States:
-    ///   Waiting   brief pause after (re)start so the player can orient.
-    ///   Pursue    steer at where the player will be shortly (linear lead, capped) and drive at the desired speed. Eases off the throttle when the
-    ///             car is pointing far away from the player so it can turn instead of running wide.
-    ///   Commit    close, aligned and at speed: lock the attack direction and stop re-aiming. The player can dodge the locked line. Ends on
-    ///             impact, when the player has been passed, or when the commit time is up.
-    ///   Overshoot after a hit or a miss: keep rolling straight for a moment (the car "completes its movement"), then pursue again.
-    ///   Recover   stuck (throttle on, hardly moving) or nose-to-nose: brake, reverse for a moment while swinging the nose towards the player, then pursue.
-    /// A simple arena-edge check turns the car back towards the middle before it drives into a wall. A car that is flipped just sits there (no teleporting).
+    /// Enemy AI V2 keeps V1's driving, wall check and stuck recovery and adds a small combat loop on top:
+    ///   Waiting     brief pause after (re)start.
+    ///   Pursue      far away or the straight line is blocked: steer at where the player will be (detouring round obstacles), drive at the speed setting.
+    ///   LineUp      within range with a clear line: slow down a little, turn the nose onto the target and build speed (the visible "I am coming for you").
+    ///   Reposition  too close for a strong hit (e.g. tailgating at low speed): brake / back off and swing wide to make a run-up, then LineUp.
+    ///   Commit      the charge: heads for the locked line at full throttle with slow course corrections (dodgeable); ends on impact, a miss or the time limit.
+    ///   Overshoot   after a hit or a miss: keeps rolling roughly straight (avoiding walls and obstacles), then Pursue turns it round.
+    ///   Recover     stuck (throttle on, hardly moving): reverses while swinging the nose to the player (unchanged from V1; the same for every skill).
+    /// A <see cref="DriverProfile"/> (aggression, skill) decides how readily it attacks and how well it drives; the profile numbers are turned into the
+    /// working values in <see cref="ApplyProfile"/>. No NavMesh: obstacles are found with a few sphere casts and a one- or two-waypoint detour round the obstacle's outline.
+    /// All state is per driver (no statics), so several enemies can coexist.
     /// </summary>
     [RequireComponent(typeof(ArcadeCarController))]
     public class EnemyDriver : MonoBehaviour
     {
-        public enum State { Waiting, Pursue, Commit, Overshoot, Recover }
+        /// <summary>Centre-to-centre distance (m) at which two cars touch nose to nose, about.</summary>
+        const float ContactDistance = 4.8f;
 
-        [Header("Tuning (the few knobs that matter)")]
+        public enum State { Waiting, Pursue, LineUp, Reposition, Commit, Overshoot, Recover }
+
+        [Header("Driver")]
+        [Tooltip("Aggression and skill. Null = a middling driver (0.5 / 0.5).")]
+        public DriverProfile profile;
+        [Tooltip("Seed of the driver's few random choices (whether to back off). Restart() reseeds it, so a reset reproduces the same behaviour.")]
+        public int seed = 1;
+
+        [Header("Basics")]
         [Tooltip("Speed the enemy tries to hold (m/s). 19.4 = 70 km/h.")]
         public float desiredSpeed = 19.4f;
         [Tooltip("Seconds before the enemy starts moving after a (re)start.")]
         public float startDelay = 1.5f;
-        [Tooltip("Heading error (degrees) that gives full steering lock while pursuing. Smaller = twitchier / more aggressive turning.")]
-        public float fullLockAngle = 35f;
-        [Tooltip("Distance (m) inside which a well-aligned enemy commits to its attack line.")]
-        public float attackCommitDistance = 14f;
-        [Tooltip("How far ahead (s, capped) the enemy leads a moving player. 0 = aims at where the player is now.")]
-        public float leadTime = 0.6f;
         [Tooltip("How long (s) a stuck enemy reverses before pursuing again.")]
         public float recoverDuration = 1.3f;
-        [Tooltip("Reaction lag (s): the enemy sees the player's velocity through a low-pass filter this slow, so a sudden swerve fools its lead for a moment. 0 = perfect tracking.")]
-        public float reactionTime = 0.4f;
+
+        [Header("Obstacles")]
+        [Tooltip("Look for obstacles ahead and between the enemy and the player, and route round them. Off = V1 behaviour (only the stuck recovery).")]
+        public bool obstacleAwareness = true;
+        public LayerMask obstacleMask = ~0;
+        [Tooltip("Dynamic bodies at least this heavy (kg) count as obstacles (heavy blocks); lighter ones (crates) are driven through. Kinematic bodies always count.")]
+        public float obstacleMinMass = 300f;
+        [Tooltip("Extra room (m) left beside an obstacle's outline when detouring.")]
+        public float detourClearance = 2.6f;
 
         [Header("Fixed behaviour")]
-        public float commitAlignAngle = 25f;
-        public float maxCommitTime = 2.2f;
-        public float overshootTime = 0.6f;
+        public float maxCommitTime = 2.4f;
+        public float minCommitTime = 0.8f;
         public float stuckSpeed = 1.5f, stuckTime = 0.9f;
         public float arenaHalf = 70f, wallMargin = 7f;
+        [Tooltip("Longest time (s) a reposition lasts, however far the player is: the enemy never backs away for long.")]
+        public float repositionMaxTime = 2.2f;
+        [Tooltip("Longest time (s) a LineUp lasts before the enemy falls back to Pursue.")]
+        public float lineUpMaxTime = 5f;
+        [Tooltip("Planning / probing period (s): obstacle casts and attack evaluation run this often, not every frame.")]
+        public float decisionInterval = 0.12f;
+
+        // ------------------------------------------------------------------ values derived from the profile (see ApplyProfile)
+        [Header("Derived from the profile (read-only; tune the formulas in ApplyProfile)")]
+        public float aggression = 0.5f;
+        public float skill = 0.5f;
+        public float reactionTime, leadMax, predictionQuality, fullLockAngle, chargeSteerLimit, believedTurnRate;
+        public float alignTolerance, minChargeSpeed, chargeRange, minImpactSpeed, lineUpRange, minRunway, repositionChance, repositionCooldown, engageTimeout, chargeSpeedFactor, overshootTime, lookAheadScale, opportunityThreshold;
 
         public State Current { get; private set; } = State.Waiting;
+        /// <summary>Hits that damaged the enemy while it was hitting (or being hit by) the player.</summary>
         public int HitsLanded { get; private set; }
+        /// <summary>Damaging hits against anything that is not the player (walls, blocks, barriers).</summary>
+        public int ObstacleHits { get; private set; }
         public int RecoveriesTriggered { get; private set; }
         public int AttacksCommitted { get; private set; }
+        public int Repositions { get; private set; }
+        public int DetoursPlanned { get; private set; }
+        public int StateChanges { get; private set; }
+        /// <summary>Own forward speed (m/s) at the moment the latest charge began, and the closing speed (m/s) at the latest hit on the player.</summary>
+        public float LastChargeSpeed { get; private set; }
+        public float LastHitClosingSpeed { get; private set; }
         public float DistanceToPlayer { get; private set; }
+        public bool Detouring => wpIndex < wpCount;
+        public string ProfileName => profile != null ? profile.displayName : "Default";
         public Rigidbody player;
         public CollisionDamageReceiver receiver;
 
         ArcadeCarController controller;
         Rigidbody body;
-        float stateTime, stuckTimer, commitTimer, flippedTimer;
-        Vector3 commitDir;
+        System.Random rng;
+        float clock, stateTime, stuckTimer, commitTimer, flippedTimer, decisionTimer;
+        float lastAttackClock, repositionBlockedUntil, closeTimer, planTimer, detourAge;
+        float circleTimer, circleBlockedUntil;
+        float throttleOut;
+        bool repositionForCircling;
+        bool avoidBraking;
         Vector3 seenVelocity;
+        bool repositionBackOff;
+        float repositionSide;
+        Vector3 repositionPoint;
+        // cached probe results (refreshed every decisionInterval)
+        bool clearToTarget = true, forwardBlocked;
+        float forwardHitDistance = float.PositiveInfinity;
+        float avoidSteer;
+        // detour
+        readonly Vector3[] wp = new Vector3[2];
+        int wpCount, wpIndex;
+        float detourSide;
+        readonly RaycastHit[] hits = new RaycastHit[16];
+        readonly Collider[] overlaps = new Collider[32];
 
         void Awake()
         {
@@ -79,14 +131,65 @@ namespace CarWreck.Driving
             Restart();
         }
 
-        /// <summary>Back to the start state (the game places the car first).</summary>
+        /// <summary>Use a profile (null = default 0.5 / 0.5). Safe at any time; takes effect immediately.</summary>
+        public void SetProfile(DriverProfile p)
+        {
+            profile = p;
+            ApplyProfile();
+        }
+
+        /// <summary>
+        /// Turns aggression (a) and skill (s), both 0..1, into the working numbers. Aggression decides willingness: how good an opportunity must be, how short a
+        /// run-up is accepted, how often it backs off and for how long it waits before it stops being picky. Skill decides execution: reaction lag, prediction,
+        /// steering precision, how quickly a charge is corrected, how long it takes to turn round after a miss and how far ahead it sees obstacles.
+        /// Recovery and the stuck detector do not depend on either.
+        /// </summary>
+        public void ApplyProfile()
+        {
+            aggression = profile != null ? Mathf.Clamp01(profile.aggression) : 0.5f;
+            skill = profile != null ? Mathf.Clamp01(profile.skill) : 0.5f;
+            float a = aggression, s = skill;
+            // execution (skill)
+            reactionTime = Mathf.Lerp(0.6f, 0.25f, s);
+            predictionQuality = Mathf.Lerp(0.4f, 1f, s);       // fraction of the ideal lead actually applied
+            leadMax = 1.6f;                                      // s, before predictionQuality: about the time a charge takes to arrive
+            fullLockAngle = Mathf.Lerp(45f, 28f, s);             // degrees of heading error for full lock: lower = sharper, more precise steering
+            chargeSteerLimit = Mathf.Lerp(0.45f, 0.7f, s);       // share of full steering lock a committed charge may use (corrections during the run-in; never a lock-on)
+            overshootTime = Mathf.Lerp(1.0f, 0.55f, s);          // s rolling straight after a hit or miss before turning round
+            believedTurnRate = 0.55f * Mathf.Lerp(1.45f, 1f, s);   // rad/s the driver thinks the car can turn at speed (the car does about 0.55)
+            lookAheadScale = Mathf.Lerp(0.75f, 1.25f, s);        // obstacle probe length
+            // willingness (aggression)
+            alignTolerance = Mathf.Lerp(12f, 32f, a) * Mathf.Lerp(1f, 0.55f, s);   // degrees off the line at which a charge may start: eager drivers accept more, skilled ones line up properly first
+            minChargeSpeed = Mathf.Lerp(7f, 4f, a);              // m/s own speed needed to start a charge
+            minRunway = Mathf.Lerp(13f, 6f, a) + 3f * s;                  // shortest run-up (m) accepted without backing off
+            minImpactSpeed = Mathf.Lerp(10f, 6f, a) + 3f * s;              // m/s expected closing speed below which an attack is not worth it (unless impatient)
+            chargeRange = Mathf.Lerp(20f, 26f, a);               // charges start at most this far from the player
+            lineUpRange = chargeRange + 20f;
+            repositionChance = Mathf.Lerp(0.95f, 0.3f, a);       // chance to back off when too close for a strong hit
+            repositionCooldown = Mathf.Lerp(2f, 5.5f, a);        // s before it will back off again
+            engageTimeout = Mathf.Lerp(6f, 3f, a);            // s without an attack after which it stops being picky
+            chargeSpeedFactor = Mathf.Lerp(1.0f, 1.2f, a);       // charge speed relative to the speed setting
+            opportunityThreshold = Mathf.Lerp(0.6f, 0.15f, a);   // quality (0..1) an attack must reach
+        }
+
+        /// <summary>Back to the start state (the game places the car first). Clears every piece of combat state.</summary>
         public void Restart()
         {
             if (controller == null) Awake();
+            ApplyProfile();
+            rng = new System.Random(seed);
             Enter(State.Waiting);
+            StateChanges = 0;
             seenVelocity = player != null ? player.linearVelocity : Vector3.zero;
-            stuckTimer = flippedTimer = 0f;
-            HitsLanded = RecoveriesTriggered = AttacksCommitted = 0;
+            circleTimer = circleBlockedUntil = 0f;
+            throttleOut = 0f;
+            WorstDriveMilliseconds = 0f;
+            stuckTimer = flippedTimer = decisionTimer = closeTimer = planTimer = detourAge = 0f;
+            clock = 0f; lastAttackClock = 0f; repositionBlockedUntil = 0f;
+            HitsLanded = ObstacleHits = RecoveriesTriggered = AttacksCommitted = Repositions = DetoursPlanned = 0;
+            LastChargeSpeed = LastHitClosingSpeed = 0f;
+            ClearDetour();
+            clearToTarget = true; forwardBlocked = false; forwardHitDistance = float.PositiveInfinity; avoidSteer = 0f;
             controller.ResetState();
             controller.Throttle = 0f; controller.SteerInput = 0f;
         }
@@ -94,23 +197,163 @@ namespace CarWreck.Driving
         void OnImpact(CollisionDamageReceiver.Report r)
         {
             if (!r.applied) return;
-            HitsLanded++;
-            if (Current == State.Commit || Current == State.Pursue) Enter(State.Overshoot);
+            bool withPlayer = player != null && r.other == player.name;
+            if (withPlayer) { HitsLanded++; LastHitClosingSpeed = r.closingSpeed; lastAttackClock = clock; }
+            else ObstacleHits++;
+            if (Current == State.Commit || Current == State.Pursue || Current == State.LineUp) Enter(State.Overshoot);
         }
 
-        void Enter(State s) { Current = s; stateTime = 0f; }
+        void Enter(State s) { if (s != Current) StateChanges++; Current = s; stateTime = 0f; }
 
-        void Update() => Drive(Time.deltaTime);
+        /// <summary>Time the decisions (page report only): the slowest Drive call since the last Restart, in ms.</summary>
+        public bool measureCost;
+        public float WorstDriveMilliseconds { get; private set; }
+        readonly System.Diagnostics.Stopwatch costWatch = new System.Diagnostics.Stopwatch();
+
+        void Update()
+        {
+            if (!measureCost) { Drive(Time.deltaTime); return; }
+            costWatch.Restart();
+            Drive(Time.deltaTime);
+            costWatch.Stop();
+            WorstDriveMilliseconds = Mathf.Max(WorstDriveMilliseconds, (float)costWatch.Elapsed.TotalMilliseconds);
+        }
 
         static Vector3 Flat(Vector3 v) { v.y = 0f; return v; }
+
+        // ------------------------------------------------------------------ probes (sphere casts; no allocation)
+
+        bool IsObstacle(Collider c)
+        {
+            var rb = c.attachedRigidbody;
+            if (rb == null || rb == body) return false;                                    // ground and other static scenery: not an obstacle
+            if (rb.TryGetComponent<ArcadeCarController>(out _) || rb.TryGetComponent<CollisionDamageReceiver>(out _)) return false;   // cars are targets, not obstacles
+            return rb.isKinematic || rb.mass >= obstacleMinMass;
+        }
+
+        /// <summary>Nearest obstacle on a sphere cast from <paramref name="from"/> along the flat direction.</summary>
+        bool Cast(Vector3 from, Vector3 dir, float length, float radius, out RaycastHit best)
+        {
+            best = default;
+            if (length <= 0.01f) return false;
+            Vector3 origin = new Vector3(from.x, body.position.y + 0.6f, from.z);
+            int n = Physics.SphereCastNonAlloc(origin, radius, dir, hits, length, obstacleMask, QueryTriggerInteraction.Ignore);
+            float bd = float.MaxValue; bool found = false;
+            for (int i = 0; i < n; i++)
+            {
+                if (!IsObstacle(hits[i].collider)) continue;
+                if (hits[i].distance < bd) { bd = hits[i].distance; best = hits[i]; found = true; }
+            }
+            return found;
+        }
+
+        bool Clear(Vector3 a, Vector3 b, float radius)
+        {
+            Vector3 d = Flat(b - a); float len = d.magnitude;
+            if (len < 0.5f) return true;
+            return !Cast(a, d / len, len, radius, out _);
+        }
+
+        /// <summary>Distance (m) the car needs to stop from its current speed (plus a margin that grows with lower skill).</summary>
+        float StopDistance(float fwdSpeed)
+        {
+            float v = Mathf.Max(0f, fwdSpeed);
+            return v * v / (2f * 22f) + Mathf.Lerp(4.5f, 2.5f, skill);
+        }
+
+        /// <summary>Refresh the cached probes: line to the target, the way straight ahead, and the side to steer to if something is in the way.</summary>
+        void Probe(Vector3 pos, Vector3 fwd, float fwdSpeed, Vector3 aimPoint)
+        {
+            float look = Mathf.Clamp(Mathf.Abs(fwdSpeed) * 0.9f + 6f, 8f, 30f) * lookAheadScale;
+            forwardBlocked = false; forwardHitDistance = float.PositiveInfinity; avoidSteer = 0f;
+            if (fwdSpeed > -0.5f && Cast(pos, fwd, look, 1.0f, out var h))
+            {
+                forwardBlocked = true; forwardHitDistance = h.distance;
+                // steer towards the freer side (probes at +/-35 degrees)
+                Vector3 l = Quaternion.Euler(0f, -35f, 0f) * fwd, r = Quaternion.Euler(0f, 35f, 0f) * fwd;
+                float dl = Cast(pos, l, look, 1.0f, out var hl) ? hl.distance : look + 1f;
+                float dr = Cast(pos, r, look, 1.0f, out var hr) ? hr.distance : look + 1f;
+                avoidSteer = dr >= dl ? 1f : -1f;
+            }
+            clearToTarget = !obstacleAwareness || Clear(pos, aimPoint, 1.0f);
+        }
+
+        // ------------------------------------------------------------------ detours (one or two waypoints round an obstacle cluster's outline)
+
+        void ClearDetour() { wpCount = wpIndex = 0; detourAge = 0f; }
+
+        /// <summary>Plan waypoints that take the car round whatever blocks the line to <paramref name="target"/>. False when nothing blocks it or no route was found.</summary>
+        bool PlanDetour(Vector3 pos, Vector3 target)
+        {
+            Vector3 d = Flat(target - pos); float dist = d.magnitude;
+            if (dist < 3f || !Cast(pos, d / dist, dist, 1.0f, out var hit)) return false;
+            // The obstacle's outline: the blocking collider plus whatever touches it (a wall with wings is one obstacle), as a flat box.
+            Bounds cb = hit.collider.bounds;
+            for (int pass = 0; pass < 3; pass++)
+            {
+                int n = Physics.OverlapBoxNonAlloc(cb.center, cb.extents + Vector3.one * 3f, overlaps, Quaternion.identity, obstacleMask, QueryTriggerInteraction.Ignore);
+                for (int i = 0; i < n; i++)
+                    if (IsObstacle(overlaps[i]) && overlaps[i].bounds.size.magnitude < 40f) cb.Encapsulate(overlaps[i].bounds);
+            }
+            float m = detourClearance + 1f;
+            float x0 = cb.min.x - m, x1 = cb.max.x + m, z0 = cb.min.z - m, z1 = cb.max.z + m;
+            float lim = arenaHalf - 4f;
+            var corners = new Vector3[]
+            {
+                new Vector3(Mathf.Clamp(x0, -lim, lim), pos.y, Mathf.Clamp(z0, -lim, lim)), new Vector3(Mathf.Clamp(x1, -lim, lim), pos.y, Mathf.Clamp(z0, -lim, lim)),
+                new Vector3(Mathf.Clamp(x1, -lim, lim), pos.y, Mathf.Clamp(z1, -lim, lim)), new Vector3(Mathf.Clamp(x0, -lim, lim), pos.y, Mathf.Clamp(z1, -lim, lim)),
+            };
+            // Candidate routes: pos -> A -> B -> target (A == B for a single waypoint), cheapest first, the previous side slightly preferred.
+            for (int ai = 0; ai < 4; ai++)
+                for (int bi = 0; bi < 4; bi++)
+                {
+                    float c = Flat(corners[ai] - pos).magnitude + Flat(corners[bi] - corners[ai]).magnitude + Flat(target - corners[bi]).magnitude;
+                    if (detourSide != 0f && Mathf.Sign(Vector3.Cross(Flat(corners[ai] - pos), d).y) == detourSide) c *= 0.85f;
+                    routeCost[ai * 4 + bi] = c;
+                }
+            int bestA = -1, bestB = -1;
+            for (int tries = 0; tries < 6 && bestA < 0; tries++)
+            {
+                int pick = -1; float pc = float.MaxValue;
+                for (int k = 0; k < 16; k++) if (routeCost[k] < pc) { pc = routeCost[k]; pick = k; }
+                if (pick < 0) break;
+                routeCost[pick] = float.MaxValue;                       // tried
+                int ca = pick / 4, cb2 = pick % 4;
+                if (Clear(pos, corners[ca], 0.9f) && (ca == cb2 || Clear(corners[ca], corners[cb2], 0.9f)) && Clear(corners[cb2], target, 0.9f)) { bestA = ca; bestB = cb2; }
+            }
+            if (bestA < 0) return false;
+            wpCount = bestA == bestB ? 1 : 2; wpIndex = 0;
+            wp[0] = corners[bestA]; wp[1] = corners[bestB];
+            detourSide = Mathf.Sign(Vector3.Cross(Flat(wp[0] - pos), d).y);
+            detourAge = 0f;
+            DetoursPlanned++;
+            return true;
+        }
+
+        readonly float[] routeCost = new float[16];
+
+        /// <summary>The point to steer at: the next detour waypoint while one is active, else the (predicted) player position.</summary>
+        Vector3 SteerTarget(Vector3 pos, Vector3 fwd, Vector3 aimPoint)
+        {
+            while (wpIndex < wpCount)
+            {
+                Vector3 to = Flat(wp[wpIndex] - pos);
+                if (to.magnitude < 5f || (Vector3.Dot(to, fwd) < 0f && to.magnitude < 9f)) wpIndex++;
+                else return wp[wpIndex];
+            }
+            return aimPoint;
+        }
+
+        // ------------------------------------------------------------------ decisions
 
         /// <summary>One decision (public so the editor validation, which has no Update, can step it).</summary>
         public void Drive(float dt)
         {
             if (controller == null) Awake();
             if (player == null || dt <= 0f) return;
+            clock += dt;
             stateTime += dt;
-            seenVelocity = Vector3.Lerp(seenVelocity, player.linearVelocity, 1f - Mathf.Exp(-dt / Mathf.Max(0.02f, reactionTime)));   // imperfect eyes
+            seenVelocity = Vector3.Lerp(seenVelocity, player.linearVelocity, 1f - Mathf.Exp(-dt / Mathf.Max(0.02f, reactionTime)));   // imperfect eyes (more lag at low skill)
 
             Vector3 pos = body.position;
             Vector3 fwd = Flat(transform.forward).normalized;
@@ -118,12 +361,29 @@ namespace CarWreck.Driving
             Vector3 toPlayer = Flat(player.position - pos);
             float dist = toPlayer.magnitude;
             DistanceToPlayer = dist;
+            Vector3 dirToPlayer = dist > 0.01f ? toPlayer / dist : fwd;
+            float closing = Vector3.Dot(Flat(body.linearVelocity - player.linearVelocity), dirToPlayer);    // m/s the gap shrinks
 
             // A flipped car cannot drive: it sits (no teleporting out of it).
             flippedTimer = controller.IsFlipped ? flippedTimer + dt : 0f;
             if (flippedTimer > 0.5f) { controller.Throttle = 0f; controller.SteerInput = 0f; return; }
 
+            // Where the player will be shortly: capped linear lead scaled by prediction quality (low skill under-leads), never perfect.
+            float lead = Mathf.Min(leadMax, dist / Mathf.Max(8f, Mathf.Abs(fwdSpeed))) * predictionQuality;
+            Vector3 aimPoint = Flat(player.position + seenVelocity * lead);
+            Vector3 aimDir = Flat(aimPoint - pos);
+
+            decisionTimer -= dt;
+            if (decisionTimer <= 0f)
+            {
+                decisionTimer = decisionInterval;
+                Probe(pos, fwd, fwdSpeed, aimPoint);
+                UpdateDetour(pos, aimPoint);
+            }
+            if (detourAge >= 0f && Detouring) detourAge += dt;
+
             float throttle = 0f, steer = 0f;
+            avoidBraking = false;
             switch (Current)
             {
                 case State.Waiting:
@@ -131,27 +391,75 @@ namespace CarWreck.Driving
                     break;
 
                 case State.Pursue:
+                case State.LineUp:
                 {
-                    // Where the player will be shortly (capped linear lead), so a moving player is led, not chased from behind.
-                    float lead = Mathf.Min(leadTime, dist / Mathf.Max(8f, Mathf.Abs(fwdSpeed)));
-                    Vector3 aim = Flat(player.position + seenVelocity * lead) - pos;
+                    bool lineUp = Current == State.LineUp;
+                    Vector3 target = SteerTarget(pos, fwd, aimPoint);
                     bool wall = WallAhead(pos, fwd, fwdSpeed, out Vector3 toCentre);
-                    if (wall) aim = toCentre;
+                    Vector3 aim = wall ? toCentre : Flat(target - pos);
                     float angle = Vector3.SignedAngle(fwd, aim, Vector3.up);
-                    steer = Mathf.Clamp(angle / fullLockAngle, -1f, 1f);
                     float absAngle = Mathf.Abs(angle);
-                    throttle = Mathf.Clamp01(desiredSpeed - fwdSpeed);
-                    if (absAngle > 70f) throttle = fwdSpeed > 9f ? 0f : 0.55f;      // pointing well away: slow down / creep so it can swing round
-                    else if (absAngle > 40f) throttle = Mathf.Min(throttle, 0.7f);
-                    if (dist < 10f) { steer *= 0.7f; throttle = Mathf.Min(throttle, 0.8f); }  // very close: no frantic circling
-                    if (wall) throttle = Mathf.Min(throttle, 0.6f);
-
-                    if (!wall && dist < attackCommitDistance && absAngle < commitAlignAngle && fwdSpeed > 7f)
+                    steer = Mathf.Clamp(angle / fullLockAngle, -1f, 1f);
+                    // LineUp slows down to a controllable approach speed, except when the player is pulling away (then it must keep its speed up to catch it)
+                    float speedGoal = lineUp && dist < chargeRange - 2f && closing > 0.25f * desiredSpeed ? Mathf.Max(minChargeSpeed * 1.3f, 0.65f * desiredSpeed) : desiredSpeed;
+                    // Braking decision (skill): the bearing must be nearly nulled before the car reaches its charge range, so the speed is limited to what the car can turn through in the
+                    // distance that is left (v <= turn rate x room / error). A skilled driver judges the car's turn rate correctly and slows in time; a poor one thinks it turns tighter than it
+                    // does, carries too much speed and arrives off the line. Once inside charge range it crawls until lined up, then accelerates into the charge.
+                    if (clearToTarget && dist < lineUpRange && absAngle > 6f && closing > 3f)   // only while it is the faster car closing in: never slow down behind a player who is running away
                     {
-                        commitDir = aim.normalized;                                  // lock the attack line: the player can still dodge it
-                        commitTimer = Mathf.Min(maxCommitTime, dist / Mathf.Max(fwdSpeed, 8f) + 0.7f);
-                        AttacksCommitted++;
-                        Enter(State.Commit);
+                        float tolRange = Mathf.Min(alignTolerance, Mathf.Atan2(Mathf.Lerp(1.4f, 4.5f, aggression) * Mathf.Lerp(1f, 0.6f, skill), chargeRange) * Mathf.Rad2Deg);
+                        float err = Mathf.Max(1f, absAngle - tolRange) * Mathf.Deg2Rad;
+                        float room = dist - chargeRange;
+                        float vTurn = room > 0f ? believedTurnRate * room / err : 0f;
+                        speedGoal = Mathf.Min(speedGoal, Mathf.Max(Mathf.Max(5.5f, minChargeSpeed), vTurn));
+                    }
+                    float diff = speedGoal - fwdSpeed;
+                    throttle = diff >= 0f ? Mathf.Clamp01(diff) : Mathf.Max(-0.8f, diff / 4f) * Mathf.Lerp(0.5f, 1f, skill);   // brakes when over the goal (a poor driver brakes less)
+                    // pointing well away: slow down / creep so it can swing round (a low skill driver carries more speed into the turn and runs wide)
+                    float turnLimit = Mathf.Lerp(9f, 6f, skill);
+                    if (absAngle > 70f) throttle = fwdSpeed > turnLimit ? -0.5f * Mathf.Lerp(0.4f, 1f, skill) : 0.55f;
+                    else if (absAngle > 40f) throttle = Mathf.Min(throttle, Mathf.Lerp(0.8f, 0.6f, skill));
+                    if (dist < 10f) { steer *= 0.7f; throttle = Mathf.Min(throttle, 0.8f); }   // very close: no frantic circling
+                    if (wall) throttle = Mathf.Min(throttle, 0.6f);
+                    // something solid dead ahead (and it is not the player): steer round it and brake in time
+                    if (obstacleAwareness && forwardBlocked && forwardHitDistance < StopDistance(fwdSpeed) + 6f && forwardHitDistance < dist - 1f)
+                    {
+                        steer = avoidSteer;
+                        throttle = forwardHitDistance < StopDistance(fwdSpeed) ? -0.6f : Mathf.Min(throttle, 0.3f);
+                        avoidBraking = true;
+                    }
+
+                    if (!wall && clearToTarget && !Detouring && decisionTimer >= decisionInterval - 1e-4f) EvaluateCombat(pos, fwd, fwdSpeed, dist, closing, angle, aimDir);
+                    else if (Current == State.LineUp && (!clearToTarget || Detouring || stateTime > lineUpMaxTime)) Enter(State.Pursue);
+                    else if (Current == State.Pursue && !Detouring && clearToTarget && dist < lineUpRange && !wall) Enter(State.LineUp);
+                    break;
+                }
+
+                case State.Reposition:
+                {
+                    // Make a run-up. Back off (brake, then reverse) while swinging the nose towards the player when the player is ahead; when the player is
+                    // beside or behind, drive round to the far point instead. Short and capped: never a retreat.
+                    float angleToPlayer = Vector3.SignedAngle(fwd, toPlayer, Vector3.up);
+                    if (repositionBackOff)
+                    {
+                        float want = angleToPlayer + repositionSide * 25f;           // aim slightly to one side so the run-up arrives at an angle, not nose to nose
+                        steer = want >= 0f ? -1f : 1f;                               // reversing mirrors the steering
+                        throttle = -1f;
+                    }
+                    else
+                    {
+                        Vector3 toPoint = Flat(repositionPoint - pos);
+                        float a2 = Vector3.SignedAngle(fwd, toPoint, Vector3.up);
+                        steer = Mathf.Clamp(a2 / fullLockAngle, -1f, 1f);
+                        throttle = Mathf.Min(Mathf.Clamp01(0.8f * desiredSpeed - fwdSpeed), Mathf.Abs(a2) > 70f ? 0.4f : 1f);
+                        if (toPoint.magnitude < 5f) stateTime = repositionMaxTime;    // arrived
+                    }
+                    if (WallAhead(pos, fwd, fwdSpeed, out Vector3 tc) && !repositionBackOff) { steer = Mathf.Clamp(Vector3.SignedAngle(fwd, tc, Vector3.up) / fullLockAngle, -1f, 1f); throttle = Mathf.Min(throttle, 0.5f); }
+                    if (dist >= minRunway * 1.7f + 4f || stateTime >= repositionMaxTime || !clearToTarget)
+                    {
+                        repositionBlockedUntil = clock + repositionCooldown;
+                        circleBlockedUntil = clock + 1.5f;
+                        Enter(clearToTarget ? State.LineUp : State.Pursue);
                     }
                     break;
                 }
@@ -159,55 +467,190 @@ namespace CarWreck.Driving
                 case State.Commit:
                 {
                     commitTimer -= dt;
-                    float angle = Vector3.SignedAngle(fwd, commitDir, Vector3.up);
-                    steer = Mathf.Clamp(angle / (fullLockAngle * 1.5f), -1f, 1f) * 0.35f;  // hold the locked line, small corrections only
-                    throttle = Mathf.Clamp01(desiredSpeed * 1.15f - fwdSpeed);
+                    // Committed: it keeps heading for the predicted position with a limited steering authority. A good driver can correct a lot, a poor one little;
+                    // nobody can follow a late swerve at 70 km/h, so the charge can be dodged. No state change is considered before minCommitTime except an emergency.
+                    float angle = Vector3.SignedAngle(fwd, aimDir, Vector3.up);
+                    steer = Mathf.Clamp(angle / (fullLockAngle * 0.5f), -chargeSteerLimit, chargeSteerLimit);
+                    throttle = Mathf.Clamp01(desiredSpeed * chargeSpeedFactor - fwdSpeed);
                     bool passed = Vector3.Dot(fwd, toPlayer) < 0f && dist > 3f;
-                    if (commitTimer <= 0f || passed) Enter(State.Overshoot);
+                    bool lost = Mathf.Abs(Vector3.SignedAngle(fwd, aimDir, Vector3.up)) > 75f && dist > 6f;
+                    // emergency: a solid obstacle before the player and too close to stop
+                    bool emergency = obstacleAwareness && forwardBlocked && forwardHitDistance < StopDistance(fwdSpeed) && forwardHitDistance < dist - 2f;
+                    if (emergency) { steer = avoidSteer; throttle = -0.6f; Enter(State.Overshoot); }
+                    else if (commitTimer <= 0f || passed || (stateTime > minCommitTime && lost)) Enter(State.Overshoot);
                     break;
                 }
 
                 case State.Overshoot:
                 {
-                    // Missed or just hit: keep rolling roughly straight for a moment, steer back from walls, then turn round and pursue.
+                    // Missed or just hit: keep rolling roughly straight for a moment (no instant U-turn), steering clear of walls and obstacles, then turn round and pursue.
                     bool wall = WallAhead(pos, fwd, fwdSpeed, out Vector3 toCentre);
                     steer = wall ? Mathf.Clamp(Vector3.SignedAngle(fwd, toCentre, Vector3.up) / fullLockAngle, -1f, 1f) : 0f;
-                    throttle = wall ? 0f : Mathf.Clamp01(0.5f * desiredSpeed - fwdSpeed);
+                    throttle = wall ? (fwdSpeed > 8f ? -0.7f * Mathf.Lerp(0.5f, 1f, skill) : 0f) : Mathf.Clamp01(0.5f * desiredSpeed - fwdSpeed);   // a wall ahead: brake (a poor driver brakes less)
+                    if (obstacleAwareness && forwardBlocked && forwardHitDistance < StopDistance(fwdSpeed) + 5f)
+                    {
+                        steer = avoidSteer;
+                        throttle = forwardHitDistance < StopDistance(fwdSpeed) ? -0.6f : 0.2f;
+                        avoidBraking = true;
+                    }
                     if (stateTime >= overshootTime) Enter(State.Pursue);
                     break;
                 }
 
                 case State.Recover:
                 {
-                    // Back out while swinging the nose towards the player (reversing mirrors the steering), then pursue again.
+                    // Back out while swinging the nose towards the player (reversing mirrors the steering), then pursue again. Unchanged from V1 and the same for every skill.
                     float angle = Vector3.SignedAngle(fwd, toPlayer, Vector3.up);
                     steer = angle >= 0f ? -1f : 1f;
                     throttle = -1f;
-                    if (stateTime >= recoverDuration) { stuckTimer = 0f; Enter(State.Pursue); }
+                    if (stateTime >= recoverDuration) { stuckTimer = 0f; ClearDetour(); Enter(State.Pursue); }
                     break;
                 }
             }
 
-            // Stuck: trying to drive forward but hardly moving (wall, obstacle, nose-to-nose with the player).
-            bool tryingToDrive = Current != State.Waiting && Current != State.Recover && throttle > 0.3f;
+            // Stuck: trying to drive forward but hardly moving (wall, obstacle, nose-to-nose with the player). Unchanged from V1.
+            bool tryingToDrive = Current != State.Waiting && Current != State.Recover && Current != State.Reposition && (throttle > 0.3f || avoidBraking);   // braking for an obstacle while hardly moving is being stuck too
             if (tryingToDrive && body.linearVelocity.magnitude < stuckSpeed) stuckTimer += dt;
             else stuckTimer = Mathf.Max(0f, stuckTimer - dt * 2f);
             if (stuckTimer > stuckTime && Current != State.Recover)
             {
                 RecoveriesTriggered++;
                 stuckTimer = 0f;
+                if (Current == State.Commit || Current == State.LineUp) lastAttackClock = clock;
+                planTimer = 0f; detourSide = 0f;     // after being stuck, re-plan the approach from scratch (and allow the other side)
                 Enter(State.Recover);
                 throttle = -1f;
             }
 
-            controller.Throttle = throttle;
+            // Approach driving eases its throttle (no bang-bang between full throttle and braking when a speed limit flickers); emergencies and recovery act at once.
+            bool approach = (Current == State.Pursue || Current == State.LineUp) && !avoidBraking;
+            throttleOut = approach ? Mathf.MoveTowards(throttleOut, throttle, 6f * dt) : throttle;
+            controller.Throttle = throttleOut;
             controller.SteerInput = steer;
+        }
+
+        /// <summary>Keep, refresh or drop the detour. Runs every decision tick (cheap unless a plan is needed).</summary>
+        void UpdateDetour(Vector3 pos, Vector3 aimPoint)
+        {
+            if (!obstacleAwareness || Current == State.Recover || Current == State.Waiting) { ClearDetour(); return; }
+            planTimer -= decisionInterval;
+            if (clearToTarget)
+            {
+                if (Detouring) ClearDetour();
+                return;
+            }
+            // blocked: keep a working detour (hysteresis), replan when there is none, when it ran out or when the leg to the next waypoint is blocked
+            bool legOk = Detouring && Clear(pos, wp[wpIndex], 1.0f) && detourAge < 6f;
+            if (legOk) return;
+            if (planTimer > 0f && !Detouring) return;
+            planTimer = 0.4f;
+            if (!PlanDetour(pos, aimPoint)) ClearDetour();
+        }
+
+        /// <summary>Attack opportunity: charge now, back off to make a run-up, or carry on (Pursue / LineUp keep steering).</summary>
+        void EvaluateCombat(Vector3 pos, Vector3 fwd, float fwdSpeed, float dist, float closing, float angle, Vector3 aimDir)
+        {
+            float absAngle = Mathf.Abs(angle);
+            float sinceAttack = clock - lastAttackClock;
+            // Patience runs out gradually: after engageTimeout without an attack the driver accepts worse angles, weaker hits and shorter run-ups (so even a cautious driver comes in regularly)
+            float patience = Mathf.Clamp01((sinceAttack - engageTimeout) / 5f);
+            // How hard could this hit be? Own speed along the line after accelerating over the remaining run-up (the controller's acceleration, capped at the charge speed),
+            // minus the speed the player is moving away at. A tailgater at the player's speed with 2 m to spare gets almost nothing; a car 15 m back gets plenty.
+            Vector3 dir = Flat(player.position - pos).normalized;
+            float vSelf = Mathf.Max(0f, Vector3.Dot(body.linearVelocity, dir)), vPlayer = Vector3.Dot(player.linearVelocity, dir);
+            float cap = desiredSpeed * chargeSpeedFactor;
+            float vImpact = Mathf.Min(cap, Mathf.Sqrt(vSelf * vSelf + 2f * 13f * Mathf.Max(0f, dist - ContactDistance))) - vPlayer;
+            float minImpact = minImpactSpeed * (1f - 0.4f * patience);
+
+            // opportunity quality 0..1: alignment, own speed, expected impact
+            float alignScore = 1f - Mathf.Clamp01(absAngle / 45f);
+            float speedScore = Mathf.Clamp01(fwdSpeed / (0.75f * desiredSpeed));
+            float runwayScore = Mathf.Clamp01(vImpact / (0.8f * desiredSpeed));
+            float opportunity = 0.5f * alignScore + 0.3f * speedScore + 0.2f * runwayScore;
+            float threshold = opportunityThreshold - 0.35f * patience;
+            // alignment: the bearing must be small for this distance (the car must be on the line, not just roughly pointing at the player); the angle cap is the loose end of it
+            float maxLateral = Mathf.Lerp(1.4f, 4.5f, aggression) * Mathf.Lerp(1f, 0.6f, skill) * (1f + 1.5f * patience);
+            float tol = Mathf.Min(alignTolerance * (1f + patience), Mathf.Atan2(maxLateral, Mathf.Max(dist, 1f)) * Mathf.Rad2Deg);
+            float needSpeed = minChargeSpeed * (1f - 0.4f * patience);
+
+            bool inRange = dist <= chargeRange;
+            bool enoughRunway = vImpact >= minImpact;
+            if (inRange && enoughRunway && absAngle <= tol && fwdSpeed >= needSpeed && opportunity >= threshold)
+            {
+                BeginCharge(aimDir, fwdSpeed, dist);
+                return;
+            }
+
+            // too close for a strong hit and not already rolling at the player: back off and make a run-up (chance and cooldown depend on aggression)
+            bool tooClose = dist < minRunway * 1.3f && vImpact < minImpact && patience < 0.6f;
+            closeTimer = tooClose ? closeTimer + decisionInterval : 0f;
+            if (tooClose && closeTimer > 0.35f && clock >= repositionBlockedUntil && Current != State.Reposition)
+            {
+                closeTimer = 0f;
+                if (rng.NextDouble() < repositionChance && BeginReposition(pos, fwd)) return;
+                repositionBlockedUntil = clock + 1.2f;                                       // decided to stay and fight: do not re-roll every tick
+            }
+
+            // circling: close to the player but pointing well away (the target is inside the car's turning circle): driving round it never lines up, so swing wide and make a run-up instead
+            bool circling = dist < 12f && absAngle > 55f && dist > 3f;
+            circleTimer = circling ? circleTimer + decisionInterval : 0f;
+            if (circleTimer > 0.7f && clock >= circleBlockedUntil && Current != State.Reposition)
+            {
+                circleTimer = 0f;
+                if (BeginReposition(pos, fwd, true)) return;
+                circleBlockedUntil = clock + 1.5f;
+            }
+
+            if (Current == State.Pursue && dist < lineUpRange) Enter(State.LineUp);
+        }
+
+        void BeginCharge(Vector3 aimDir, float fwdSpeed, float dist)
+        {
+            commitTimer = Mathf.Min(maxCommitTime, dist / Mathf.Max(fwdSpeed, 8f) + 0.9f);
+            AttacksCommitted++;
+            LastChargeSpeed = fwdSpeed;
+            lastAttackClock = clock;
+            Enter(State.Commit);
+        }
+
+        bool BeginReposition(Vector3 pos, Vector3 fwd, bool circling = false)
+        {
+            repositionForCircling = circling;
+            Vector3 toPlayer = Flat(player.position - pos);
+            float angleToPlayer = Vector3.SignedAngle(fwd, toPlayer, Vector3.up);
+            // run-up side: the side the nose is already turned to, so the swing is short
+            repositionSide = angleToPlayer >= 0f ? 1f : -1f;
+            repositionBackOff = Mathf.Abs(angleToPlayer) < 50f;
+            if (repositionBackOff)
+            {
+                // reversing needs room behind
+                if (obstacleAwareness && Cast(pos, -fwd, 9f, 1.0f, out _)) return false;
+            }
+            else
+            {
+                Vector3 away = (-toPlayer).normalized;
+                float runway = minRunway * 1.7f + 6f;
+                float lim = arenaHalf - 6f;
+                Vector3 best = Vector3.zero; bool found = false;
+                for (int k = 0; k < 2 && !found; k++)
+                {
+                    float side = k == 0 ? repositionSide : -repositionSide;
+                    Vector3 p = Flat(player.position) + Quaternion.Euler(0f, side * 40f, 0f) * away * runway;
+                    p.x = Mathf.Clamp(p.x, -lim, lim); p.z = Mathf.Clamp(p.z, -lim, lim);
+                    if (!obstacleAwareness || Clear(pos, p, 1.0f)) { best = p; found = true; }
+                }
+                if (!found) return false;
+                repositionPoint = best;
+            }
+            Repositions++;
+            Enter(State.Reposition);
+            return true;
         }
 
         /// <summary>True when the car, a moment from now at its current speed, would be too close to the arena edge; also returns the direction to the middle.</summary>
         bool WallAhead(Vector3 pos, Vector3 fwd, float fwdSpeed, out Vector3 toCentre)
         {
-            Vector3 ahead = pos + fwd * Mathf.Max(6f, fwdSpeed * 0.9f);
+            Vector3 ahead = pos + fwd * Mathf.Max(6f, fwdSpeed * 1.1f);
             float limit = arenaHalf - wallMargin;
             toCentre = Flat(-pos);
             return fwdSpeed > 0f && (Mathf.Abs(ahead.x) > limit || Mathf.Abs(ahead.z) > limit);

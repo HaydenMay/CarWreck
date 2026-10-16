@@ -200,6 +200,7 @@ namespace CarWreck.Driving.EditorTools
             var game = new GameObject("DrivingGame").AddComponent<DrivingGame>();
             game.vehicles = vehicles;
             game.profiles = profiles;
+            game.driverProfiles = DriverProfileAssets();
             game.playerRig = playerRig;
             game.targetRig = targetRig;
             game.playerSpawn = playerSpawn;
@@ -237,6 +238,25 @@ namespace CarWreck.Driving.EditorTools
             var d = AssetDatabase.LoadAssetAtPath<VehicleDefinition>(path);
             if (d == null || d.model == null) throw new System.Exception($"Vehicle definition missing or without a model: {path}");
             return d;
+        }
+
+        /// <summary>The three starting enemy driver profiles as assets (Brawler, Hunter, Cautious). Existing assets are kept as they are, so tuning done in the Inspector survives a scene rebuild.</summary>
+        static DriverProfile[] DriverProfileAssets()
+        {
+            if (!AssetDatabase.IsValidFolder(Root + "/Profiles")) AssetDatabase.CreateFolder(Root, "Profiles");
+            const string folder = Root + "/Profiles/Drivers";
+            if (!AssetDatabase.IsValidFolder(folder)) AssetDatabase.CreateFolder(Root + "/Profiles", "Drivers");
+            var result = new DriverProfile[DriverProfile.PresetCount];
+            for (int i = 0; i < result.Length; i++)
+            {
+                var preset = DriverProfile.CreatePreset(i);
+                string path = $"{folder}/{preset.displayName}.asset";
+                var asset = AssetDatabase.LoadAssetAtPath<DriverProfile>(path);
+                if (asset == null) { AssetDatabase.CreateAsset(preset, path); asset = preset; }
+                else Object.DestroyImmediate(preset);
+                result[i] = asset;
+            }
+            return result;
         }
 
         static DriveProfile Profile(string file, string displayName, string description, System.Action<DriveProfile> set)
