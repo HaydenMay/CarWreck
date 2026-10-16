@@ -56,7 +56,8 @@ namespace CarWreck.Driving
         GameObject touchRoot;
         GameObject menuRoot, cornerRoot;
         LookDragPad lookPad;
-        Button[] playerButtons, targetButtons;
+        Button[] playerButtons, targetButtons, modeButtons;
+        Text speedLabel;
         bool menuBuilt;
         Text speedText, impactText, hintText, flipText, touchToggleLabel;
         bool touchVisible;
@@ -133,8 +134,8 @@ namespace CarWreck.Driving
             var bg = menuRoot.GetComponent<Image>();
             bg.color = new Color(0.04f, 0.05f, 0.06f, 0.8f);
 
-            var title = Label("Title", mr, "CHOOSE YOUR CAR", 32, TextAnchor.UpperLeft, FontStyle.Bold);
-            Anchor(title.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(36, -22), new Vector2(580, 44));
+            var title = Label("Title", mr, "CHOOSE YOUR CAR", 30, TextAnchor.UpperLeft, FontStyle.Bold);
+            Anchor(title.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(36, -14), new Vector2(580, 40));
 
             int n = game.vehicles.Length;
             playerButtons = new Button[n];
@@ -143,21 +144,32 @@ namespace CarWreck.Driving
                 int idx = i;
                 var p = game.profiles[i];
                 string text = $"<b>{p.displayName.ToUpperInvariant()}</b>   {game.vehicles[i].mass:N0} kg\n<size=20>{p.description}</size>";
-                playerButtons[i] = MenuButton("Car" + i, mr, text, 24, TextAnchor.MiddleLeft, new Vector2(36, -72 - i * 98), new Vector2(578, 90), () => { game.SelectPlayer(idx); RefreshMenu(); });
+                playerButtons[i] = MenuButton("Car" + i, mr, text, 24, TextAnchor.MiddleLeft, new Vector2(36, -58 - i * 84), new Vector2(578, 78), () => { game.SelectPlayer(idx); RefreshMenu(); });
             }
 
-            var tl = Label("TargetLabel", mr, "TARGET VEHICLE  (parked: crash into it)", 22, TextAnchor.UpperLeft, FontStyle.Bold);
-            Anchor(tl.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(36, -370), new Vector2(580, 28));
+            var tl = Label("TargetLabel", mr, "TARGET  (which car, then how it behaves)", 21, TextAnchor.UpperLeft, FontStyle.Bold);
+            Anchor(tl.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(36, -312), new Vector2(580, 26));
             targetButtons = new Button[n];
             string[] shortNames = { "MUSCLE CAR", "HATCHBACK", "PICKUP" };
             for (int i = 0; i < n; i++)
             {
                 int idx = i;
-                targetButtons[i] = MenuButton("Target" + i, mr, i < shortNames.Length ? shortNames[i] : game.vehicles[i].displayName, 22, TextAnchor.MiddleCenter,
-                    new Vector2(36 + i * 196, -400), new Vector2(186, 72), () => { game.SelectTarget(idx); RefreshMenu(); });
+                targetButtons[i] = MenuButton("Target" + i, mr, i < shortNames.Length ? shortNames[i] : game.vehicles[i].displayName, 21, TextAnchor.MiddleCenter,
+                    new Vector2(36 + i * 196, -340), new Vector2(186, 58), () => { game.SelectTarget(idx); RefreshMenu(); });
             }
+            modeButtons = new Button[3];
+            string[] modeNames = { "PARKED", "SAME WAY", "HEAD-ON" };
+            for (int i = 0; i < 3; i++)
+            {
+                int idx = i;
+                modeButtons[i] = MenuButton("Mode" + i, mr, modeNames[i], 21, TextAnchor.MiddleCenter, new Vector2(36 + i * 196, -406), new Vector2(186, 58), () => { game.SetTargetMode(idx); RefreshMenu(); });
+            }
+            MenuButton("SpeedDown", mr, "-", 34, TextAnchor.MiddleCenter, new Vector2(36, -472), new Vector2(110, 58), () => { game.StepTargetSpeed(-1); RefreshMenu(); });
+            speedLabel = Label("SpeedLabel", mr, "", 21, TextAnchor.MiddleCenter, FontStyle.Bold);
+            Anchor(speedLabel.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(156, -472), new Vector2(338, 58));
+            MenuButton("SpeedUp", mr, "+", 34, TextAnchor.MiddleCenter, new Vector2(504, -472), new Vector2(110, 58), () => { game.StepTargetSpeed(1); RefreshMenu(); });
 
-            var drive = MenuButton("Drive", mr, "DRIVE", 44, TextAnchor.MiddleCenter, new Vector2(36, -486), new Vector2(578, 96), () => game.CloseMenu());
+            var drive = MenuButton("Drive", mr, "DRIVE", 42, TextAnchor.MiddleCenter, new Vector2(36, -540), new Vector2(578, 84), () => game.CloseMenu());
             drive.targetGraphic.color = new Color(0.95f, 0.48f, 0.1f, 0.95f);
             var colors = drive.colors; colors.normalColor = colors.highlightedColor = Color.white; colors.pressedColor = new Color(0.8f, 0.8f, 0.8f); colors.selectedColor = Color.white; drive.colors = colors;
         }
@@ -169,6 +181,9 @@ namespace CarWreck.Driving
             if (!menuBuilt) return;
             for (int i = 0; i < playerButtons.Length; i++) playerButtons[i].targetGraphic.color = i == game.playerIndex ? Chosen : Dark;
             for (int i = 0; i < targetButtons.Length; i++) targetButtons[i].targetGraphic.color = i == game.targetIndex ? Chosen : Dark;
+            for (int i = 0; i < modeButtons.Length; i++) modeButtons[i].targetGraphic.color = i == (int)game.targetMode ? Chosen : Dark;
+            speedLabel.text = game.targetMode == DrivingGame.TargetMode.Parked ? "TARGET SPEED: parked" : $"TARGET SPEED  {game.targetSpeedKmh:0} km/h";
+            speedLabel.color = game.targetMode == DrivingGame.TargetMode.Parked ? new Color(1f, 1f, 1f, 0.45f) : Color.white;
         }
 
         Button MenuButton(string name, Transform parent, string text, int fontSize, TextAnchor anchor, Vector2 topLeft, Vector2 size, UnityEngine.Events.UnityAction onClick)
