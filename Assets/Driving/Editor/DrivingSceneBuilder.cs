@@ -175,6 +175,8 @@ namespace CarWreck.Driving.EditorTools
             var sameDirTarget = Spawn("SameDirTargetSpawn", 52f, -37f, 0f);      // 25 m ahead of the player, driving away along +z
             var headOnPlayer = Spawn("HeadOnPlayerSpawn", 52f, -62f, 0f);
             var headOnTarget = Spawn("HeadOnTargetSpawn", 52f, 58f, 180f);       // 120 m ahead, driving towards the player along -z
+            // Enemy encounter: the player uses the normal start pad (0, -50); the enemy starts 60 m away to the north-west, pointing at it (clear of every obstacle).
+            var enemyStart = Spawn("EnemySpawn", -18f, 8f, 162.8f);
 
             // ---------------------------------------------------------------- camera, UI, game
             var camGO = new GameObject("Main Camera") { tag = "MainCamera" };
@@ -206,6 +208,7 @@ namespace CarWreck.Driving.EditorTools
             game.sameDirTargetSpawn = sameDirTarget;
             game.headOnPlayerSpawn = headOnPlayer;
             game.headOnTargetSpawn = headOnTarget;
+            game.enemySpawn = enemyStart;
             game.routeLength = 95f;
             game.playerIndex = 0;
             game.targetIndex = 2;

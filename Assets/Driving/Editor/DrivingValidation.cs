@@ -35,14 +35,16 @@ namespace CarWreck.Driving.EditorTools
 
         static void Step(int steps, float throttle, float steer, Action<int> each = null) => Step(steps, i => throttle, steer, each);
 
-        static void Step(int steps, Func<int, float> throttle, float steer, Action<int> each = null)
+        static void Step(int steps, Func<int, float> throttle, float steer, Action<int> each = null) => Step(steps, throttle, i => steer, each);
+
+        static void Step(int steps, Func<int, float> throttle, Func<int, float> steer, Action<int> each = null)
         {
             for (int i = 0; i < steps; i++)
             {
                 C.Throttle = throttle(i);
-                C.SteerInput = steer;
+                C.SteerInput = steer(i);
                 C.Tick(Dt);
-                if (game.Target.controller != null) { game.Target.driver?.Drive(); game.Target.controller.Tick(Dt); }   // moving target: its driver feeds its own controller
+                if (game.Target.controller != null) { game.Target.driver?.Drive(); game.Target.enemy?.Drive(Dt); game.Target.controller.Tick(Dt); }   // moving target: its driver feeds its own controller
                 Physics.Simulate(Dt);
                 game.Player.Receiver.Step(Dt);
                 game.Target.Receiver.Step(Dt);
@@ -371,6 +373,147 @@ namespace CarWreck.Driving.EditorTools
                 Step(100, 0f, 0f);
                 Check("Stationary scenario restored after switching back", game.Target.driver == null && Vector3.Distance(T.position, game.Target.startPos) < 0.1f && T.linearVelocity.magnitude < 0.1f && Vector3.Distance(new Vector3(P.position.x, 0, P.position.z), game.playerSpawn.position) < 0.1f,
                       $"target at {T.position.ToString("F1")} speed {T.linearVelocity.magnitude:0.00} m/s, player at {P.position.ToString("F1")}");
+
+                // ================================================================ enemy encounter
+                sb.AppendLine("  -- enemy encounter (muscle car player, pickup enemy) --");
+                game.SelectPlayer(0);
+                game.SetTargetMode((int)DrivingGame.TargetMode.Enemy);
+                game.SelectTarget(2);
+                game.Player.Receiver.logImpacts = false; game.Target.Receiver.logImpacts = false;
+                var E = game.Target.enemy;
+                Check("ENEMY mode spawns exactly one enemy, driven by the same controller, away from the player", E != null && game.Target.controller != null && UnityEngine.Object.FindObjectsByType<EnemyDriver>(FindObjectsSortMode.None).Length == 1
+                      && Vector3.Distance(game.Target.startPos, game.Player.startPos) > 40f && game.Target.def.displayName == "Compact Pickup",
+                      $"enemy {game.Target.def.displayName} at {game.Target.startPos.ToString("F1")}, player at {game.Player.startPos.ToString("F1")}, distance {Vector3.Distance(game.Target.startPos, game.Player.startPos):0} m");
+
+                // --- Test A: pursuit (player drives away east at 12 m/s)
+                {
+                    game.ResetAll();
+                    E = game.Target.enemy;
+                    Place(0f, -50f, 90f);
+                    float startDist = Vector3.Distance(T.position, P.position), minAngle = 180f, dist6 = 0f;
+                    Step(400, i => P.linearVelocity.magnitude < 12f ? 1f : 0f, 0f, i =>
+                    {
+                        Vector3 toP = P.position - T.position; toP.y = 0f; Vector3 f = T.transform.forward; f.y = 0f;
+                        if (i > 100) minAngle = Mathf.Min(minAngle, Mathf.Abs(Vector3.SignedAngle(f, toP, Vector3.up)));
+                        if (i == 299) dist6 = toP.magnitude;
+                    });
+                    Check("A. Enemy pursues a player who drives away", E.Current != EnemyDriver.State.Waiting && dist6 < startDist - 15f && minAngle < 40f,
+                          $"distance {startDist:0} m at the start, {dist6:0} m after 6 s (player moving away at 43 km/h); best heading error to the player {minAngle:0} deg; state {E.Current}");
+                }
+
+                // --- Test B + E: attack a stationary player; both cars damaged through the existing engine
+                {
+                    game.ResetAll();
+                    E = game.Target.enemy;
+                    int tFrames = -1; float contactKmh = 0f; string first = "";
+                    var seen = new System.Collections.Generic.HashSet<EnemyDriver.State>();
+                    CollisionDamageReceiver.Report? firstP = null, firstT = null;
+                    System.Action<CollisionDamageReceiver.Report> lp = r => { if (r.applied && firstP == null) firstP = r; };
+                    System.Action<CollisionDamageReceiver.Report> lt = r => { if (r.applied && firstT == null) firstT = r; };
+                    game.Player.Receiver.ImpactRegistered += lp; game.Target.Receiver.ImpactRegistered += lt;
+                    Step(1000, 0f, 0f, i => { seen.Add(E.Current); if (tFrames < 0 && firstP != null && firstT != null) tFrames = i; });
+                    game.Player.Receiver.ImpactRegistered -= lp; game.Target.Receiver.ImpactRegistered -= lt;
+                    if (firstT != null) { contactKmh = firstT.Value.closingSpeed * 3.6f; first = $"enemy {firstT.Value.strength * 100f:0}% / player {firstP?.strength * 100f:0}%, closing {contactKmh:0} km/h, regions '{firstT.Value.region}' / '{firstP?.region}'"; }
+                    Check("B. Enemy attacks a stationary player (commits to an attack line, does not circle forever)", tFrames >= 0 && tFrames * Dt < 14f && E.AttacksCommitted >= 1 && seen.Contains(EnemyDriver.State.Commit) && contactKmh > 30f,
+                          $"first damaging hit after {tFrames * Dt:0.0} s, attacks committed {E.AttacksCommitted}, states seen {string.Join("/", seen)}; {first}");
+                    Check("E. Enemy hit damages both vehicles through the existing receivers", game.Player.Model.ImpactCount > 0 && game.Target.Model.ImpactCount > 0 && firstP != null && firstT != null && MaxDisplacement(game.Player) > 0.05f && MaxDisplacement(game.Target) > 0.05f,
+                          $"impact records player {game.Player.Model.ImpactCount} / enemy {game.Target.Model.ImpactCount}, deformation player {MaxDisplacement(game.Player):0.00} m / enemy {MaxDisplacement(game.Target):0.00} m, deform ms {firstP?.deformMilliseconds:0}/{firstT?.deformMilliseconds:0}");
+                }
+
+                // --- Test C: evasion. Player and enemy drive at each other along the south edge; the player swerves right when the enemy is N metres away.
+                {
+                    int dodgesMissed = 0, reengaged = 0, runs = 0; var rows = new System.Text.StringBuilder(); bool sawOvershoot = false;
+                    foreach (float swerveAt in new[] { 32f, 26f, 21f })
+                    {
+                        game.ResetAll();
+                        E = game.Target.enemy;
+                        // enemy starts at the west end facing east, player at the east end facing west, 70 m apart (open ground, no obstacles on this line)
+                        T.position = new Vector3(-40f, T.position.y, -55f); T.rotation = Quaternion.Euler(0f, 90f, 0f); T.transform.SetPositionAndRotation(T.position, T.rotation);
+                        T.linearVelocity = Vector3.zero; T.angularVelocity = Vector3.zero;
+                        Place(30f, -55f, 270f);
+                        E.Restart();
+                        bool dodged = false; int dodgeStep = -1, hitsAtDodge = 0, hitsAfterWindow = 0; float closestLater = 999f;
+                        var seq = new System.Collections.Generic.List<EnemyDriver.State>(); EnemyDriver.State lastS = E.Current;
+                        Step(1100, i => P.linearVelocity.magnitude < 14f ? 1f : 0f, i => (dodgeStep >= 0 && i < dodgeStep + 50) ? 1f : 0f, i =>
+                        {
+                            float d = E.DistanceToPlayer;
+                            if (E.Current != lastS) { seq.Add(E.Current); lastS = E.Current; if (E.Current == EnemyDriver.State.Overshoot) sawOvershoot = true; }
+                            if (!dodged && d < swerveAt && E.Current != EnemyDriver.State.Waiting) { dodged = true; dodgeStep = i + 1; hitsAtDodge = E.HitsLanded; }
+                            if (dodged && i == dodgeStep + 100) hitsAfterWindow = E.HitsLanded;          // 2 s after the swerve began
+                            if (dodged && i > dodgeStep + 100) closestLater = Mathf.Min(closestLater, d);
+                        });
+                        bool missed = dodged && hitsAfterWindow == hitsAtDodge;
+                        bool back = dodged && (closestLater < 14f || E.HitsLanded > hitsAfterWindow);
+                        runs++; if (missed) dodgesMissed++; if (back) reengaged++;
+                        rows.Append($"\n      swerve at {swerveAt:0} m: {(missed ? "MISSED" : "hit")}, then closest approach {closestLater:0} m / further hits {E.HitsLanded - hitsAfterWindow}, attacks {E.AttacksCommitted}, states {string.Join(">", seq.Take(8))}");
+                    }
+                    sb.AppendLine("    C runs:" + rows);
+                    Check("C. Evasion: a well-timed swerve makes the enemy miss, and it overshoots, recovers and comes back", dodgesMissed >= 1 && dodgesMissed < runs + 1 && reengaged >= runs - 1 && sawOvershoot,
+                          $"{dodgesMissed} of {runs} swerves (at 32 / 26 / 21 m) avoided the first hit; the enemy came back for another attack in {reengaged} of {runs} runs");
+                }
+
+                // --- Test D: wall recovery
+                {
+                    foreach (var variant in new[] { "facing the wall 5 m away", "pressed against the wall, nose in" })
+                    {
+                        game.ResetAll();
+                        E = game.Target.enemy;
+                        var rb = T;
+                        float z = variant.StartsWith("facing") ? 63f : 67.2f;
+                        rb.position = new Vector3(0f, rb.position.y, z); rb.rotation = Quaternion.identity;
+                        rb.transform.SetPositionAndRotation(rb.position, rb.rotation); rb.linearVelocity = Vector3.zero; rb.angularVelocity = Vector3.zero;
+                        Physics.SyncTransforms();
+                        float zMax = z; int recoveries0 = E.RecoveriesTriggered;
+                        Step(900, 0f, 0f, i => zMax = Mathf.Max(zMax, T.position.z));
+                        float away = 70f - T.position.z;
+                        Check($"D. Wall recovery ({variant})", away > 15f && Mathf.Abs(T.position.x) < 69f && !float.IsNaN(T.position.x),
+                              $"after 18 s the enemy is {away:0} m from the wall (state {E.Current}, stuck recoveries {E.RecoveriesTriggered - recoveries0}, closest approach z {zMax:0.0})");
+                    }
+                }
+
+                // --- Test F: player rams the enemy, which keeps working afterwards
+                {
+                    game.ResetAll();
+                    E = game.Target.enemy;
+                    E.startDelay = 100f; E.Restart();                              // hold the enemy still at its start while the player lines up the hit
+                    Vector3 toE = T.position - P.position; toE.y = 0f;
+                    Place(T.position.x - toE.normalized.x * 30f, T.position.z - toE.normalized.z * 30f, Quaternion.LookRotation(toE).eulerAngles.y);
+                    Step(300, i => P.linearVelocity.magnitude < 18f ? 1f : 0f, 0f);
+                    bool hit = game.Player.Model.ImpactCount > 0 && game.Target.Model.ImpactCount > 0;
+                    E.startDelay = 1.5f; E.Restart();                              // release it: it must now drive off and fight on
+                    float maxSpeed = 0f; var seen = new System.Collections.Generic.HashSet<EnemyDriver.State>();
+                    Step(600, 0f, 0f, i => { maxSpeed = Mathf.Max(maxSpeed, T.linearVelocity.magnitude * 3.6f); seen.Add(E.Current); });
+                    Check("F. Player rams the enemy; both damaged and the enemy still functions afterwards", hit && maxSpeed > 15f && seen.Contains(EnemyDriver.State.Pursue),
+                          $"impact records player {game.Player.Model.ImpactCount} / enemy {game.Target.Model.ImpactCount}; afterwards the enemy reached {maxSpeed:0} km/h, states {string.Join("/", seen)}, enemy hits landed {E.HitsLanded}");
+                }
+
+                // --- Test G: reset repeatedly
+                {
+                    bool ok = true; string why = "";
+                    for (int k = 0; k < 3; k++)
+                    {
+                        game.ResetAll();
+                        Step(5, 0f, 0f);
+                        int count = UnityEngine.Object.FindObjectsByType<EnemyDriver>(FindObjectsSortMode.None).Length;
+                        bool clean = MaxDisplacement(game.Player) < 1e-4f && MaxDisplacement(game.Target) < 1e-4f && game.Player.Model.ImpactCount == 0 && game.Target.Model.ImpactCount == 0
+                                     && Vector3.Distance(T.position, game.Target.startPos) < 0.2f && Vector3.Distance(P.position, game.Player.startPos) < 0.2f && T.linearVelocity.magnitude < 0.5f && game.Target.enemy.Current == EnemyDriver.State.Waiting
+                                     && game.Target.enemy.HitsLanded == 0;
+                        if (count != 1 || !clean) { ok = false; why += $" reset {k + 1}: enemies {count}, clean {clean};"; }
+                        Step(400, 0f, 0f);                                          // let the enemy attack again between resets
+                    }
+                    Check("G. Reset x3: both vehicles restored, damage cleared, one enemy only, behaviour restarted", ok, ok ? "3 of 3 resets restored meshes, impact records, poses, velocities and the enemy's state; exactly one EnemyDriver in the scene each time" : why);
+                }
+
+                // --- Test H (selection / stationary / moving scenarios still work)
+                game.SelectTarget(1);
+                Check("H. Changing the enemy's vehicle works (hatchback enemy)", game.Target.enemy != null && game.Target.def.displayName == "Compact Hatchback" && UnityEngine.Object.FindObjectsByType<EnemyDriver>(FindObjectsSortMode.None).Length == 1, $"enemy is now {game.Target.def.displayName}");
+                game.SelectTarget(2);
+                game.SetTargetMode((int)DrivingGame.TargetMode.Parked);
+                game.ResetAll();
+                Step(100, 0f, 0f);
+                Check("H. Switching back to the parked target restores the original stationary scenario", game.Target.enemy == null && game.Target.driver == null && UnityEngine.Object.FindObjectsByType<EnemyDriver>(FindObjectsSortMode.None).Length == 0
+                      && Vector3.Distance(T.position, game.Target.startPos) < 0.1f && T.linearVelocity.magnitude < 0.1f && Vector3.Distance(new Vector3(P.position.x, 0, P.position.z), game.playerSpawn.position) < 0.1f,
+                      $"target at {T.position.ToString("F1")} speed {T.linearVelocity.magnitude:0.00} m/s; no EnemyDriver left in the scene");
 
             }
             finally
