@@ -116,3 +116,35 @@ To reproduce the width table, run `CarWreck.Driving.EditorTools.ImpactWidthProbe
   - This is not a box-selection problem: all three boxes join (see the callback log).
 - **Vehicle hits register 20 ms later** because of `vehicleGatherSteps = 1`. The delay is not perceptible. Setting the value to 0 restores the old timing but also loses the late-segment fix.
 - **Boxes from different body parts are not merged**, for example a front box and a side box in a corner hit. The first box is used, as before.
+
+## Follow-up: fast head-on hits dented one corner (`fix/head-on-face-fill`)
+
+**Symptom.** In playtests, nominally "dead-on" head-on hits dented one corner at about 80 km/h and above. At 60 km/h the dent was centred, and at 40 km/h it was on the other side.
+
+**Cause.** Real driving always has a small offset or angle. The side boxes of the shell start about 0.63 m behind the nose. At high closing speed, CCD resolves the first box to touch (the leading corner) and pushes the cars apart. The other two boxes never physically touch, even during the one-step gather. The union then held only that corner box. At lower speeds the cars stay in contact long enough for all three boxes to touch, so those hits were already full width.
+
+**Fix.** `vehicleFaceReach` (default 0.25 m; 0 turns it off) in `CollisionDamageReceiver.FillFace` adds to the union any of the other vehicle's boxes that meets all of these conditions:
+
+- it is aligned with the first box;
+- its leading face is within the reach of the first box's leading face along the impact direction;
+- it overlaps this car's shell, with the shell bounds expanded by the reach.
+
+Added boxes are logged as `~Name`. This only shapes the footprint. The patch is still limited to vertices within first contact plus crush travel, and strength and energy are unchanged.
+
+**Results** (`ImpactWidthProbe.RunHeadOnSweep`):
+
+- **Dead-on hits at every speed, and the offset and angled cases at moderate speed:** unchanged, because all three boxes already touched.
+- **133 km/h closing, 0.3 m offset, 3°:**
+  - player, before: front left, dent x −1.00..−0.42;
+  - player, after: front centre, dent x −1.01..+0.90.
+  - Strength is 94% in both.
+- **Offset hits that only partly overlap:** stay local. The 1.02 m offset rows in the table above are unchanged.
+
+**Regression results:**
+
+- Collision Lab verify and geometry: 15 of 15 PASS.
+- Vehicle integration: 20 of 20 PASS.
+- Wall widths: unchanged.
+- `DrivingValidation`: ALL CHECKS PASSED, after one test change.
+  - The "damage persists" check used a 0.05 m depth floor. With the face fill, the Compact Pickup striker's dent against the Compact Hatchback is spread over its full face: 0.047 m deep, against 0.054 m with the fill off.
+  - The floor is now `PersistFloor = 0.03 m`. The check is about persistence (reverted damage reads about 0), not depth.
