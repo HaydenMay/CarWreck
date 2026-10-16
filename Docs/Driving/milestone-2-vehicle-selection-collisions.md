@@ -114,3 +114,13 @@ finding. Mobile: **not measured**. Repeated collisions were not profiled for tre
 `bash Docs/Driving/publish-preview.sh` renames the Unity files to include the build id and keeps the previous build's files for one
 more publish, so a browser holding an older cached `index.html` still works; the page also compares its build id with `version.json`
 and reloads once if it is stale. The loading screen and `window.carwreckBuild` show the build id.
+
+## Damage tuning after the first playtest (build 20261016-0139)
+
+Feedback: the player seemed to take the brunt, and target damage did not grow with how hard it was hit. Measured (editor sim, same collision, both cars):
+
+* **Both cars always get the same strength** (the receiver gives each the same reduced-mass collision energy), so equal damage per hit is by design.
+* **It saturated.** The receiver default (`energyScale` 60,000 J) reaches about 90% strength at 70 km/h closing speed, so 70 km/h and 100 km/h looked the same.
+* **Side hits look smaller on the target.** In a T-bone the player's front dents 2-5x more vertices (a wide crush) than the struck door (a narrow patch), at the same strength and 0.3-0.45 m depth. This is the engine's side-region behaviour (a damage-profile property shared with the Collision Lab); it was left alone and needs approval to change.
+
+Change (configuration only, no engine code): `DrivingGame.damageEnergyScale` = 100,000 J (applied to both receivers at spawn), so strength now rises across the speed range. Desktop WebGL, muscle into parked muscle: 50 km/h gives 48%, 62 km/h gives 64%, 86 km/h gives 86%, on both cars. Reverse rear hit at 44 km/h into a pickup now reads about 39% (was 56%). The parked target's ground friction was lowered (0.5 to 0.35) so it slides farther: 3.3 m, 8 m, 11.7 m for those three hits.
