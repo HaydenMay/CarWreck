@@ -59,6 +59,11 @@ namespace DamageLab.CollisionTest
                  "contacts before it is applied. Shell segments of a sloped or rounded face can first touch one step apart; without this the later " +
                  "ones fall into the cooldown and the dent covers only the first segment. Walls and lab blocks are processed immediately as before.")]
         [Range(0, 3)] public int vehicleGatherSteps = 1;
+        [Tooltip("Vehicle-vs-vehicle only: the other vehicle's shell boxes that are aligned with the first one, whose leading face is within this " +
+                 "distance (m, along the impact direction) of the first box's, and that lie in front of this car also join the footprint. In a fast " +
+                 "hit continuous collision detection stops the cars at the first touching corner box, so the rest of a face that would have hit " +
+                 "never reports a contact. The crush depth still decides which vertices dent, so a box beside this car adds nothing. 0 = off.")]
+        [Range(0f, 0.5f)] public float vehicleFaceReach = 0.25f;
         [Tooltip("After a body has made its damaging impact, its further contacts (bounces, depenetration pushes, re-touches) are logged " +
                  "but cause no damage until it is re-armed (ClearCooldowns / ResetState: the lab does this on every launch and block reset).")]
         public bool oneImpactPerLaunch = true;
@@ -227,6 +232,73 @@ namespace DamageLab.CollisionTest
             return b;
         }
 
+        readonly List<BoxCollider> faceBoxes = new List<BoxCollider>(32);
+
+        /// <summary>
+        /// Adds the other vehicle's untouched shell boxes of the same face to the event: aligned with the first box, leading face within
+        /// vehicleFaceReach of the first box's along the impact direction, and overlapping this car's shell (so a box beside the car is skipped).
+        /// Filled boxes are marked "~" in the impactor list.
+        /// </summary>
+        void FillFace(Rigidbody other, Pending p, Vector3 inwardVehicle)
+        {
+            Vector3 d = Quaternion.Inverse(p.otherRotation) * inwardVehicle;   // impact direction in the other body's frame
+            float firstLead = Lead(p.box.center, p.box.rotation, p.box.halfExtents, d);
+            Bounds mine = ShellBounds();
+            mine.Expand(2f * vehicleFaceReach);
+            var ot = other.transform;
+            other.GetComponentsInChildren(faceBoxes);
+            foreach (var bc in faceBoxes)
+            {
+                if (bc.isTrigger || !bc.enabled || bc.attachedRigidbody != other || p.boxes.Contains(bc)) continue;
+                var bt = bc.transform;
+                Quaternion rotation = Quaternion.Inverse(ot.rotation) * bt.rotation;
+                if (Quaternion.Angle(rotation, p.box.rotation) >= 0.5f) continue;
+                Vector3 center = ot.InverseTransformPoint(bt.TransformPoint(bc.center)), half = Vector3.Scale(bc.size, bt.lossyScale) * 0.5f;
+                half = new Vector3(Mathf.Abs(half.x), Mathf.Abs(half.y), Mathf.Abs(half.z));
+                if (firstLead - Lead(center, rotation, half, d) > vehicleFaceReach) continue;     // further back: not this face
+                // In front of this car: its box (at the first contact's pose, vehicle space) overlaps this car's shell bounds.
+                Vector3 c = p.otherPosition + p.otherRotation * center;
+                Quaternion r = p.otherRotation * rotation;
+                Vector3 ext = new Vector3(
+                    Mathf.Abs((r * Vector3.right).x) * half.x + Mathf.Abs((r * Vector3.up).x) * half.y + Mathf.Abs((r * Vector3.forward).x) * half.z,
+                    Mathf.Abs((r * Vector3.right).y) * half.x + Mathf.Abs((r * Vector3.up).y) * half.y + Mathf.Abs((r * Vector3.forward).y) * half.z,
+                    Mathf.Abs((r * Vector3.right).z) * half.x + Mathf.Abs((r * Vector3.up).z) * half.y + Mathf.Abs((r * Vector3.forward).z) * half.z);
+                if (!mine.Intersects(new Bounds(c, 2f * ext))) continue;
+                Vector3 l = Quaternion.Inverse(p.box.rotation) * (center - p.box.center);
+                p.boxMin = Vector3.Min(p.boxMin, l - half); p.boxMax = Vector3.Max(p.boxMax, l + half);
+                p.boxes.Add(bc); p.impactors += " + ~" + bc.name;
+            }
+        }
+
+        /// <summary>How far a box reaches along d (its leading face).</summary>
+        static float Lead(Vector3 center, Quaternion rotation, Vector3 half, Vector3 d)
+        {
+            return Vector3.Dot(center, d) + Mathf.Abs(Vector3.Dot(rotation * Vector3.right, d)) * half.x
+                 + Mathf.Abs(Vector3.Dot(rotation * Vector3.up, d)) * half.y + Mathf.Abs(Vector3.Dot(rotation * Vector3.forward, d)) * half.z;
+        }
+
+        readonly List<BoxCollider> ownBoxes = new List<BoxCollider>(32);
+
+        /// <summary>This car's physics shell bounds in vehicle (model) space.</summary>
+        Bounds ShellBounds()
+        {
+            var root = model.transform;
+            body.GetComponentsInChildren(ownBoxes);
+            bool any = false;
+            var b = new Bounds();
+            foreach (var bc in ownBoxes)
+            {
+                if (bc.isTrigger || !bc.enabled || bc.attachedRigidbody != body) continue;
+                for (int i = 0; i < 8; i++)
+                {
+                    Vector3 corner = bc.center + Vector3.Scale(bc.size * 0.5f, new Vector3((i & 1) == 0 ? -1 : 1, (i & 2) == 0 ? -1 : 1, (i & 4) == 0 ? -1 : 1));
+                    Vector3 v = root.InverseTransformPoint(bc.transform.TransformPoint(corner));
+                    if (!any) { b = new Bounds(v, Vector3.zero); any = true; } else b.Encapsulate(v);
+                }
+            }
+            return b;
+        }
+
         /// <summary>The event box (other body's frame) placed in vehicle space at the first contact's pose.</summary>
         static BoxImpactor InVehicleSpace(BoxImpactor b, Pending p)
         {
@@ -276,6 +348,7 @@ namespace DamageLab.CollisionTest
             // A fast block can be reported only after it has moved part of a step into the collider. Back the impactor
             // pose out along the normal by that penetration (contact points were corrected per contact above).
             float penetration = Mathf.Max(0f, -p.minSeparation);
+            if (p.box.valid && p.vehicle && vehicleFaceReach > 0f) FillFace(other, p, root.InverseTransformDirection(n));
             if (p.box.valid) p.box = InVehicleSpace(EventBox(p), p);
             if (p.box.valid) p.box.center -= root.InverseTransformDirection(n) * penetration;
             // Collision.relativeVelocity is the other body's velocity relative to this one (verified by the

@@ -21,6 +21,9 @@ namespace CarWreck.Driving.EditorTools
     {
         const float Dt = 0.02f;
         static readonly string[] Names = { "Muscle Car", "Compact Hatchback", "Compact Pickup" };
+        // "Damage persists" floor: a dent still this deep 1 s after the hits (reverted damage reads ~0). The striker takes a 15%
+        // share spread over its full face, so its dent is shallow: 0.047 m for Compact Pickup -> Compact Hatchback (head-on face fill).
+        const float PersistFloor = 0.03f;
 
         [MenuItem("CarWreck/Validate Driving", priority = 12)]
         public static void Run() => Debug.Log(Execute());
@@ -208,13 +211,13 @@ namespace CarWreck.Driving.EditorTools
                                        && game.Player.Model.ImpactCount == 0 && game.Target.Model.ImpactCount == 0 && P.linearVelocity.magnitude < 0.1f && T.linearVelocity.magnitude < 0.1f;
                         bool both = pDamage > 0 && tDamage > 0 && pr.applied && tr.applied;
                         sb.AppendLine($"  {Names[p],-18}-> {Names[t],-18}{pr.closingSpeed * 3.6f,4:0} | {pEv,2} {pDamage,3} {pr.strength * 100f,3:0} {pr.deformMilliseconds,5:0.0} | " +
-                                      $"{tEv,2} {tDamage,3} {tr.strength * 100f,3:0} {tr.deformMilliseconds,5:0.0} | {moved,5:0.0} m {yawD,4:0}° | +{pExtra}/+{tExtra} | +{pSecond}/+{tSecond} | {(pPersist > 0.05f && tPersist > 0.05f ? "yes" : "NO")} | {(resetOk ? "ok" : "NO")}");
+                                      $"{tEv,2} {tDamage,3} {tr.strength * 100f,3:0} {tr.deformMilliseconds,5:0.0} | {moved,5:0.0} m {yawD,4:0}° | +{pExtra}/+{tExtra} | +{pSecond}/+{tSecond} | {(pPersist > PersistFloor && tPersist > PersistFloor ? "yes" : "NO")} | {(resetOk ? "ok" : "NO")}");
                         string key = $"{Names[p]} -> {Names[t]}";
                         float eRatio = pr.energy > 0f ? tr.energy / pr.energy : 0f;
                         Check($"{key}: the parked target takes the bigger share (15/85)", tr.strength > pr.strength && eRatio > 4.5f && eRatio < 7f,
                               $"energy applied: player {pr.energy / 1000f:0} kJ, target {tr.energy / 1000f:0} kJ (ratio {eRatio:0.0}, expected 5.7); strength {pr.strength * 100f:0}% vs {tr.strength * 100f:0}%");
                         Check($"{key}: both vehicles damaged and target pushed", both && (moved > 0.3f || yawD > 3f), $"player impacts {pDamage}, target impacts {tDamage}, target moved {moved:0.0} m / yawed {yawD:0}°");
-                        Check($"{key}: damage persists and reset restores both", pPersist > 0.05f && tPersist > 0.05f && resetOk, $"max displacement after 1 s: player {pPersist:0.00} m, target {tPersist:0.00} m; reset ok {resetOk}");
+                        Check($"{key}: damage persists and reset restores both", pPersist > PersistFloor && tPersist > PersistFloor && resetOk, $"max displacement after 1 s: player {pPersist:0.000} m, target {tPersist:0.000} m; reset ok {resetOk}");
                     }
 
                 // ================================================================ momentum split: moving cars

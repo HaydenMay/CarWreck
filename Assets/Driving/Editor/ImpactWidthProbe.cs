@@ -154,5 +154,84 @@ namespace CarWreck.Driving.EditorTools
             Debug.Log(sb.ToString());
             Physics.simulationMode = SimulationMode.FixedUpdate;
         }
+
+        /// <summary>
+        /// Diagnostic: dead-on Muscle vs Muscle head-on at several closing speeds, player only moving or both moving.
+        /// Logs where the dent lands across the face and the inputs that place it (impact direction, impactor box pose, crush travel).
+        /// </summary>
+        public static void RunHeadOnSweep()
+        {
+            EditorSceneManager.OpenScene(DrivingSceneBuilder.ScenePath, OpenSceneMode.Single);
+            var game = Object.FindFirstObjectByType<DrivingGame>();
+            Physics.simulationMode = SimulationMode.Script;
+            game.Setup();
+            foreach (Transform o in game.obstacles) if (!o.name.StartsWith("Wall") && !o.name.StartsWith("CrashWall")) o.gameObject.SetActive(false);
+            var sb = new StringBuilder("[HeadOnSweep] Muscle vs Muscle, dead-on head-on. x is across the car (+ = right), in that car's frame.\n");
+
+            void Place(Rigidbody b, Vector3 pos, float yaw, Vector3 vel)
+            {
+                var rot = Quaternion.Euler(0f, yaw, 0f);
+                b.position = new Vector3(pos.x, b.position.y, pos.z); b.rotation = rot;
+                b.transform.SetPositionAndRotation(b.position, rot);
+                b.linearVelocity = vel; b.angularVelocity = Vector3.zero;
+            }
+
+            void Line(string who, DrivingGame.Slot s)
+            {
+                var r = s.Receiver.Last; var f = r.footprint;
+                float lo = 0f, hi = 0f;
+                if (f.outline != null && f.outline.Length > 0) { lo = float.MaxValue; hi = float.MinValue; foreach (var q in f.outline) { lo = Mathf.Min(lo, q.x); hi = Mathf.Max(hi, q.x); } }
+                var m = s.Model; string box = "none";
+                if (m.ImpactCount > 0)
+                {
+                    var bi = m.Impacts[m.ImpactCount - 1].impactor;
+                    if (bi.valid) { var e = bi.rotation.eulerAngles; box = $"yaw {Mathf.DeltaAngle(180f, e.y):+0.00;-0.00}° pitch {Mathf.DeltaAngle(0f, e.x):+0.00;-0.00}° roll {Mathf.DeltaAngle(0f, e.z):+0.00;-0.00}° cx {bi.center.x:+0.000;-0.000}"; }
+                }
+                float half = s.rig.geometry.body.size.x * 0.5f;
+                sb.AppendLine($"      {who,-6} region '{r.region}' str {r.strength * 100f:0}%  dent centre x {f.center.x:+0.00;-0.00} ({f.center.x / half:+0.00;-0.00} of half-width)  dent x [{lo:+0.00;-0.00} .. {hi:+0.00;-0.00}]  travel {f.travel:0.000}" +
+                              $"  dir ({r.localDirection.x:+0.000;-0.000}, {r.localDirection.y:+0.000;-0.000}, {r.localDirection.z:+0.000;-0.000})  contact x {r.contactPoint.x:+0.00;-0.00}  pen {r.penetration:0.000}  box {box}  [{r.impactorColliders}]");
+            }
+
+            // Both cars move at half the closing speed, 8 m apart (no controller ticks, so they coast without slowing).
+            void Hit(float kmh, float offset, float yaw, string label)
+            {
+                game.SelectPlayer(0); game.SelectTarget(0);
+                game.ResetAll();
+                var P = game.Player; var T = game.Target;
+                foreach (var s in new[] { P, T }) s.Receiver.logImpacts = false;
+                float v = kmh / 3.6f;
+                Vector3 tp = T.Body.position;
+                Place(T.Body, tp, 180f, Vector3.back * v * 0.5f);
+                var fwd = Quaternion.Euler(0f, yaw, 0f) * Vector3.forward;
+                Place(P.Body, new Vector3(tp.x + offset, 0f, tp.z) - fwd * 8f, yaw, fwd * v * 0.5f);
+                Physics.SyncTransforms();
+                int before = P.Receiver.EventCount;
+                var log = new List<string>();
+                int step = 0;
+                System.Action<UnityEngine.Collision, bool> cb = (c, ok) =>
+                {
+                    if (log.Count >= 12) return;
+                    var k = c.GetContact(0);
+                    log.Add($"step {step} {k.thisCollider.name}<-{c.collider.name} contacts {c.contactCount} sep {k.separation:0.000} x {P.Body.transform.InverseTransformPoint(k.point).x:+0.00;-0.00} rel {Vector3.Dot(c.relativeVelocity, P.Body.transform.forward):0.0} m/s{(ok ? "" : " (ignored)")}");
+                };
+                if (log != null && label.StartsWith("offset+")) P.Receiver.ContactsReceived += cb;
+                for (step = 0; step < 150; step++)
+                {
+                    Physics.Simulate(Dt);
+                    P.Receiver.Step(Dt); T.Receiver.Step(Dt);
+                }
+                P.Receiver.ContactsReceived -= cb;
+                sb.AppendLine($"  {label}: closing {kmh:0} km/h, player offset {offset:+0.00;-0.00} m right, yaw {yaw:+0;-0}°{(P.Receiver.EventCount == before ? "  (NO HIT)" : "")}");
+                Line("player", P); Line("target", T);
+                foreach (var l in log) sb.AppendLine("        player callback " + l);
+            }
+
+            foreach (float kmh in new[] { 40f, 60f, 80f, 106f, 133f }) Hit(kmh, 0f, 0f, "dead-on");
+            foreach (float off in new[] { 0.15f, 0.3f, 0.5f, -0.3f }) Hit(80f, off, 0f, "offset");
+            foreach (float yaw in new[] { 2f, 5f, -5f }) Hit(80f, 0f, yaw, "angled");
+            foreach (float kmh in new[] { 40f, 133f }) Hit(kmh, 0.3f, 3f, "offset+angled");
+            Debug.Log(sb.ToString());
+            Physics.simulationMode = SimulationMode.FixedUpdate;
+        }
     }
 }
