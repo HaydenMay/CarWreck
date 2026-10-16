@@ -169,6 +169,12 @@ namespace CarWreck.Driving.EditorTools
             // The target parks sideways to the approach (broadside to the player's start), 42 m ahead, open ground all round it.
             var targetSpawn = new GameObject("TargetSpawn").transform;
             targetSpawn.SetPositionAndRotation(new Vector3(0f, 0f, -8f), Quaternion.Euler(0f, 90f, 0f));
+            // Moving-target scenarios use a long clear lane on the east side (x = 52, obstacles are 4+ m away from it): the player starts at its south end.
+            Transform Spawn(string name, float x, float z, float yaw) { var t = new GameObject(name).transform; t.SetPositionAndRotation(new Vector3(x, 0f, z), Quaternion.Euler(0f, yaw, 0f)); return t; }
+            var sameDirPlayer = Spawn("SameDirPlayerSpawn", 52f, -62f, 0f);
+            var sameDirTarget = Spawn("SameDirTargetSpawn", 52f, -37f, 0f);      // 25 m ahead of the player, driving away along +z
+            var headOnPlayer = Spawn("HeadOnPlayerSpawn", 52f, -62f, 0f);
+            var headOnTarget = Spawn("HeadOnTargetSpawn", 52f, 58f, 180f);       // 120 m ahead, driving towards the player along -z
 
             // ---------------------------------------------------------------- camera, UI, game
             var camGO = new GameObject("Main Camera") { tag = "MainCamera" };
@@ -196,6 +202,11 @@ namespace CarWreck.Driving.EditorTools
             game.targetRig = targetRig;
             game.playerSpawn = playerSpawn;
             game.targetSpawn = targetSpawn;
+            game.sameDirPlayerSpawn = sameDirPlayer;
+            game.sameDirTargetSpawn = sameDirTarget;
+            game.headOnPlayerSpawn = headOnPlayer;
+            game.headOnTargetSpawn = headOnTarget;
+            game.routeLength = 95f;
             game.playerIndex = 0;
             game.targetIndex = 2;
             game.chaseCamera = chase;

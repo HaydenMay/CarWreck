@@ -39,6 +39,7 @@ namespace CarWreck.Driving.EditorTools
                 C.Throttle = throttle(i);
                 C.SteerInput = steer;
                 C.Tick(Dt);
+                if (game.Target.controller != null) { game.Target.driver?.Drive(); game.Target.controller.Tick(Dt); }   // moving target: its driver feeds its own controller
                 Physics.Simulate(Dt);
                 game.Player.Receiver.Step(Dt);
                 game.Target.Receiver.Step(Dt);
@@ -262,6 +263,107 @@ namespace CarWreck.Driving.EditorTools
                     Check($"{Names[p]} reversing into pickup: rear impact with real damage", pr.applied && rear && game.Target.Model.ImpactCount > 0,
                           $"closing {pr.closingSpeed * 3.6f:0} km/h (peak {peak:0}), region '{pr.region}', player strength {pr.strength * 100f:0}% ({pr.energy / 1000f:0} kJ), target strength {tr.strength * 100f:0}%, deform {pr.deformMilliseconds:0.0}/{tr.deformMilliseconds:0.0} ms");
                 }
+                // ================================================================ moving target scenarios
+                sb.AppendLine("  -- moving target scenarios (muscle car player, pickup target; target speed in km/h) --");
+                foreach (var mode in new[] { DrivingGame.TargetMode.SameDirection, DrivingGame.TargetMode.HeadOn })
+                {
+                    string label = mode == DrivingGame.TargetMode.SameDirection ? "SAME DIRECTION" : "HEAD-ON";
+                    game.SelectPlayer(0);
+                    game.SetTargetMode((int)mode);
+                    game.SelectTarget(2);
+                    game.Player.Receiver.logImpacts = false; game.Target.Receiver.logImpacts = false;
+                    game.SetTargetSpeedKmh(40f);
+                    game.ResetAll();
+                    var ps = mode == DrivingGame.TargetMode.SameDirection ? game.sameDirPlayerSpawn : game.headOnPlayerSpawn;
+                    var ts = mode == DrivingGame.TargetMode.SameDirection ? game.sameDirTargetSpawn : game.headOnTargetSpawn;
+                    Check($"{label}: scenario selection places both cars", Vector3.Distance(new Vector3(P.position.x, 0, P.position.z), ps.position) < 0.1f && Vector3.Distance(new Vector3(T.position.x, 0, T.position.z), ts.position) < 0.1f && game.Target.driver != null,
+                          $"player at {P.position.ToString("F1")}, target at {T.position.ToString("F1")}, target driven {game.Target.driver != null}");
+
+                    // 1) the target drives straight at its configured speed, by physics (player idle, nothing in its way)
+                    foreach (float kmh in new[] { 30f, 60f })
+                    {
+                        game.SetTargetSpeedKmh(kmh);
+                        game.ResetAll();
+                        var t0 = T.position; var yaw0 = T.rotation.eulerAngles.y;
+                        float maxX = 0f;
+                        Step(150, 0f, 0f, i => maxX = Mathf.Max(maxX, Mathf.Abs(T.position.x - t0.x)));
+                        float sp = T.linearVelocity.magnitude * 3.6f;
+                        float yawDrift = Mathf.Abs(Mathf.DeltaAngle(yaw0, T.rotation.eulerAngles.y));
+                        float travelled = Vector3.Distance(new Vector3(T.position.x, 0, T.position.z), new Vector3(t0.x, 0, t0.z));
+                        Check($"{label}: target holds {kmh:0} km/h on a straight line", Mathf.Abs(sp - kmh) < 3f && maxX < 0.3f && yawDrift < 1f && Mathf.Abs(travelled - kmh / 3.6f * 3f) < 3f,
+                              $"speed {sp:0.0} km/h after 3 s, lateral drift {maxX:0.00} m, heading drift {yawDrift:0.0} deg, travelled {travelled:0.0} m (expected {kmh / 3.6f * 3f:0.0}), state {game.Target.driver.Current}");
+                    }
+                    // 2) route end: nothing hits it, it brakes to a stop inside the arena
+                    game.SetTargetSpeedKmh(40f);
+                    game.ResetAll();
+                    var tStart = T.position;
+                    Step(1000, 0f, 0f);       // 20 s
+                    float runLen = Vector3.Distance(new Vector3(T.position.x, 0, T.position.z), new Vector3(tStart.x, 0, tStart.z));
+                    Check($"{label}: unstruck target stops at the end of its route", game.Target.driver.Current == TargetDriver.State.Stopping && T.linearVelocity.magnitude < 0.6f && runLen > game.routeLength - 2f && runLen < game.routeLength + 15f && Mathf.Abs(T.position.z) < 69f,
+                          $"state {game.Target.driver.Current}, speed {T.linearVelocity.magnitude * 3.6f:0.0} km/h, ran {runLen:0} m (route {game.routeLength:0})");
+
+                    // 3) collision, repeated 5 times with a reset between runs
+                    var strengthsP = new System.Collections.Generic.List<float>(); var strengthsT = new System.Collections.Generic.List<float>();
+                    bool stable = true;
+                    for (int run = 0; run < 5; run++)
+                    {
+                        var events = new System.Text.StringBuilder();
+                        CollisionDamageReceiver.Report? firstP = null, firstT = null;          // the FIRST damaging hit of each car (later ones: wall pins, re-hits)
+                        System.Action<CollisionDamageReceiver.Report> logP = r => { if (r.applied && firstP == null) firstP = r; events.Append($"[P vs {r.other} {r.closingSpeed * 3.6f:0}km/h {r.strength * 100f:0}% {(r.applied ? "applied" : "not")} {r.region}] "); };
+                        System.Action<CollisionDamageReceiver.Report> logT = r => { if (r.applied && firstT == null) firstT = r; events.Append($"[T vs {r.other} {r.closingSpeed * 3.6f:0}km/h {r.strength * 100f:0}% {(r.applied ? "applied" : "not")} {r.region}] "); };
+                        game.Player.Receiver.ImpactRegistered += logP; game.Target.Receiver.ImpactRegistered += logT;
+                        game.ResetAll();
+                        Step(10, 0f, 0f);
+                        bool contact = false; int contactStep = -1; float preSpeedT = 0f, preSpeedP = 0f, postSpeedT = 0f, maxXT = 0f; var tp0 = T.position;
+                        Vector3 tFwd = game.Target.startRot * Vector3.forward;
+                        Step(700, 1f, 0f, i =>
+                        {
+                            if (!contact)
+                            {
+                                if (game.Player.Receiver.EventCount > 0 || game.Target.Receiver.EventCount > 0) { contact = true; contactStep = i; }
+                                else { preSpeedT = Vector3.Dot(T.linearVelocity, tFwd) * 3.6f; preSpeedP = P.linearVelocity.magnitude * 3.6f; maxXT = Mathf.Max(maxXT, Mathf.Abs(T.position.x - tp0.x)); }
+                            }
+                            else if (i == contactStep + 12 && postSpeedT == 0f) postSpeedT = Vector3.Dot(T.linearVelocity, tFwd) * 3.6f;    // 0.25 s after first contact
+                        });
+                        game.Player.Receiver.ImpactRegistered -= logP; game.Target.Receiver.ImpactRegistered -= logT;
+                        if (run == 0) sb.AppendLine($"    {label} run 1 events: {events}");
+                        var pr = firstP ?? game.Player.Receiver.Last; var tr = firstT ?? game.Target.Receiver.Last;
+                        float share = pr.energy / Mathf.Max(1f, pr.energy + tr.energy);
+                        bool finite = !float.IsNaN(P.position.x) && !float.IsNaN(T.position.x) && P.position.magnitude < 500f && T.position.magnitude < 500f;
+                        stable &= finite;
+                        strengthsP.Add(pr.strength * 100f); strengthsT.Add(tr.strength * 100f);
+                        if (run == 0)
+                        {
+                            float expectedClosing = mode == DrivingGame.TargetMode.SameDirection ? preSpeedP - preSpeedT : preSpeedP + preSpeedT;
+                            Check($"{label}: collision registers on both cars through the existing engine", pr.applied && tr.applied && game.Player.Model.ImpactCount > 0 && game.Target.Model.ImpactCount > 0 && Mathf.Abs(pr.closingSpeed * 3.6f - expectedClosing) < 8f,
+                                  $"closing {pr.closingSpeed * 3.6f:0} km/h (player {preSpeedP:0} / target {preSpeedT:0} km/h before impact, expected about {expectedClosing:0}), strength {pr.strength * 100f:0}% / {tr.strength * 100f:0}%, regions '{pr.region}' / '{tr.region}', deform {pr.deformMilliseconds:0}/{tr.deformMilliseconds:0} ms");
+                            Check($"{label}: target stayed on its straight path until impact", maxXT < 0.5f, $"max lateral deviation {maxXT:0.00} m (the player steers; the target never does)");
+                            bool reacted = mode == DrivingGame.TargetMode.SameDirection ? postSpeedT > preSpeedT + 1f : postSpeedT < preSpeedT - 8f;
+                            Check($"{label}: target reacts physically (velocity changed by the collision) and its driver lifts off", reacted && game.Target.driver.Current == TargetDriver.State.Struck,
+                                  $"target speed along its heading {preSpeedT:0} -> {postSpeedT:0} km/h, driver {game.Target.driver.Current}");
+                            if (mode == DrivingGame.TargetMode.SameDirection)
+                                Check($"{label}: attacker/retreating-car split follows momentum", Mathf.Abs(share - 0.15f) < 0.05f, $"player took {share * 100f:0}% of the energy (expected 15%)");
+                            else
+                                Check($"{label}: both attacking so the split is not lopsided", share > 0.25f && share < 0.6f, $"player took {share * 100f:0}% of the energy (muscle car vs pickup, both driving into each other)");
+                        }
+                    }
+                    float spread = Mathf.Max(strengthsP.Max() - strengthsP.Min(), strengthsT.Max() - strengthsT.Min());
+                    Check($"{label}: 5 repeated runs after reset are stable and consistent", stable && spread < 12f, $"player strengths {string.Join("/", strengthsP.Select(x => x.ToString("0")))}%, target {string.Join("/", strengthsT.Select(x => x.ToString("0")))}% (spread {spread:0} points)");
+
+                    // 4) reset restores everything, including the scenario movement
+                    game.ResetAll();
+                    Step(150, 0f, 0f);
+                    float spd = T.linearVelocity.magnitude * 3.6f;
+                    Check($"{label}: reset restores both cars, clears damage and restarts the target", MaxDisplacement(game.Player) < 1e-4f && MaxDisplacement(game.Target) < 1e-4f && game.Player.Model.ImpactCount == 0 && game.Target.Model.ImpactCount == 0 && Mathf.Abs(spd - 40f) < 3f && game.Target.driver.Current == TargetDriver.State.Driving,
+                          $"meshes restored, impacts {game.Player.Model.ImpactCount}/{game.Target.Model.ImpactCount}, target speed {spd:0.0} km/h 3 s after reset, driver {game.Target.driver.Current}");
+                }
+                // back to the original stationary scenario
+                game.SetTargetMode(0);
+                game.ResetAll();
+                Step(100, 0f, 0f);
+                Check("Stationary scenario restored after switching back", game.Target.driver == null && Vector3.Distance(T.position, game.Target.startPos) < 0.1f && T.linearVelocity.magnitude < 0.1f && Vector3.Distance(new Vector3(P.position.x, 0, P.position.z), game.playerSpawn.position) < 0.1f,
+                      $"target at {T.position.ToString("F1")} speed {T.linearVelocity.magnitude:0.00} m/s, player at {P.position.ToString("F1")}");
+
             }
             finally
             {

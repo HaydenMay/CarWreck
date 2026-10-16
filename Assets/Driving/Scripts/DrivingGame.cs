@@ -23,7 +23,18 @@ namespace CarWreck.Driving
         [Tooltip("The parked target has more ground friction, so it stops sliding like a car with its brakes on.")]
         public VehicleRigSettings targetRig = new VehicleRigSettings();
         public Transform playerSpawn, targetSpawn;
+        [Tooltip("Spawn points for the moving-target scenarios (same lane, east side of the arena, clear of obstacles).")]
+        public Transform sameDirPlayerSpawn, sameDirTargetSpawn, headOnPlayerSpawn, headOnTargetSpawn;
         public int playerIndex = 0, targetIndex = 2;
+
+        public enum TargetMode { Parked, SameDirection, HeadOn }
+        [Header("Target scenario")]
+        public TargetMode targetMode = TargetMode.Parked;
+        [Tooltip("Speed the moving target drives at (km/h); also its speed at the moment of reset. Menu buttons change it in steps.")]
+        public float targetSpeedKmh = 40f;
+        public float minTargetSpeedKmh = 10f, maxTargetSpeedKmh = 80f, targetSpeedStepKmh = 10f;
+        [Tooltip("Length of the straight test route (m). A target that reaches the end brakes to a stop.")]
+        public float routeLength = 95f;
 
         [Header("Scene")]
         public ChaseCamera chaseCamera;
@@ -46,7 +57,8 @@ namespace CarWreck.Driving
         {
             public VehicleRig.Rig rig;
             public VehicleDefinition def;
-            public ArcadeCarController controller;   // player only
+            public ArcadeCarController controller;   // player, and the moving target
+            public TargetDriver driver;              // moving target only
             public System.Action<CollisionDamageReceiver.Report> handler;
             public Vector3 startPos;
             public Quaternion startRot;
@@ -94,8 +106,8 @@ namespace CarWreck.Driving
                     if (!rb.isKinematic) startPoses.Add(new StartPose { rb = rb, pos = rb.position, rot = rb.rotation });
             playerIndex = Mathf.Clamp(playerIndex, 0, vehicles.Length - 1);
             targetIndex = Mathf.Clamp(targetIndex, 0, vehicles.Length - 1);
-            Player = Spawn(playerIndex, playerSpawn, playerRig, true);
-            Target = Spawn(targetIndex, targetSpawn, targetRig, false);
+            Player = Spawn(playerIndex, PlayerSpawnFor(targetMode), playerRig, true);
+            Target = SpawnTarget();
             if (ui != null) { ui.input = input; ui.game = this; }
             if (chaseCamera != null) { chaseCamera.target = Player.Body; chaseCamera.Snap(); }
             if (Application.isPlaying) OpenMenu();
@@ -103,7 +115,13 @@ namespace CarWreck.Driving
 
         // ------------------------------------------------------------------ building vehicles
 
-        Slot Spawn(int index, Transform spawn, VehicleRigSettings settings, bool isPlayer)
+        Transform PlayerSpawnFor(TargetMode m) => m == TargetMode.SameDirection ? sameDirPlayerSpawn : m == TargetMode.HeadOn ? headOnPlayerSpawn : playerSpawn;
+        Transform TargetSpawnFor(TargetMode m) => m == TargetMode.SameDirection ? sameDirTargetSpawn : m == TargetMode.HeadOn ? headOnTargetSpawn : targetSpawn;
+
+        /// <summary>The parked target (own high-friction material, no controller) or a driven one (same low-friction shell, controller and handling profile as the player's cars).</summary>
+        Slot SpawnTarget() => Spawn(targetIndex, TargetSpawnFor(targetMode), targetMode == TargetMode.Parked ? targetRig : playerRig, false, targetMode != TargetMode.Parked);
+
+        Slot Spawn(int index, Transform spawn, VehicleRigSettings settings, bool isPlayer, bool driven = false)
         {
             var def = vehicles[index];
             var rig = VehicleRig.Build(def, null, spawn.position, settings);
@@ -120,7 +138,7 @@ namespace CarWreck.Driving
             rig.body.rotation = rot;
             slot.startPos = pos;
             slot.startRot = rot;
-            if (isPlayer)
+            if (isPlayer || driven)
             {
                 var c = rig.root.AddComponent<ArcadeCarController>();
                 c.Apply(profiles[index]);
@@ -138,6 +156,14 @@ namespace CarWreck.Driving
             receiver.shareEnergyWithVehicles = shareEnergyBetweenVehicles;
             slot.handler = r => OnImpact(slot, isPlayer, r);
             receiver.ImpactRegistered += slot.handler;
+            if (driven)
+            {
+                // Moving target: a TargetDriver feeds the car's own controller (physics only; the transform is never written). It starts at speed.
+                slot.driver = rig.root.AddComponent<TargetDriver>();
+                slot.driver.receiver = receiver;
+                slot.driver.Begin(targetSpeedKmh / 3.6f, routeLength);
+                rig.body.linearVelocity = rot * Vector3.forward * (targetSpeedKmh / 3.6f);
+            }
             Physics.SyncTransforms();
             return slot;
         }
@@ -163,7 +189,7 @@ namespace CarWreck.Driving
             if (Player != null && index == playerIndex) return;
             Despawn(Player);
             playerIndex = index;
-            Player = Spawn(playerIndex, playerSpawn, playerRig, true);
+            Player = Spawn(playerIndex, PlayerSpawnFor(targetMode), playerRig, true);
             if (chaseCamera != null) { chaseCamera.target = Player.Body; if (MenuOpen) chaseCamera.SetMenuFocus(Player.rig.root.transform); }
             ClearHud();
         }
@@ -174,10 +200,39 @@ namespace CarWreck.Driving
             if (Target != null && index == targetIndex) return;
             Despawn(Target);
             targetIndex = index;
-            Target = Spawn(targetIndex, targetSpawn, targetRig, false);
+            Target = SpawnTarget();
             if (chaseCamera != null && MenuOpen) chaseCamera.SetMenuFocus(Target.rig.root.transform);
             ClearHud();
         }
+
+        // ------------------------------------------------------------------ target scenario (stationary / same direction / head-on)
+
+        /// <summary>0 = parked target, 1 = moving target driving the same way as the player, 2 = moving target driving towards the player.</summary>
+        public void SetTargetMode(int mode)
+        {
+            var m = (TargetMode)Mathf.Clamp(mode, 0, 2);
+            if (m == targetMode && Target != null) return;
+            targetMode = m;
+            Despawn(Target);
+            var ps = PlayerSpawnFor(targetMode);
+            Player.startPos = ps.position + Vector3.up * Player.rig.geometry.groundLift;
+            Player.startRot = Quaternion.Euler(0f, ps.eulerAngles.y, 0f);
+            ResetSlot(Player);
+            Target = SpawnTarget();
+            Physics.SyncTransforms();
+            if (chaseCamera != null) { chaseCamera.Snap(); if (MenuOpen) chaseCamera.SetMenuFocus(Player.rig.root.transform); }
+            ClearHud();
+        }
+
+        public void SetTargetSpeedKmh(float kmh)
+        {
+            targetSpeedKmh = Mathf.Clamp(Mathf.Round(kmh / 1f), minTargetSpeedKmh, maxTargetSpeedKmh);
+            if (Target != null && Target.driver != null) Target.driver.desiredSpeed = targetSpeedKmh / 3.6f;
+        }
+
+        public void StepTargetSpeed(int direction) => SetTargetSpeedKmh(targetSpeedKmh + direction * targetSpeedStepKmh);
+
+        public string TargetModeLabel => targetMode == TargetMode.Parked ? "parked" : targetMode == TargetMode.SameDirection ? $"same direction, {targetSpeedKmh:0} km/h" : $"head-on, {targetSpeedKmh:0} km/h";
 
         // ------------------------------------------------------------------ menu / pause
 
@@ -288,6 +343,13 @@ namespace CarWreck.Driving
         {
             ResetSlot(Player);
             ResetSlot(Target);
+            if (Target.driver != null)
+            {
+                // Moving scenario: the target starts each run already at its test speed (an initial velocity, then its own controller drives).
+                Target.Body.linearVelocity = Target.startRot * Vector3.forward * (targetSpeedKmh / 3.6f);
+                Target.driver.desiredSpeed = targetSpeedKmh / 3.6f;
+                Target.driver.Restart();
+            }
             foreach (var p in startPoses)
             {
                 if (p.rb == null) continue;
@@ -307,7 +369,7 @@ namespace CarWreck.Driving
             damageViewArmed = false;
             if (chaseCamera != null) { chaseCamera.yawOffset = 0f; chaseCamera.Snap(); }
             ClearHud();
-            if (ui != null) ui.SetImpact("Reset. Drive into the target vehicle or any obstacle.");
+            if (ui != null) ui.SetImpact($"Reset. Target: {TargetName}, {TargetModeLabel}.");
         }
 
         static void ResetSlot(Slot s)
@@ -344,6 +406,7 @@ namespace CarWreck.Driving
             var sb = new StringBuilder(512);
             var ci = CultureInfo.InvariantCulture;
             sb.Append("{\"scene\":\"drive\",\"menu\":").Append(MenuOpen ? "true" : "false")
+              .Append(",\"mode\":").Append((int)targetMode).Append(",\"tspeedSet\":").Append(targetSpeedKmh.ToString("0", ci)).Append(",\"tdrv\":\"").Append(Target.driver != null ? Target.driver.Current.ToString() : "-").Append('"')
               .Append(",\"vehicle\":\"").Append(PlayerName).Append("\",\"target\":\"").Append(TargetName).Append('"')
               .Append(",\"speedKmh\":").Append(SpeedKmh.ToString("0.0", ci))
               .Append(",\"fwdKmh\":").Append((Player.controller.ForwardSpeed * 3.6f).ToString("0.0", ci))
