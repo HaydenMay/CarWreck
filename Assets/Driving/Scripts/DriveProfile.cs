@@ -12,10 +12,6 @@ namespace CarWreck.Driving
         public string displayName = "Vehicle";
         [TextArea(2, 4)] public string description = "";
 
-        [Header("Damage")]
-        [Tooltip("How much of a vehicle-vs-vehicle collision's energy this vehicle absorbs, relative to the other car (see CollisionDamageReceiver.softness). 1 = baseline; below 1 = sturdier, above 1 = softer.")]
-        public float damageSoftness = 1f;
-
         [Header("Forward")]
         public float acceleration = 13f;
         public float maxSpeed = 30f;

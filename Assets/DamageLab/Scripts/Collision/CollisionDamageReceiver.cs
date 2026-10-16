@@ -40,8 +40,8 @@ namespace DamageLab.CollisionTest
         [Header("Two deformable vehicles (off by default: the Collision Lab is unaffected)")]
         [Tooltip("The energy computed below is what the whole collision dissipates. When the other body is also a damageable vehicle (it has its own receiver) the two cars share it, so each applies only a fraction instead of both applying all of it. Against walls and other non-vehicles the car still takes all of it.")]
         public bool shareEnergyWithVehicles;
-        [Tooltip("How soft this vehicle is when sharing: it absorbs softness / (softness + the other car's softness) of the dissipated energy. Equal values = half each; 1.25 against 0.8 = 61% / 39%.")]
-        [Range(0.2f, 5f)] public float softness = 1f;
+        [Tooltip("How lopsided the split can get. Each car's share of the energy depends on how much it was driving INTO the other (mass x speed towards it): 0.35 = an all-attacking car takes 15% and a stationary or retreating one takes 85%; both attacking equally = 50/50; 0 = always 50/50.")]
+        [Range(0f, 0.5f)] public float momentumShareRange = 0.35f;
 
         [Header("Event filtering")]
         [Tooltip("Seconds after an impact during which the same body cannot create another one.")]
@@ -177,9 +177,26 @@ namespace DamageLab.CollisionTest
         public void Step(float dt)
         {
             clock += dt;
-            if (pending.Count == 0) return;
-            foreach (var kv in pending) Process(kv.Key, kv.Value);
-            pending.Clear();
+            if (pending.Count > 0)
+            {
+                foreach (var kv in pending) Process(kv.Key, kv.Value);
+                pending.Clear();
+            }
+            if (body != null) velocityBeforeStep = body.linearVelocity;   // read by the next Step: the velocity from before the physics step that produced its contacts
+        }
+
+        Vector3 velocityBeforeStep;
+
+        /// <summary>This car's share (0.5 - range .. 0.5 + range) of the dissipated energy in a vehicle-vs-vehicle hit. Momentum each car was driving into the other (mass x speed along the contact normal, from before the impact): the more it attacked, the smaller its share; a stationary or retreating car takes the larger one.</summary>
+        float MomentumShare(Rigidbody other, Vector3 inwardNormal, Vector3 otherRelativeVelocity)
+        {
+            Vector3 vMe = velocityBeforeStep;
+            Vector3 vOther = vMe + otherRelativeVelocity;                  // pre-impact: relative velocity is the other body's velocity relative to this one
+            float pMe = body.mass * Mathf.Max(0f, -Vector3.Dot(vMe, inwardNormal));
+            float pOther = other.mass * Mathf.Max(0f, Vector3.Dot(vOther, inwardNormal));
+            float total = pMe + pOther;
+            float attack = total > 1e-3f ? pMe / total : 0.5f;             // 1 = I did all the attacking, 0 = none
+            return Mathf.Clamp(0.5f + momentumShareRange * (1f - 2f * attack), 0.5f - momentumShareRange, 0.5f + momentumShareRange);
         }
 
         void Process(Rigidbody other, Pending p)
@@ -206,7 +223,7 @@ namespace DamageLab.CollisionTest
             float mu = float.IsInfinity(mOther) && float.IsInfinity(mCar) ? body.mass
                      : float.IsInfinity(mOther) ? mCar : float.IsInfinity(mCar) ? mOther : mCar * mOther / (mCar + mOther);
             float energy = 0.5f * mu * vn * vn;
-            if (shareEnergyWithVehicles && other.TryGetComponent<CollisionDamageReceiver>(out var otherCar)) energy *= softness / (softness + otherCar.softness);
+            if (shareEnergyWithVehicles && other.TryGetComponent<CollisionDamageReceiver>(out _)) energy *= MomentumShare(other, n, v);
             float strength = energy <= energyThreshold ? 0f : 1f - Mathf.Exp(-(energy - energyThreshold) / Mathf.Max(1f, energyScale));
 
             Vector3 dir = separating ? n : (n * vn + vt * tangentialDirectionWeight).normalized;

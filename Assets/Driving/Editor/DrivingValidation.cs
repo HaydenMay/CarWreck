@@ -209,13 +209,40 @@ namespace CarWreck.Driving.EditorTools
                         sb.AppendLine($"  {Names[p],-18}-> {Names[t],-18}{pr.closingSpeed * 3.6f,4:0} | {pEv,2} {pDamage,3} {pr.strength * 100f,3:0} {pr.deformMilliseconds,5:0.0} | " +
                                       $"{tEv,2} {tDamage,3} {tr.strength * 100f,3:0} {tr.deformMilliseconds,5:0.0} | {moved,5:0.0} m {yawD,4:0}° | +{pExtra}/+{tExtra} | +{pSecond}/+{tSecond} | {(pPersist > 0.05f && tPersist > 0.05f ? "yes" : "NO")} | {(resetOk ? "ok" : "NO")}");
                         string key = $"{Names[p]} -> {Names[t]}";
-                        float sp = game.profiles[p].damageSoftness, st = game.profiles[t].damageSoftness;
-                        float want = sp / (sp + st);                       // player's share of the dissipated energy
-                        Check($"{Names[p]} -> {Names[t]}: softer car takes the stronger hit", Mathf.Approximately(sp, st) ? Mathf.Abs(pr.strength - tr.strength) < 0.02f : (sp > st) == (pr.strength > tr.strength),
-                              $"softness {sp:0.00} vs {st:0.00} (player takes {want * 100f:0}% of the energy): strength {pr.strength * 100f:0}% vs {tr.strength * 100f:0}%");
+                        float eRatio = pr.energy > 0f ? tr.energy / pr.energy : 0f;
+                        Check($"{key}: the parked target takes the bigger share (15/85)", tr.strength > pr.strength && eRatio > 4.5f && eRatio < 7f,
+                              $"energy applied: player {pr.energy / 1000f:0} kJ, target {tr.energy / 1000f:0} kJ (ratio {eRatio:0.0}, expected 5.7); strength {pr.strength * 100f:0}% vs {tr.strength * 100f:0}%");
                         Check($"{key}: both vehicles damaged and target pushed", both && (moved > 0.3f || yawD > 3f), $"player impacts {pDamage}, target impacts {tDamage}, target moved {moved:0.0} m / yawed {yawD:0}°");
                         Check($"{key}: damage persists and reset restores both", pPersist > 0.05f && tPersist > 0.05f && resetOk, $"max displacement after 1 s: player {pPersist:0.00} m, target {tPersist:0.00} m; reset ok {resetOk}");
                     }
+
+                // ================================================================ momentum split: moving cars
+                sb.AppendLine("  -- momentum split (player share of the dissipated energy; wall hits are unaffected) --");
+                {
+                    // hatchback (player, 15 m/s) head-on with a pickup (target, 15 m/s towards it): mass counts, the lighter car takes slightly more
+                    game.SelectPlayer(1); game.SelectTarget(2);
+                    game.Player.Receiver.logImpacts = false; game.Target.Receiver.logImpacts = false;
+                    game.ResetAll();
+                    Place(0f, -30f, 0f, 15f);
+                    T.linearVelocity = new Vector3(0f, 0f, -15f);
+                    Step(2, 0f, 0f);
+                    Step(150, 0f, 0f);
+                    var pr = game.Player.Receiver.Last; var tr = game.Target.Receiver.Last;
+                    float share = pr.energy / Mathf.Max(1f, pr.energy + tr.energy);
+                    float pm = 950f * 15f, tm = 1350f * 15f, want = 0.5f + 0.35f * (1f - 2f * pm / (pm + tm));
+                    Check("Hatchback head-on with a moving pickup: both attack, so the split stays near 50/50", pr.applied && tr.applied && share > 0.3f && share < 0.7f, $"(both attacking, so no lopsided split; speeds decay before contact so exact mass effect is not asserted) hatchback took {share * 100f:0}% of the energy (expected {want * 100f:0}%), strength {pr.strength * 100f:0}% vs {tr.strength * 100f:0}%; closing {pr.closingSpeed:0.0}/{tr.closingSpeed:0.0} m/s, energy {pr.energy / 1000f:0.0}/{tr.energy / 1000f:0.0} kJ, target speed now {T.linearVelocity.magnitude:0.0}, events {game.Player.Receiver.EventCount}/{game.Target.Receiver.EventCount}");
+                    // muscle (player, 25 m/s) rear-ends a muscle car driving away at 15 m/s: the attacker takes the small share
+                    game.SelectPlayer(0); game.SelectTarget(0);
+                    game.Player.Receiver.logImpacts = false; game.Target.Receiver.logImpacts = false;
+                    game.ResetAll();
+                    Place(0f, -30f, 0f, 25f);
+                    T.linearVelocity = new Vector3(0f, 0f, 15f);
+                    Step(2, 0f, 0f);
+                    Step(200, 0f, 0f);
+                    pr = game.Player.Receiver.Last; tr = game.Target.Receiver.Last;
+                    share = pr.energy / Mathf.Max(1f, pr.energy + tr.energy);
+                    Check("Rear-ending a retreating car: the attacker takes the small share", pr.applied && tr.applied && Mathf.Abs(share - 0.15f) < 0.04f, $"attacker took {share * 100f:0}% of the energy, strength {pr.strength * 100f:0}% vs {tr.strength * 100f:0}%");
+                }
 
                 // ================================================================ rear-first hits
                 sb.AppendLine("  -- player reverses into a parked pickup (full reverse throttle from 40 m away) --");

@@ -36,7 +36,7 @@ namespace CarWreck.Driving
         public float damageEnergyThreshold = 1500f;
         [Tooltip("Energy above the threshold for about 63% strength. The receiver default (60000) saturates at about 70 km/h, so every hard hit looked the same; a larger value spreads damage across the speed range so harder hits do visibly more.")]
         public float damageEnergyScale = 80000f;
-        [Tooltip("Vehicle-vs-vehicle hits: the two cars share the energy the collision dissipates instead of each taking all of it.")]
+        [Tooltip("Vehicle-vs-vehicle hits: the two cars share the energy the collision dissipates by momentum (the car that was attacking takes less, a stationary or retreating one takes more) instead of each taking all of it.")]
         public bool shareEnergyBetweenVehicles = true;
         [Tooltip("Impacts whose deformation took longer than this (ms) are flagged as hitches.")]
         public float hitchMilliseconds = 40f;
@@ -136,7 +136,6 @@ namespace CarWreck.Driving
             receiver.energyThreshold = damageEnergyThreshold;
             receiver.energyScale = damageEnergyScale;
             receiver.shareEnergyWithVehicles = shareEnergyBetweenVehicles;
-            receiver.softness = profiles[index].damageSoftness;
             slot.handler = r => OnImpact(slot, isPlayer, r);
             receiver.ImpactRegistered += slot.handler;
             Physics.SyncTransforms();
