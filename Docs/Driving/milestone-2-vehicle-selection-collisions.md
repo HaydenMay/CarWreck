@@ -142,3 +142,19 @@ Desktop WebGL, muscle car into parked pickup: 55 km/h gives 38%, 65 km/h gives 4
 Checked: driving validation 43/43 (new: in all nine pairings the softer car takes the stronger hit, equal cars are equal); Collision Lab validation unchanged. Live desktop WebGL at about 74 km/h closing: hatchback into pickup 59% (hatchback) / 43% (pickup); pickup into hatchback 42% / 57%; muscle into muscle 60% / 60%.
 
 **Update (build 20261016-0348):** playtest feedback was that a flat per-vehicle softness is unfair (a hatchback hitting a stationary pickup took more damage than the pickup, which leaves it uncompetitive). All three vehicles are now 1.0, so both cars in a hit take equal strength and the differences come only from speed, mass, handling and where the hit lands. The `softness` mechanism stays available (default 1) but is not used. A fairer way to give vehicles identities is a direction-dependent one (a sturdy front, weaker sides and rear, so hitting an opponent's weak spot pays off); not built. Live check, ~75 km/h: hatchback into pickup 54% / 54%, pickup into hatchback 50% / 50%.
+
+## Momentum-based damage split (build 20261016-0400, replaces softness)
+
+Agreed design (after playtest feedback that a stationary car should lose the trade and the car that is moving into it should be rewarded for good timing): in a vehicle-vs-vehicle hit the game still computes the energy the collision dissipates (reduced mass, closing speed), then splits it by **how much each car was driving into the other**, using the velocities from just before the impact: `attack = mass x speed along the contact normal toward the other car`. A car's share is `0.5 + 0.35 x (1 - 2 x its fraction of the total attack)`: an all-attacking car takes **15%**, a stationary or retreating car **85%**, two equal attackers 50/50, and heavier attackers push the split their way. Walls and other non-vehicles are unchanged (the car takes everything). The only shared-engine code: `CollisionDamageReceiver.shareEnergyWithVehicles` (default off, Collision Lab unchanged) and `momentumShareRange` (0.35), plus remembering the velocity before each physics step. The per-vehicle softness setting was removed; all vehicles use the same rule.
+
+Examples, as agreed (muscle 1,400 kg, hatchback 950 kg, pickup 1,350 kg):
+
+| Hit | Old 50/50 | Now (first car / second car) |
+|---|---|---|
+| Muscle at 72 km/h into parked muscle | 58 / 58 | 22 / 77 |
+| Hatchback at 72 km/h into parked pickup | 49 / 49 | 17 / 69 |
+| Pickup at 72 km/h into parked hatchback | 49 / 49 | 17 / 69 |
+| Muscle at 90 km/h rear-ends a muscle at 54 km/h | 18 / 18 | 5 / 30 |
+| Reverse at 44 km/h into a parked pickup (muscle) | 26 / 26 | 7 / 41 |
+
+Checks: driving validation 45/45 (new: the parked target takes 85% in all nine pairings with a 5.7 energy ratio; a moving pickup head-on keeps the split near 50/50; rear-ending a retreating car gives the attacker 15%); Collision Lab validation unchanged. Live desktop WebGL at about 75 km/h: muscle into muscle 24% / 81%, hatchback into pickup 18% / 71%, pickup into hatchback 18% / 70%, reverse into the south wall at 36 km/h 57% (wall unchanged). Mobile not re-measured.
