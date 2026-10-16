@@ -109,3 +109,19 @@ Repeated impacts meet the updated boundary: the struck car's contact z (where th
 ## J. Recommendation
 
 Ready for review. The change is small (one runtime file), reversible (`refitColliders`), and the measured gap drops from 0.06 to 0.56 m of invisible wall down to under 0.08 m in all front scenarios, with repeated hits colliding against the damaged shape. Review points: the 0.2 s settle delay, the upper-edge overlap and the narrow-dent behaviour (limitations 2 and 3), and a mobile/WebGL check before publishing.
+
+## K. WebGL smoke test (local build before merging)
+
+Build `20261016-1804-df0611b` (0 errors, 21.9 MB), served locally, driven in the in-app Chromium (desktop, synthetic key events; software-rendered, so 8 to 57 fps: not a performance measurement). The page state now also reports `prefits` / `trefits` (refits applied) and `pshell` / `tshell` (largest shell face retraction, m).
+
+| Scenario | Result |
+|---|---|
+| Parked pickup, muscle car at 86 km/h (side-on) | player 30 % / pickup 87 %; one refit each; shells retracted 0.04 m / 0.27 m |
+| Repeated hits on the same pickup (3 more rams) | one refit per damaging hit per car; pickup shell 0.27 -> 0.32 -> 0.35 m |
+| Reset x3 (R key, after damage) | meshes, shells (0 m), impact counts, positions and velocities restored each time |
+| ENEMY mode | enemy waited, pursued, hit the idle player at 70 km/h (player 74 % / enemy 20 %, one refit each, player shell 0.21 m); kept pursuing; after the player rammed it twice its shell was 0.19 m and it still drove |
+| HEAD-ON (135 km/h closing) | 89 % / 98 %; shells 0.30 m / 0.47 m |
+| SAME WAY with a different car (hatchback) | vehicle selection and mode switching worked; rear-end at 48 km/h: pickup 40 % / hatchback 7 %, pickup shell 0.09 m |
+| Parked mode | covered by the first row |
+
+Not tested in a browser: a real phone or touch controls, other browsers, long sessions, and the WebGL cost of the refit itself (the per-impact deformation pair measured 43 to 76 ms in this software-rendered pane, the same order as before; the refit is not separable from it here).
