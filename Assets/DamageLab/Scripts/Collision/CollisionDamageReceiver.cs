@@ -37,6 +37,12 @@ namespace DamageLab.CollisionTest
         [Tooltip("How much the sideways (scraping) velocity tilts the push direction (0 = pure contact normal).")]
         [Range(0f, 1f)] public float tangentialDirectionWeight = 0.5f;
 
+        [Header("Two deformable vehicles (off by default: the Collision Lab is unaffected)")]
+        [Tooltip("The energy computed below is what the whole collision dissipates. When the other body is also a damageable vehicle (it has its own receiver) the two cars share it, so each applies only a fraction instead of both applying all of it. Against walls and other non-vehicles the car still takes all of it.")]
+        public bool shareEnergyWithVehicles;
+        [Tooltip("Fraction of the dissipated energy this vehicle absorbs when sharing (0.5 = both cars equally soft).")]
+        [Range(0.05f, 1f)] public float sharedEnergyFraction = 0.5f;
+
         [Header("Event filtering")]
         [Tooltip("Seconds after an impact during which the same body cannot create another one.")]
         public float cooldown = 0.5f;
@@ -200,6 +206,7 @@ namespace DamageLab.CollisionTest
             float mu = float.IsInfinity(mOther) && float.IsInfinity(mCar) ? body.mass
                      : float.IsInfinity(mOther) ? mCar : float.IsInfinity(mCar) ? mOther : mCar * mOther / (mCar + mOther);
             float energy = 0.5f * mu * vn * vn;
+            if (shareEnergyWithVehicles && other.TryGetComponent<CollisionDamageReceiver>(out _)) energy *= sharedEnergyFraction;
             float strength = energy <= energyThreshold ? 0f : 1f - Mathf.Exp(-(energy - energyThreshold) / Mathf.Max(1f, energyScale));
 
             Vector3 dir = separating ? n : (n * vn + vt * tangentialDirectionWeight).normalized;
