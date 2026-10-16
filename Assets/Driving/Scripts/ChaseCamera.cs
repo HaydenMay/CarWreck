@@ -28,6 +28,24 @@ namespace CarWreck.Driving
         public float fovMax = 70f;
         public float fovSpeed = 30f;
 
+        [Header("Free look (swipe / drag on empty screen)")]
+        [Tooltip("Seconds after the last swipe before the view eases back behind the car.")]
+        public float lookReturnDelay = 3f;
+        public float lookReturnTime = 0.5f;
+        public float minLift = -1.2f, maxLift = 6f;
+        float userYaw, userLift, userYawVel, userLiftVel, lastLookTime = -99f;
+        public float UserYaw => userYaw;
+        public float LastLookTime => lastLookTime;
+
+        /// <summary>Swipe input: yaw degrees (swipe right swings the camera round to the left of the car) and a height change in metres.</summary>
+        public void AddUserLook(float dYaw, float dLift)
+        {
+            lastLookTime = Time.unscaledTime;
+            if (menuFocus != null) { menuAngle += dYaw; return; }
+            userYaw = Mathf.DeltaAngle(0f, userYaw + dYaw);
+            userLift = Mathf.Clamp(userLift + dLift, minLift, maxLift);
+        }
+
         [Header("Damage view")]
         [Tooltip("Extra heading (deg) added to the chase heading: the game swings the view round to the damage after a crash.")]
         public float yawOffset;
@@ -80,6 +98,7 @@ namespace CarWreck.Driving
 
         public void Snap()
         {
+            userYaw = userLift = 0f; lastLookTime = -99f;
             snapped = false;
             if (isActiveAndEnabled && target != null) LateUpdate();
         }
@@ -134,10 +153,15 @@ namespace CarWreck.Driving
 
             // Smooth only the vertical component (ramps, landings); the horizontal offset stays locked to the car.
             smoothedY = snapped ? Mathf.Lerp(smoothedY, t.position.y, 1f - Mathf.Exp(-heightSharpness * dt)) : t.position.y;
-            Quaternion heading = Quaternion.Euler(0f, yaw, 0f);
+            if (Time.unscaledTime - lastLookTime > lookReturnDelay)
+            {
+                userYaw = Mathf.SmoothDampAngle(userYaw, 0f, ref userYawVel, lookReturnTime, Mathf.Infinity, dt);
+                userLift = Mathf.SmoothDamp(userLift, 0f, ref userLiftVel, lookReturnTime, Mathf.Infinity, dt);
+            }
+            Quaternion heading = Quaternion.Euler(0f, yaw + userYaw, 0f);
             Vector3 anchor = new Vector3(t.position.x, smoothedY, t.position.z);
             Vector3 look = anchor + Vector3.up * lookHeight;
-            Vector3 pos = anchor + heading * new Vector3(0f, height, -distance);
+            Vector3 pos = anchor + heading * new Vector3(0f, height + userLift, -distance);
 
             // Pull the camera in when something solid is behind the car (instantly in, eased back out).
             Vector3 toCam = pos - look;

@@ -29,6 +29,19 @@ namespace CarWreck.Driving
         }
     }
 
+    /// <summary>Invisible full-screen layer behind every button: a swipe or mouse drag on empty screen orbits the camera.
+    /// Buttons sit in front of it, so fingers on the pedals and steering never reach it (each finger is its own pointer).</summary>
+    public class LookDragPad : MonoBehaviour, IDragHandler
+    {
+        public ChaseCamera cam;
+        public float degreesPerPixel = 0.3f, metresPerPixel = 0.03f;
+        public void OnDrag(PointerEventData e)
+        {
+            if (cam == null) return;
+            cam.AddUserLook(e.delta.x * degreesPerPixel, -e.delta.y * metresPerPixel);
+        }
+    }
+
     /// <summary>
     /// Builds the whole driving overlay in code: speed read-out, last-impact line, key hints, the on-screen touch
     /// controls (steer left / right bottom-left, gas / brake bottom-right, reset top-right) and a touch on/off toggle.
@@ -42,6 +55,7 @@ namespace CarWreck.Driving
         Canvas canvas;
         GameObject touchRoot;
         GameObject menuRoot, cornerRoot;
+        LookDragPad lookPad;
         Button[] playerButtons, targetButtons;
         bool menuBuilt;
         Text speedText, impactText, hintText, flipText, touchToggleLabel;
@@ -87,6 +101,7 @@ namespace CarWreck.Driving
 
         void Update()
         {
+            if (lookPad != null && lookPad.cam == null && game != null) lookPad.cam = game.chaseCamera;
             if (input != null && input.TouchSeen && !touchVisible && !userToggled) SetTouch(true, false);
             if (game == null) return;
             if (speedText != null) speedText.text = $"{Mathf.Abs(game.SpeedKmh):0}<size=26> km/h</size>";
@@ -193,6 +208,14 @@ namespace CarWreck.Driving
             cgo.AddComponent<GraphicRaycaster>();
             var root = (RectTransform)cgo.transform;
 
+            // -------------------------------------------------------------- swipe-to-look layer (first child = behind everything)
+            var padGO = new GameObject("LookPad", typeof(RectTransform), typeof(Image));
+            padGO.transform.SetParent(root, false);
+            var prt = (RectTransform)padGO.transform;
+            prt.anchorMin = Vector2.zero; prt.anchorMax = Vector2.one; prt.offsetMin = prt.offsetMax = Vector2.zero;
+            padGO.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0f);
+            lookPad = padGO.AddComponent<LookDragPad>();
+
             // -------------------------------------------------------------- HUD
             speedText = Label("Speed", root, "0", 64, TextAnchor.UpperLeft, FontStyle.Bold);
             Anchor(speedText.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(28, -18), new Vector2(360, 90));
@@ -200,7 +223,7 @@ namespace CarWreck.Driving
             impactText = Label("Impact", root, "Drive into something solid to see the damage.", 22, TextAnchor.UpperLeft, FontStyle.Normal);
             Anchor(impactText.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(30, -96), new Vector2(500, 120));
             impactText.fontSize = 19;
-            hintText = Label("Hint", root, "W / S  accelerate - brake / reverse     A / D  steer     R  reset     M  menu", 22, TextAnchor.LowerCenter, FontStyle.Normal);
+            hintText = Label("Hint", root, "W / S  accelerate - brake / reverse     A / D  steer     R  reset     M  menu     drag  look around", 22, TextAnchor.LowerCenter, FontStyle.Normal);
             Anchor(hintText.rectTransform, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 18), new Vector2(1100, 40));
             flipText = Label("Flipped", root, "Flipped?  Press R  (or tap RESET)", 34, TextAnchor.MiddleCenter, FontStyle.Bold);
             Anchor(flipText.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 120), new Vector2(900, 60));

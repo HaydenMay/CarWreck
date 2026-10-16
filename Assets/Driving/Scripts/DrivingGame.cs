@@ -263,6 +263,7 @@ namespace CarWreck.Driving
         {
             if (chaseCamera == null) return;
             sinceImpact += Time.deltaTime;
+            if (Time.unscaledTime - chaseCamera.LastLookTime < 0.5f) damageViewArmed = false;   // the player is steering the camera themself
             bool still = Player.Body.linearVelocity.sqrMagnitude < 4f;
             bool driving = Mathf.Abs(input.Throttle) > 0.1f || Mathf.Abs(input.Steer) > 0.1f;
             bool show = damageViewArmed && still && sinceImpact < 12f && !(driving && damageViewShown > 1.5f);
@@ -346,6 +347,7 @@ namespace CarWreck.Driving
               .Append(",\"x\":").Append(p.x.ToString("0.00", ci)).Append(",\"y\":").Append(p.y.ToString("0.00", ci)).Append(",\"z\":").Append(p.z.ToString("0.00", ci))
               .Append(",\"yaw\":").Append(b.rotation.eulerAngles.y.ToString("0.0", ci))
               .Append(",\"tx\":").Append(tp.x.ToString("0.00", ci)).Append(",\"tz\":").Append(tp.z.ToString("0.00", ci)).Append(",\"tyaw\":").Append(Target.Body.rotation.eulerAngles.y.ToString("0.0", ci))
+              .Append(",\"look\":").Append(chaseCamera != null ? chaseCamera.UserYaw.ToString("0.0", ci) : "0")
               .Append(",\"tspeed\":").Append((Target.Body.linearVelocity.magnitude * 3.6f).ToString("0.0", ci))
               .Append(",\"throttle\":").Append(input.Throttle.ToString("0.0", ci)).Append(",\"steer\":").Append(input.Steer.ToString("0.0", ci))
               .Append(",\"grounded\":").Append(Player.controller.IsGrounded ? "true" : "false")
