@@ -51,6 +51,14 @@ namespace DamageLab.CollisionTest
         public bool logImpacts = true;
         [Tooltip("Use the impacting BoxCollider's shape for the dent footprint (off = Phase 1 point impacts).")]
         public bool geometryAwareFootprint = true;
+        [Tooltip("When the other body touches the car with several aligned box colliders in the same event (a vehicle's segmented physics shell: " +
+                 "FrontLeft / FrontCentre / FrontRight ...), the dent footprint is their combined box instead of only the first one reported. " +
+                 "Only boxes that actually made contact are combined, so an offset hit stays local. A single-box impactor (wall, lab block) is unaffected.")]
+        public bool combineImpactorBoxes = true;
+        [Tooltip("Vehicle-vs-vehicle only (the other body has its own receiver, combineImpactorBoxes on): extra physics steps an event keeps gathering " +
+                 "contacts before it is applied. Shell segments of a sloped or rounded face can first touch one step apart; without this the later " +
+                 "ones fall into the cooldown and the dent covers only the first segment. Walls and lab blocks are processed immediately as before.")]
+        [Range(0, 3)] public int vehicleGatherSteps = 1;
         [Tooltip("After a body has made its damaging impact, its further contacts (bounces, depenetration pushes, re-touches) are logged " +
                  "but cause no damage until it is re-armed (ClearCooldowns / ResetState: the lab does this on every launch and block reset).")]
         public bool oneImpactPerLaunch = true;
@@ -77,7 +85,12 @@ namespace DamageLab.CollisionTest
             public float deformMilliseconds;
             public ImpactFootprint footprint; // contact patch (geometry-aware impacts)
             public string carCollider;        // which car collider was struck (e.g. "FrontLeftBox")
+            public string impactorColliders;  // the other body's box colliders that touched in this event ("FrontLeftBox + FrontCentreBox")
+            public int impactorBoxes;         // how many of them shaped the footprint (1 = the first box only)
         }
+
+        /// <summary>Diagnostics: every collision callback from a rigidbody, and whether it joined an event (false = ignored by the cooldown).</summary>
+        public event Action<UnityEngine.Collision, bool> ContactsReceived;
 
         public bool HasReport { get; private set; }
         public Report Last { get; private set; }
@@ -90,7 +103,14 @@ namespace DamageLab.CollisionTest
             public float impulse;
             public int contacts;
             public float minSeparation;   // most negative ContactPoint.separation (= penetration when the contact was reported)
-            public BoxImpactor box;   // world space, pose at the first reported contact
+            public BoxImpactor box;   // in the other body's frame until Process places it in vehicle (model) space
+            public Vector3 otherPosition; public Quaternion otherRotation; // the other body's pose in vehicle space at the first box contact
+            public Vector3 boxMin, boxMax; // union of the aligned impactor boxes, in the first box's frame (about its centre)
+            public bool vehicle;      // the other body is a damageable vehicle: the event may gather contacts for vehicleGatherSteps more steps
+            public int age;           // steps this event has already waited
+            public Vector3 velocityBefore; // this car's velocity before the step that produced the first contact (momentum split)
+            public readonly List<BoxCollider> boxes = new List<BoxCollider>(4);
+            public string impactors;
             public string carCollider; // the car collider of the deepest contact
         }
 
@@ -136,13 +156,22 @@ namespace DamageLab.CollisionTest
         {
             var other = c.rigidbody;
             if (other == null || other == body) return;              // ground and other static geometry
-            if (lastHit.TryGetValue(other, out float t) && clock - t < cooldown) return;
+            bool cooling = lastHit.TryGetValue(other, out float t) && clock - t < cooldown;
+            ContactsReceived?.Invoke(c, !cooling);
+            if (cooling) return;
 
             c.GetContacts(contactBuffer);
             if (contactBuffer.Count == 0) return;
-            if (!pending.TryGetValue(other, out var p)) pending[other] = p = new Pending();
+            if (!pending.TryGetValue(other, out var p))
+            {
+                pending[other] = p = new Pending { velocityBefore = velocityBeforeStep };
+                p.vehicle = combineImpactorBoxes && vehicleGatherSteps > 0 && other.TryGetComponent<CollisionDamageReceiver>(out _);
+            }
+            // A gathered vehicle event takes its strength inputs (point, normal, velocity, impulse, penetration) from its first
+            // step only, exactly as without gathering; contacts from the extra step only add impactor boxes (the footprint).
+            bool first = p.age == 0;
             Vector3 com = body.worldCenterOfMass;
-            foreach (var cp in contactBuffer)
+            if (first) foreach (var cp in contactBuffer)
             {
                 Vector3 n = cp.normal;
                 if (Vector3.Dot(n, com - cp.point) < 0f) n = -n;      // orient into the car
@@ -151,26 +180,59 @@ namespace DamageLab.CollisionTest
                 Vector3 pt = cp.point;
                 float pen = -cp.separation;
                 if (pen > 0f && cp.thisCollider is BoxCollider own && InsideDepth(own, pt) > 0.5f * pen) pt -= n * pen;
-                p.pointSum += pt;
-                p.normalSum += n;
+                p.pointSum += model.transform.InverseTransformPoint(pt);       // vehicle space: an event may span steps
+                p.normalSum += model.transform.InverseTransformDirection(n);
                 p.contacts++;
                 if (cp.separation <= p.minSeparation || p.carCollider == null) p.carCollider = cp.thisCollider != null ? cp.thisCollider.name : null;
                 p.minSeparation = Mathf.Min(p.minSeparation, cp.separation);
             }
-            p.impulse += c.impulse.magnitude;
-            if (c.relativeVelocity.sqrMagnitude > p.relativeVelocity.sqrMagnitude) p.relativeVelocity = c.relativeVelocity;
-            if (!p.box.valid && c.collider is BoxCollider bc && geometryAwareFootprint)
+            if (first) p.impulse += c.impulse.magnitude;
+            if (first && c.relativeVelocity.sqrMagnitude > p.relativeVelocity.sqrMagnitude) p.relativeVelocity = c.relativeVelocity;
+            if (c.collider is BoxCollider bc && geometryAwareFootprint && !p.boxes.Contains(bc))
             {
-                // The impactor's real shape: its box collider at the contact pose (world space).
+                // The impactor's real shape: its box collider, kept in the other body's own frame (where its shell boxes are
+                // fixed and aligned), and placed on this car at the pose of the event's first contact.
                 var bt = bc.transform;
-                p.box = new BoxImpactor
+                var ot = other.transform;
+                Vector3 center = ot.InverseTransformPoint(bt.TransformPoint(bc.center)), half = Vector3.Scale(bc.size, bt.lossyScale) * 0.5f;
+                half = new Vector3(Mathf.Abs(half.x), Mathf.Abs(half.y), Mathf.Abs(half.z));
+                Quaternion rotation = Quaternion.Inverse(ot.rotation) * bt.rotation;
+                if (!p.box.valid)
                 {
-                    valid = true,
-                    center = bt.TransformPoint(bc.center),
-                    rotation = bt.rotation,
-                    halfExtents = Vector3.Scale(bc.size, bt.lossyScale) * 0.5f,
-                };
+                    p.box = new BoxImpactor { valid = true, center = center, rotation = rotation, halfExtents = half };
+                    p.boxMin = -half; p.boxMax = half;
+                    p.boxes.Add(bc); p.impactors = bc.name;
+                    var root = model.transform;
+                    p.otherPosition = root.InverseTransformPoint(ot.position);
+                    p.otherRotation = Quaternion.Inverse(root.rotation) * ot.rotation;
+                }
+                else if (combineImpactorBoxes && Quaternion.Angle(rotation, p.box.rotation) < 0.5f)
+                {
+                    // Another segment of the same body's shell touched in this event (a vehicle's physics shell is tiled into
+                    // boxes): grow the footprint box to cover it. Only touching boxes join, so an offset hit stays local.
+                    Vector3 l = Quaternion.Inverse(p.box.rotation) * (center - p.box.center);
+                    p.boxMin = Vector3.Min(p.boxMin, l - half); p.boxMax = Vector3.Max(p.boxMax, l + half);
+                    p.boxes.Add(bc); p.impactors += " + " + bc.name;
+                }
             }
+        }
+
+        /// <summary>The event's impactor box: the first box reported, or the combined box of every aligned box that touched.</summary>
+        static BoxImpactor EventBox(Pending p)
+        {
+            var b = p.box;
+            if (p.boxes.Count <= 1) return b;
+            b.center += b.rotation * ((p.boxMin + p.boxMax) * 0.5f);
+            b.halfExtents = (p.boxMax - p.boxMin) * 0.5f;
+            return b;
+        }
+
+        /// <summary>The event box (other body's frame) placed in vehicle space at the first contact's pose.</summary>
+        static BoxImpactor InVehicleSpace(BoxImpactor b, Pending p)
+        {
+            b.center = p.otherPosition + p.otherRotation * b.center;
+            b.rotation = p.otherRotation * b.rotation;
+            return b;
         }
 
         /// <summary>Advance the event clock and turn the contacts gathered since the last call into impacts.</summary>
@@ -179,18 +241,23 @@ namespace DamageLab.CollisionTest
             clock += dt;
             if (pending.Count > 0)
             {
-                foreach (var kv in pending) Process(kv.Key, kv.Value);
-                pending.Clear();
+                ready.Clear();
+                foreach (var kv in pending)
+                {
+                    if (kv.Value.vehicle && kv.Value.age < vehicleGatherSteps) kv.Value.age++;   // still gathering this vehicle's contacts
+                    else ready.Add(kv.Key);
+                }
+                foreach (var other in ready) { Process(other, pending[other]); pending.Remove(other); }
             }
             if (body != null) velocityBeforeStep = body.linearVelocity;   // read by the next Step: the velocity from before the physics step that produced its contacts
         }
 
         Vector3 velocityBeforeStep;
+        readonly List<Rigidbody> ready = new List<Rigidbody>(4);
 
         /// <summary>This car's share (0.5 - range .. 0.5 + range) of the dissipated energy in a vehicle-vs-vehicle hit. Momentum each car was driving into the other (mass x speed along the contact normal, from before the impact): the more it attacked, the smaller its share; a stationary or retreating car takes the larger one.</summary>
-        float MomentumShare(Rigidbody other, Vector3 inwardNormal, Vector3 otherRelativeVelocity)
+        float MomentumShare(Rigidbody other, Vector3 inwardNormal, Vector3 otherRelativeVelocity, Vector3 vMe)
         {
-            Vector3 vMe = velocityBeforeStep;
             Vector3 vOther = vMe + otherRelativeVelocity;                  // pre-impact: relative velocity is the other body's velocity relative to this one
             float pMe = body.mass * Mathf.Max(0f, -Vector3.Dot(vMe, inwardNormal));
             float pOther = other.mass * Mathf.Max(0f, Vector3.Dot(vOther, inwardNormal));
@@ -203,12 +270,14 @@ namespace DamageLab.CollisionTest
         {
             lastHit[other] = clock;
             EventCount++;
-            Vector3 n = p.normalSum.sqrMagnitude > 1e-8f ? p.normalSum.normalized : (body.worldCenterOfMass - p.pointSum / p.contacts).normalized;
+            var root = model.transform;
+            Vector3 point = root.TransformPoint(p.pointSum / p.contacts);
+            Vector3 n = p.normalSum.sqrMagnitude > 1e-8f ? root.TransformDirection(p.normalSum.normalized) : (body.worldCenterOfMass - point).normalized;
             // A fast block can be reported only after it has moved part of a step into the collider. Back the impactor
             // pose out along the normal by that penetration (contact points were corrected per contact above).
             float penetration = Mathf.Max(0f, -p.minSeparation);
-            Vector3 point = p.pointSum / p.contacts;
-            if (p.box.valid) p.box.center -= n * penetration;
+            if (p.box.valid) p.box = InVehicleSpace(EventBox(p), p);
+            if (p.box.valid) p.box.center -= root.InverseTransformDirection(n) * penetration;
             // Collision.relativeVelocity is the other body's velocity relative to this one (verified by the
             // validation: every approaching hit has vn > 0). A contact whose bodies are already separating
             // along the normal is not an impact, so it is never flipped into one.
@@ -223,11 +292,10 @@ namespace DamageLab.CollisionTest
             float mu = float.IsInfinity(mOther) && float.IsInfinity(mCar) ? body.mass
                      : float.IsInfinity(mOther) ? mCar : float.IsInfinity(mCar) ? mOther : mCar * mOther / (mCar + mOther);
             float energy = 0.5f * mu * vn * vn;
-            if (shareEnergyWithVehicles && other.TryGetComponent<CollisionDamageReceiver>(out _)) energy *= MomentumShare(other, n, v);
+            if (shareEnergyWithVehicles && other.TryGetComponent<CollisionDamageReceiver>(out _)) energy *= MomentumShare(other, n, v, p.velocityBefore);
             float strength = energy <= energyThreshold ? 0f : 1f - Mathf.Exp(-(energy - energyThreshold) / Mathf.Max(1f, energyScale));
 
             Vector3 dir = separating ? n : (n * vn + vt * tangentialDirectionWeight).normalized;
-            var root = model.transform;
             Vector3 localDir = root.InverseTransformDirection(dir);
             Vector3 localContact = root.InverseTransformPoint(point);
             model.SurfacePointAlong(localContact, localDir, out Vector3 localPoint, surfaceLane);
@@ -239,14 +307,7 @@ namespace DamageLab.CollisionTest
                 normal = -root.InverseTransformDirection(n),
                 strength = strength,
             };
-            if (p.box.valid)
-                impact.impactor = new BoxImpactor
-                {
-                    valid = true,
-                    center = root.InverseTransformPoint(p.box.center),
-                    rotation = Quaternion.Inverse(root.rotation) * p.box.rotation,
-                    halfExtents = p.box.halfExtents,
-                };
+            if (p.box.valid) impact.impactor = p.box;   // already in vehicle space
 
             var report = new Report
             {
@@ -265,6 +326,8 @@ namespace DamageLab.CollisionTest
                 contactPoint = localContact,
                 penetration = penetration,
                 carCollider = p.carCollider,
+                impactorColliders = p.impactors,
+                impactorBoxes = p.boxes.Count,
                 region = Region(localPoint),
             };
             report.suppressed = strength > 0f && oneImpactPerLaunch && spent.Contains(other);
@@ -292,6 +355,7 @@ namespace DamageLab.CollisionTest
                                       $"impulse {report.impulse:0} N·s, μ {report.reducedMass:0} kg, E {report.energy / 1000f:0.0} kJ, strength {report.strength * 100f:0.0}, " +
                                       $"{report.contacts} contacts, at {report.localPoint.ToString("F2")} ({report.region}) dir {report.localDirection.ToString("F2")}, " +
                                       $"{(report.footprint.valid ? $"footprint {report.footprint.kind} {report.footprint.halfU * 2f:0.00} x {report.footprint.halfV * 2f:0.00} m ({report.footprint.area:0.00} m², crush {report.footprint.travel:0.000} m), " : "")}" +
+                                      $"{(report.impactorBoxes > 1 ? $"impactor {report.impactorColliders}, " : "")}" +
                                       $"{(report.separating ? "separating, " : "")}{(report.applied ? $"deform {report.deformMilliseconds:0.0} ms" : report.suppressed ? "no damage (block already made its impact this launch)" : "no damage")}");
             ImpactRegistered?.Invoke(report);
         }

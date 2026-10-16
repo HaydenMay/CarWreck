@@ -316,15 +316,20 @@ namespace CarWreck.Driving.EditorTools
                         Step(10, 0f, 0f);
                         bool contact = false; int contactStep = -1; float preSpeedT = 0f, preSpeedP = 0f, postSpeedT = 0f, maxXT = 0f; var tp0 = T.position;
                         Vector3 tFwd = game.Target.startRot * Vector3.forward;
+                        // First physical car-car contact (the damage event itself is gathered for a step, so EventCount lags it).
+                        bool touched = false;
+                        System.Action<UnityEngine.Collision, bool> onTouch = (c, ok) => { if (c.rigidbody == P || c.rigidbody == T) touched = true; };
+                        game.Player.Receiver.ContactsReceived += onTouch;
                         Step(700, 1f, 0f, i =>
                         {
                             if (!contact)
                             {
-                                if (game.Player.Receiver.EventCount > 0 || game.Target.Receiver.EventCount > 0) { contact = true; contactStep = i; }
+                                if (touched || game.Player.Receiver.EventCount > 0 || game.Target.Receiver.EventCount > 0) { contact = true; contactStep = i; }
                                 else { preSpeedT = Vector3.Dot(T.linearVelocity, tFwd) * 3.6f; preSpeedP = P.linearVelocity.magnitude * 3.6f; maxXT = Mathf.Max(maxXT, Mathf.Abs(T.position.x - tp0.x)); }
                             }
                             else if (i == contactStep + 12 && postSpeedT == 0f) postSpeedT = Vector3.Dot(T.linearVelocity, tFwd) * 3.6f;    // 0.25 s after first contact
                         });
+                        game.Player.Receiver.ContactsReceived -= onTouch;
                         game.Player.Receiver.ImpactRegistered -= logP; game.Target.Receiver.ImpactRegistered -= logT;
                         if (run == 0) sb.AppendLine($"    {label} run 1 events: {events}");
                         var pr = firstP ?? game.Player.Receiver.Last; var tr = firstT ?? game.Target.Receiver.Last;
