@@ -7,6 +7,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#101214">
+  <meta http-equiv="Cache-Control" content="no-cache">
   <title>CarWreck - Driving Prototype</title>
   <style>
     :root {
@@ -92,9 +93,9 @@
     </div>
   </div>
 
-  <script src="Build/WebGLDrive.loader.js"></script>
+  <script src="Build/WebGLDrive.20261016-0054-b9e6923.loader.js"></script>
   <script>
-    const BUILD_ID = "20261016-0051-6b1855e";
+    const BUILD_ID = "20261016-0054-b9e6923";
     window.carwreckBuild = BUILD_ID;
     const canvas = document.getElementById("unity-canvas");
     const fill = document.getElementById("fill");
@@ -102,6 +103,14 @@
     const label = document.getElementById("label");
     const loader = document.getElementById("loader");
     document.getElementById("build").textContent = "Build " + BUILD_ID;
+
+    // Stale-page guard: GitHub Pages lets browsers cache index.html for ~10 minutes. If the published build is newer than this page,
+    // reload once through a different URL so the newest build files are used (a ?r= page never redirects again).
+    if (!/[?&]r=/.test(location.search)) {
+      fetch("version.json?" + Date.now(), { cache: "no-store" }).then((r) => r.json()).then((v) => {
+        if (v && v.buildId && v.buildId !== BUILD_ID) location.replace(location.pathname + "?r=" + encodeURIComponent(v.buildId));
+      }).catch(() => {});
+    }
 
     // --- keep the browser out of the way of the game ---
     const stop = (e) => e.preventDefault();
@@ -128,9 +137,9 @@
     window.addEventListener("touchstart", () => { window.__touchSeen = true; tellTouch(); }, { passive: true });
 
     createUnityInstance(canvas, {
-      dataUrl: "Build/WebGLDrive.data.unityweb",
-      frameworkUrl: "Build/WebGLDrive.framework.js.unityweb",
-      codeUrl: "Build/WebGLDrive.wasm.unityweb",
+      dataUrl: "Build/WebGLDrive.20261016-0054-b9e6923.data.unityweb",
+      frameworkUrl: "Build/WebGLDrive.20261016-0054-b9e6923.framework.js.unityweb",
+      codeUrl: "Build/WebGLDrive.20261016-0054-b9e6923.wasm.unityweb",
       streamingAssetsUrl: "StreamingAssets",
       companyName: "CarWreck",
       productName: "CarWreck Driving Prototype",
