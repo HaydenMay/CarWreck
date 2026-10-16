@@ -23,6 +23,9 @@ namespace CarWreck.Driving.EditorTools
         const float Dt = 0.02f;
         const float ExactTolerance = 1e-6f;      // mesh space, m: instant replay vs progressive final (same arithmetic, so bit-identical is expected)
         const float LogicalTolerance = 1e-4f;    // vehicle space, m: displayed vs DeformedVehiclePosition through a recomposed matrix
+        // Arena cars vs a standalone replay of their impact records: the same car replayed 400 m away differs by float rounding (instant mode, i.e. the engine before
+        // progressive crushing, shows the identical residual: pickup 1.8e-5 m / normals 3e-3 after a 170 km/h head-on), so these two are looser than ExactTolerance.
+        const float ReplayPositionTolerance = 5e-5f, ReplayNormalTolerance = 1e-2f;
 
         [MenuItem("CarWreck/Validate Progressive Crush", priority = 13)]
         public static void Run() => Debug.Log(Execute());
@@ -349,7 +352,7 @@ namespace CarWreck.Driving.EditorTools
         {
             bool started = w.Hit && !w.shownInstantly && w.firstFrame > 0.02f && w.firstFrame < 0.95f;
             bool progressive = w.ticks >= 2;
-            bool exact = w.logicalDiff <= LogicalTolerance && (w.replayDiff < 0f || (w.replayDiff <= ExactTolerance && w.replayNormals <= ExactTolerance));
+            bool exact = w.logicalDiff <= LogicalTolerance && (w.replayDiff < 0f || (w.replayDiff <= ReplayPositionTolerance && w.replayNormals <= ReplayNormalTolerance));
             bool smooth = w.backwards == 0 && w.lastJump <= Mathf.Max(0.35f, w.maxJump) + 1e-4f;
             int expectTicks = Mathf.CeilToInt(w.duration / Dt - 1e-4f);
             bool timing = Mathf.Abs(w.duration - Settings(true).DurationFor(w.travel)) < 1e-4f && w.ticks >= expectTicks && w.ticks <= expectTicks + 1;
@@ -429,7 +432,7 @@ namespace CarWreck.Driving.EditorTools
         static void FrontalSeverities()
         {
             sb.AppendLine("  -- frontal severities (muscle car into the pickup, head-on, open ground) --");
-            var cases = new (string test, string label, float kmh)[] { ("A", "A. Light frontal (30 km/h closing)", 30f), ("B", "B. Moderate frontal (80 km/h closing)", 80f), ("C", "C. Severe frontal (170 km/h closing)", 170f) };
+            var cases = new (string test, string label, float kmh)[] { ("A", "A. Light frontal (50 km/h closing)", 50f), ("B", "B. Moderate frontal (80 km/h closing)", 80f), ("C", "C. Severe frontal (170 km/h closing)", 170f) };
             var durations = new List<float>();
             foreach (var c in cases)
             {

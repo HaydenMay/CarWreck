@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using DamageLab.CollisionTest;
+using DamageLab.Vehicle;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -36,6 +37,7 @@ namespace CarWreck.Driving.EditorTools
             game = UnityEngine.Object.FindFirstObjectByType<DrivingGame>();
             var prev = Physics.simulationMode;
             Physics.simulationMode = SimulationMode.Script;
+            VehicleDamageModel.ProgressiveInEditMode = Environment.GetEnvironmentVariable("CGP_PROGRESSIVE") == "1";   // progressive crushing on: one rendered frame per physics step
             var sb = new StringBuilder("[ColliderGapProbe] muscle car (player) vs compact pickup (target), head-on in open ground; metres; real PhysX, editor timings\n");
             try
             {
@@ -48,6 +50,7 @@ namespace CarWreck.Driving.EditorTools
             }
             finally
             {
+                VehicleDamageModel.ProgressiveInEditMode = false;
                 game.refitColliders = true;
                 Physics.simulationMode = prev;
             }
@@ -139,6 +142,7 @@ namespace CarWreck.Driving.EditorTools
                 if (pushWithPlayer) { game.Player.controller.Throttle = 1f; game.Player.controller.SteerInput = 0f; game.Player.controller.Tick(Dt); }
                 Physics.Simulate(Dt);
                 game.Player.Receiver.Step(Dt); game.Target.Receiver.Step(Dt);
+                game.Player.Model.AdvanceCrush(Dt); game.Target.Model.AdvanceCrush(Dt);
                 int uP = hbP.UpdateCount, uT = hbT.UpdateCount;
                 long b0 = UnityEngine.Profiling.Profiler.GetMonoUsedSizeLong();
                 game.AfterPhysicsStep(Dt);
@@ -275,6 +279,37 @@ namespace CarWreck.Driving.EditorTools
                     int lane = Lanes / 2;
                     sb.AppendLine($"   hit {hit}: pickup crush max {cT.crushMax:0.000}, excess gap max {cT.gapMax:0.000}, centre box face z {faceT.current:0.000} (limit {faceT.inner + T.rig.hitbox.minDepth:0.000}), centre metal z {sT.vis[lane * 3 + 1]:0.000} | " +
                                   $"muscle crush max {cP.crushMax:0.000}, excess gap max {cP.gapMax:0.000}, centre box face z {faceP.current:0.000} (limit {faceP.inner + P.rig.hitbox.minDepth:0.000}), centre metal z {sP.vis[lane * 3 + 1]:0.000}");
+                }
+
+                // Walls: the player into the north wall, then the pickup pinned between the player and the wall (driven, 3 s).
+                {
+                    game.ResetAll();
+                    var wallRep = new System.Text.StringBuilder();
+                    float wMaxAng = 0f, wMaxUp = 0f, wMaxSpeed = 0f; bool wNan = false;
+                    Action<int> watchW = i =>
+                    {
+                        wMaxAng = Mathf.Max(wMaxAng, P.Body.angularVelocity.magnitude, T.Body.angularVelocity.magnitude);
+                        wMaxUp = Mathf.Max(wMaxUp, Mathf.Abs(P.Body.linearVelocity.y), Mathf.Abs(T.Body.linearVelocity.y));
+                        wMaxSpeed = Mathf.Max(wMaxSpeed, P.Body.linearVelocity.magnitude, T.Body.linearVelocity.magnitude);
+                        wNan |= float.IsNaN(P.Body.position.x) || float.IsNaN(T.Body.position.x);
+                    };
+                    Place(T.Body, new Vector3(-40f, 0f, -40f), 0f, Vector3.zero);
+                    Place(P.Body, new Vector3(30f, 0f, 40f), 0f, Vector3.forward * (80f / 3.6f));
+                    Physics.SyncTransforms(); P.Receiver.ClearCooldowns(); T.Receiver.ClearCooldowns(); P.controller.ResetState();
+                    Sim(3f, true, watchW);
+                    float wallRetract = P.rig.hitbox.Faces.Max(f => f.original - f.current);
+                    sb.AppendLine($"9a Player into the north wall at 80 km/h, then driving on into it (3 s): player impacts {P.Model.ImpactCount}, deepest dent {MaxCrush(P):0.000} m, shell retracted {wallRetract:0.000} m, refits {P.refits}, crushing now {P.Model.IsCrushing}; " +
+                                  $"max angular speed {wMaxAng:0.00} rad/s, max vertical speed {wMaxUp:0.00} m/s, max speed {wMaxSpeed * 3.6f:0} km/h, NaN {wNan}, player speed now {P.Body.linearVelocity.magnitude * 3.6f:0.0} km/h, position z {P.Body.position.z:0.00} (wall at 70)");
+
+                    game.ResetAll(); wMaxAng = wMaxUp = wMaxSpeed = 0f; wNan = false;
+                    Place(T.Body, new Vector3(0f, 0f, 66.3f), 0f, Vector3.zero);
+                    Place(P.Body, new Vector3(0f, 0f, 55f), 0f, Vector3.forward * (50f / 3.6f));
+                    Physics.SyncTransforms(); P.Receiver.ClearCooldowns(); T.Receiver.ClearCooldowns(); P.controller.ResetState();
+                    Sim(4f, true, watchW);
+                    float tR = T.rig.hitbox.Faces.Max(f => f.original - f.current), pR = P.rig.hitbox.Faces.Max(f => f.original - f.current);
+                    sb.AppendLine($"9b Pickup pinned between the muscle car (50 km/h, then driven on 4 s) and the wall: impacts player {P.Model.ImpactCount} / pickup {T.Model.ImpactCount}, deepest dents {MaxCrush(P):0.000} / {MaxCrush(T):0.000} m, " +
+                                  $"shells retracted {pR:0.000} / {tR:0.000} m, refits {P.refits} / {T.refits}; max angular speed {wMaxAng:0.00} rad/s, max vertical speed {wMaxUp:0.00} m/s, NaN {wNan}, speeds now {P.Body.linearVelocity.magnitude * 3.6f:0.0} / {T.Body.linearVelocity.magnitude * 3.6f:0.0} km/h, " +
+                                  $"pickup z {T.Body.position.z:0.00}, player z {P.Body.position.z:0.00}, crushing {P.Model.IsCrushing}/{T.Model.IsCrushing}");
                 }
 
                 if (refitMs.Count > 0)
