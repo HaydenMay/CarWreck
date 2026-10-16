@@ -57,6 +57,7 @@ namespace CarWreck.Driving
         GameObject menuRoot, cornerRoot;
         LookDragPad lookPad;
         Button[] playerButtons, targetButtons, modeButtons;
+        Button driverButton; Text driverText;
         Text speedLabel;
         bool menuBuilt;
         Text speedText, impactText, hintText, flipText, touchToggleLabel;
@@ -164,10 +165,13 @@ namespace CarWreck.Driving
                 int idx = i;
                 modeButtons[i] = MenuButton("Mode" + i, mr, modeNames[i], 19, TextAnchor.MiddleCenter, new Vector2(36 + i * 147, -406), new Vector2(137, 58), () => { game.SetTargetMode(idx); RefreshMenu(); });
             }
-            MenuButton("SpeedDown", mr, "-", 34, TextAnchor.MiddleCenter, new Vector2(36, -472), new Vector2(110, 58), () => { game.StepTargetSpeed(-1); RefreshMenu(); });
-            speedLabel = Label("SpeedLabel", mr, "", 21, TextAnchor.MiddleCenter, FontStyle.Bold);
-            Anchor(speedLabel.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(156, -472), new Vector2(338, 58));
-            MenuButton("SpeedUp", mr, "+", 34, TextAnchor.MiddleCenter, new Vector2(504, -472), new Vector2(110, 58), () => { game.StepTargetSpeed(1); RefreshMenu(); });
+            MenuButton("SpeedDown", mr, "-", 34, TextAnchor.MiddleCenter, new Vector2(36, -472), new Vector2(80, 58), () => { game.StepTargetSpeed(-1); RefreshMenu(); });
+            speedLabel = Label("SpeedLabel", mr, "", 18, TextAnchor.MiddleCenter, FontStyle.Bold);
+            Anchor(speedLabel.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(122, -472), new Vector2(200, 58));
+            MenuButton("SpeedUp", mr, "+", 34, TextAnchor.MiddleCenter, new Vector2(326, -472), new Vector2(80, 58), () => { game.StepTargetSpeed(1); RefreshMenu(); });
+            // ENEMY mode only: cycles the enemy driver's personality (Brawler, Hunter, Cautious).
+            driverButton = MenuButton("Driver", mr, "", 18, TextAnchor.MiddleCenter, new Vector2(416, -472), new Vector2(198, 58), () => { game.CycleEnemyProfile(); RefreshMenu(); });
+            driverText = driverButton.GetComponentInChildren<Text>();
 
             var drive = MenuButton("Drive", mr, "DRIVE", 42, TextAnchor.MiddleCenter, new Vector2(36, -540), new Vector2(578, 84), () => game.CloseMenu());
             drive.targetGraphic.color = new Color(0.95f, 0.48f, 0.1f, 0.95f);
@@ -182,7 +186,10 @@ namespace CarWreck.Driving
             for (int i = 0; i < playerButtons.Length; i++) playerButtons[i].targetGraphic.color = i == game.playerIndex ? Chosen : Dark;
             for (int i = 0; i < targetButtons.Length; i++) targetButtons[i].targetGraphic.color = i == game.targetIndex ? Chosen : Dark;
             for (int i = 0; i < modeButtons.Length; i++) modeButtons[i].targetGraphic.color = i == (int)game.targetMode ? Chosen : Dark;
-            speedLabel.text = game.targetMode == DrivingGame.TargetMode.Parked ? "TARGET SPEED: parked" : game.targetMode == DrivingGame.TargetMode.Enemy ? $"ENEMY TOP SPEED  {game.enemySpeedKmh:0} km/h" : $"TARGET SPEED  {game.targetSpeedKmh:0} km/h";
+            speedLabel.text = game.targetMode == DrivingGame.TargetMode.Parked ? "SPEED: parked" : game.targetMode == DrivingGame.TargetMode.Enemy ? $"TOP SPEED  {game.enemySpeedKmh:0} km/h" : $"SPEED  {game.targetSpeedKmh:0} km/h";
+            bool enemyMode = game.targetMode == DrivingGame.TargetMode.Enemy;
+            driverButton.gameObject.SetActive(enemyMode);
+            if (enemyMode) driverText.text = $"DRIVER: {game.EnemyProfileName.ToUpperInvariant()}";
             speedLabel.color = game.targetMode == DrivingGame.TargetMode.Parked ? new Color(1f, 1f, 1f, 0.45f) : Color.white;
         }
 

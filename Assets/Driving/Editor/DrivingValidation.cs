@@ -665,7 +665,8 @@ namespace CarWreck.Driving.EditorTools
                     game.SetTargetMode((int)DrivingGame.TargetMode.Enemy);
                     game.SelectTarget(2);
                     game.ResetAll();
-                    Step(1000, 0f, 0f, i => { });
+                    Step(400, 0f, 0f, i => { });
+                    var clHold = game.Target.enemy; clHold.startDelay = 1000f; clHold.Restart();      // the enemy keeps attacking; hold it so the last hit has time to be refitted
                     Step(60, 0f, 0f);
                     bool clBoth = game.Player.Model.ImpactCount > 0 && game.Target.Model.ImpactCount > 0;
                     Check("Colliders E. AI vehicle: the enemy's shell is refitted after its own attack (one refit per hit, nothing left pending)", game.Target.enemy != null && clBoth && game.Player.refits > 0 && game.Target.refits > 0 && !game.Player.rig.hitbox.HasPending && !game.Target.rig.hitbox.HasPending,
