@@ -127,22 +127,22 @@ namespace CarWreck.Driving
             {
                 int idx = i;
                 var p = game.profiles[i];
-                string text = $"<b>{p.displayName.ToUpperInvariant()}</b>   {game.vehicles[i].mass:N0} kg\n<size=19>{p.description}</size>";
-                playerButtons[i] = MenuButton("Car" + i, mr, text, 24, TextAnchor.MiddleLeft, new Vector2(36, -76 - i * 106), new Vector2(578, 96), () => { game.SelectPlayer(idx); RefreshMenu(); });
+                string text = $"<b>{p.displayName.ToUpperInvariant()}</b>   {game.vehicles[i].mass:N0} kg\n<size=20>{p.description}</size>";
+                playerButtons[i] = MenuButton("Car" + i, mr, text, 24, TextAnchor.MiddleLeft, new Vector2(36, -72 - i * 98), new Vector2(578, 90), () => { game.SelectPlayer(idx); RefreshMenu(); });
             }
 
             var tl = Label("TargetLabel", mr, "TARGET VEHICLE  (parked: crash into it)", 22, TextAnchor.UpperLeft, FontStyle.Bold);
-            Anchor(tl.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(36, -400), new Vector2(580, 30));
+            Anchor(tl.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(36, -370), new Vector2(580, 28));
             targetButtons = new Button[n];
             string[] shortNames = { "MUSCLE CAR", "HATCHBACK", "PICKUP" };
             for (int i = 0; i < n; i++)
             {
                 int idx = i;
                 targetButtons[i] = MenuButton("Target" + i, mr, i < shortNames.Length ? shortNames[i] : game.vehicles[i].displayName, 22, TextAnchor.MiddleCenter,
-                    new Vector2(36 + i * 196, -436), new Vector2(186, 80), () => { game.SelectTarget(idx); RefreshMenu(); });
+                    new Vector2(36 + i * 196, -400), new Vector2(186, 72), () => { game.SelectTarget(idx); RefreshMenu(); });
             }
 
-            var drive = MenuButton("Drive", mr, "DRIVE", 44, TextAnchor.MiddleCenter, new Vector2(36, -540), new Vector2(578, 112), () => game.CloseMenu());
+            var drive = MenuButton("Drive", mr, "DRIVE", 44, TextAnchor.MiddleCenter, new Vector2(36, -486), new Vector2(578, 96), () => game.CloseMenu());
             drive.targetGraphic.color = new Color(0.95f, 0.48f, 0.1f, 0.95f);
             var colors = drive.colors; colors.normalColor = colors.highlightedColor = Color.white; colors.pressedColor = new Color(0.8f, 0.8f, 0.8f); colors.selectedColor = Color.white; drive.colors = colors;
         }
