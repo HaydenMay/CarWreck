@@ -162,8 +162,11 @@ namespace DamageLab.Deformation
         }
 
         /// <summary>Rebuild the deformed mesh. With <paramref name="onlyIfImpactsChanged"/> a part whose impact sum did not
-        /// change since its last rebuild is skipped (the directional slider state must be unchanged too); returns whether it rebuilt.</summary>
-        public bool Apply(CrushField[] fields, RegionState[] states, float roofStart, float roofEnd, ImpactField impacts = null, bool onlyIfImpactsChanged = false)
+        /// change since its last rebuild is skipped (the directional slider state must be unchanged too); returns whether it rebuilt.
+        /// With <paramref name="progressive"/> the new state is solved exactly the same way, but the mesh is not uploaded: it starts a
+        /// display ramp from what is on screen now (<see cref="Ramping"/>, advanced by <see cref="ShowRamp"/>). Restoring the original
+        /// mesh is always immediate.</summary>
+        public bool Apply(CrushField[] fields, RegionState[] states, float roofStart, float roofEnd, ImpactField impacts = null, bool onlyIfImpactsChanged = false, bool progressive = false)
         {
             if (onlyIfImpactsChanged && appliedOnce && !ImpactDirty) return false;
             appliedOnce = true;
@@ -177,6 +180,7 @@ namespace DamageLab.Deformation
             {
                 if (!deformed) return false;
                 // Exact restore: copy the original arrays back.
+                Ramping = false;
                 System.Array.Copy(baseVerts, work, n);
                 RuntimeMesh.SetVertices(baseVerts);
                 RuntimeMesh.SetNormals(baseNormals);
@@ -185,6 +189,8 @@ namespace DamageLab.Deformation
                 deformed = false;
                 return true;
             }
+
+            if (progressive) CaptureDisplayed();   // before work / workNormals are overwritten
 
             // Displacement is a pure function of per-vertex constants, so vertex chunks run in parallel.
             applyFields = fields; applyStates = states; applyRoofStart = roofStart; applyRoofEnd = roofEnd;
@@ -203,6 +209,8 @@ namespace DamageLab.Deformation
                 workNormals[i] = m > 1e-12f ? nn / Mathf.Sqrt(m) : baseNormals[i];
             }
 
+            if (progressive && PrepareRamp()) { deformed = true; return true; }
+            Ramping = false;   // an immediate rebuild supersedes a running ramp
             RuntimeMesh.SetVertices(work);
             RuntimeMesh.SetNormals(workNormals);
             RuntimeMesh.RecalculateBounds();
@@ -241,6 +249,116 @@ namespace DamageLab.Deformation
                 if (applyImpacts != null) disp += applyImpacts.Limit(impactSum[i], impactCap[i]);
                 work[i] = baseVerts[i] + vehicleToMesh.MultiplyVector(disp);
             }
+        }
+
+        // ---- Progressive crushing (display only) ----
+        // `work` / `workNormals` always hold the final solved state (DeformedVehiclePosition, hitbox fitting and the next hit's
+        // footprint read it). During a ramp the mesh shows `shown`, which travels from `rampFrom` (what was on screen when the ramp
+        // started) to `work`. Only vertices whose position or shading changes are touched; the buffers are allocated on the first
+        // ramp and reused.
+        Vector3[] rampFrom, rampFromNormals, shown, shownNormals;
+        int[] rampVerts;
+        int rampCount;
+        const float MovedEpsilon2 = 1e-12f;     // (1 µm)²: a vertex that moves less than this is not part of the ramp
+        const float NormalEpsilon2 = 1e-8f;     // shading normal change below 1e-4: not part of the ramp
+
+        /// <summary>True while the displayed mesh is still travelling towards the solved state (<see cref="DeformedVehiclePosition"/>).</summary>
+        public bool Ramping { get; private set; }
+        /// <summary>Largest distance (m, vehicle space) a vertex travels in the current ramp.</summary>
+        public float RampTravel { get; private set; }
+        /// <summary>Vertices updated per frame by the current ramp (0 when not ramping).</summary>
+        public int RampVertexCount => Ramping ? rampCount : 0;
+
+        /// <summary>Copy what is on screen now into the ramp's start state.</summary>
+        void CaptureDisplayed()
+        {
+            int n = baseVerts.Length;
+            if (rampFrom == null)
+            {
+                rampFrom = new Vector3[n]; rampFromNormals = new Vector3[n];
+                shown = new Vector3[n]; shownNormals = new Vector3[n];
+                rampVerts = new int[n];
+            }
+            if (Ramping) { System.Array.Copy(shown, rampFrom, n); System.Array.Copy(shownNormals, rampFromNormals, n); }
+            else if (deformed) { System.Array.Copy(work, rampFrom, n); System.Array.Copy(workNormals, rampFromNormals, n); }
+            else { System.Array.Copy(baseVerts, rampFrom, n); System.Array.Copy(baseNormals, rampFromNormals, n); }
+        }
+
+        /// <summary>Collect the vertices that move from the captured state to <c>work</c>. False (and no ramp) when nothing visibly moves.</summary>
+        bool PrepareRamp()
+        {
+            int n = baseVerts.Length;
+            rampCount = 0;
+            float travel2 = 0f;
+            Vector3 min = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue), max = -min;
+            for (int i = 0; i < n; i++)
+            {
+                Vector3 w = work[i];
+                min = Vector3.Min(min, w); max = Vector3.Max(max, w);
+                Vector3 d = w - rampFrom[i];
+                if (d.sqrMagnitude <= MovedEpsilon2 && (workNormals[i] - rampFromNormals[i]).sqrMagnitude <= NormalEpsilon2) continue;
+                rampVerts[rampCount++] = i;
+                travel2 = Mathf.Max(travel2, meshToVehicle.MultiplyVector(d).sqrMagnitude);
+            }
+            RampTravel = Mathf.Sqrt(travel2);
+            Ramping = rampCount > 0;
+            if (!Ramping) return false;
+            System.Array.Copy(rampFrom, shown, n);
+            System.Array.Copy(rampFromNormals, shownNormals, n);
+            // Every displayed vertex lies between its start and its target, so this box holds the mesh for the whole ramp.
+            var b = RuntimeMesh.bounds;
+            b.Encapsulate(min); b.Encapsulate(max);
+            RuntimeMesh.bounds = b;
+            return true;
+        }
+
+        /// <summary>A newer hit restarted the vehicle's ramp: continue from what is shown now towards the (unchanged) solved state.</summary>
+        public void RestartRamp()
+        {
+            if (!Ramping) return;
+            CaptureDisplayed();
+            PrepareRamp();
+            if (!Ramping) FinishRamp(true);
+        }
+
+        /// <summary>
+        /// Show the ramp at time fraction <paramref name="t"/> (0..1). A vertex's start is delayed by <paramref name="stagger"/> times its
+        /// depth behind <paramref name="point"/> along <paramref name="dir"/> (vehicle space) scaled by <paramref name="invDepth"/> (clamped to 1),
+        /// so the struck surface leads and the metal behind it follows; all vertices arrive at t = 1.
+        /// </summary>
+        public void ShowRamp(float t, Vector3 point, Vector3 dir, float invDepth, float stagger)
+        {
+            if (!Ramping) return;
+            // Scalar arithmetic: this loop runs every frame of a crush over every moving vertex, and Vector3 operators cost several
+            // times more under the Mono JIT (editor).
+            for (int k = 0; k < rampCount; k++)
+            {
+                int i = rampVerts[k];
+                Vector3 p = vehiclePos[i];
+                float depth = (p.x - point.x) * dir.x + (p.y - point.y) * dir.y + (p.z - point.z) * dir.z;
+                float e = ProgressiveCrushSettings.Ease(t, stagger * Mathf.Clamp01(depth * invDepth));
+                Vector3 a = rampFrom[i], w = work[i];
+                shown[i] = new Vector3(a.x + (w.x - a.x) * e, a.y + (w.y - a.y) * e, a.z + (w.z - a.z) * e);
+                Vector3 na = rampFromNormals[i], nw = workNormals[i];
+                float nx = na.x + (nw.x - na.x) * e, ny = na.y + (nw.y - na.y) * e, nz = na.z + (nw.z - na.z) * e;
+                float m = nx * nx + ny * ny + nz * nz;
+                if (m > 1e-12f) { float s = 1f / Mathf.Sqrt(m); shownNormals[i] = new Vector3(nx * s, ny * s, nz * s); }
+                else shownNormals[i] = nw;
+            }
+            RuntimeMesh.SetVertices(shown);
+            RuntimeMesh.SetNormals(shownNormals);
+            if (wireMesh != null) wireMesh.SetVertices(shown);
+        }
+
+        /// <summary>End the ramp: show exactly the solved state (the same arrays an immediate rebuild uploads).</summary>
+        public void FinishRamp(bool force = false)
+        {
+            if (!Ramping && !force) return;
+            Ramping = false;
+            RuntimeMesh.SetVertices(work);
+            RuntimeMesh.SetNormals(workNormals);
+            RuntimeMesh.RecalculateBounds();
+            if (wireMesh != null) { wireMesh.SetVertices(work); wireMesh.RecalculateBounds(); }
         }
 
         Vector3[] impactSum;              // per vertex: summed raw displacement of all localized impacts
@@ -357,7 +475,8 @@ namespace DamageLab.Deformation
         public Vector3 ImpactedVehiclePosition(int i, ImpactField field) =>
             impactSum == null || !hasImpacts ? vehiclePos[i] : vehiclePos[i] + field.Limit(impactSum[i], impactCap[i]);
 
-        /// <summary>Current rendered position of vertex i in vehicle space (original when undeformed).</summary>
+        /// <summary>Current solved position of vertex i in vehicle space (original when undeformed). This is the rendered position too,
+        /// except while a progressive crush is still showing the way there (<see cref="Ramping"/>).</summary>
         public Vector3 DeformedVehiclePosition(int i) => deformed ? meshToVehicle.MultiplyPoint3x4(work[i]) : vehiclePos[i];
         /// <summary>Original vertex with the smallest distance t ≥ 0 along d from o, within √r2 of the line.</summary>
         public void FirstAlongLane(Vector3 o, Vector3 d, float r2, ref float bestT, ref Vector3 bestPoint)
