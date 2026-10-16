@@ -124,3 +124,7 @@ Feedback: the player seemed to take the brunt, and target damage did not grow wi
 * **Side hits look smaller on the target.** In a T-bone the player's front dents 2-5x more vertices (a wide crush) than the struck door (a narrow patch), at the same strength and 0.3-0.45 m depth. This is the engine's side-region behaviour (a damage-profile property shared with the Collision Lab); it was left alone and needs approval to change.
 
 Change (configuration only, no engine code): `DrivingGame.damageEnergyScale` = 100,000 J (applied to both receivers at spawn), so strength now rises across the speed range. Desktop WebGL, muscle into parked muscle: 50 km/h gives 48%, 62 km/h gives 64%, 86 km/h gives 86%, on both cars. Reverse rear hit at 44 km/h into a pickup now reads about 39% (was 56%). The parked target's ground friction was lowered (0.5 to 0.35) so it slides farther: 3.3 m, 8 m, 11.7 m for those three hits.
+
+## Free look (build 20261016-0210)
+
+Swipe (touch) or drag (mouse) on empty screen to orbit the camera around the car; vertical movement raises/lowers it. The view eases back behind the car 3 s after the last swipe, and a swipe cancels the post-crash damage view. In the menu a drag spins the car preview. `LookDragPad` is an invisible full-screen layer behind all buttons, so pedal/steering fingers never reach it; verified with a synthetic two-finger test (gas held while swiping). Not tested on a real device.
