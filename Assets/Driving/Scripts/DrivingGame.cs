@@ -488,6 +488,15 @@ namespace CarWreck.Driving
             if (ui != null && on == "1") ui.SetTouch(true, false);
         }
 
+        /// <summary>Largest distance (m) any face of the car's damage-aware shell has retracted from its undamaged position (page report only).</summary>
+        static float ShellRetraction(Slot s)
+        {
+            float m = 0f;
+            if (s == null || s.rig == null || s.rig.hitbox == null || s.rig.hitbox.Faces == null) return m;
+            foreach (var f in s.rig.hitbox.Faces) m = Mathf.Max(m, f.original - f.current);
+            return float.IsNaN(m) ? 0f : m;
+        }
+
         void ReportToPage()
         {
 #if UNITY_WEBGL && !UNITY_EDITOR
@@ -499,6 +508,7 @@ namespace CarWreck.Driving
             sb.Append("{\"scene\":\"drive\",\"menu\":").Append(MenuOpen ? "true" : "false")
               .Append(",\"mode\":").Append((int)targetMode).Append(",\"tspeedSet\":").Append(targetSpeedKmh.ToString("0", ci)).Append(",\"tdrv\":\"").Append(Target.driver != null ? Target.driver.Current.ToString() : "-").Append('"')
               .Append(",\"enemy\":\"").Append(Target.enemy != null ? Target.enemy.Current.ToString() : "-").Append("\",\"edist\":").Append(Target.enemy != null ? Target.enemy.DistanceToPlayer.ToString("0", ci) : "0").Append(",\"ehits\":").Append(Target.enemy != null ? Target.enemy.HitsLanded : 0).Append(",\"estuck\":").Append(Target.enemy != null ? Target.enemy.RecoveriesTriggered : 0)
+              .Append(",\"prefits\":").Append(Player.refits).Append(",\"trefits\":").Append(Target.refits).Append(",\"pshell\":").Append(ShellRetraction(Player).ToString("0.000", ci)).Append(",\"tshell\":").Append(ShellRetraction(Target).ToString("0.000", ci))
               .Append(",\"vehicle\":\"").Append(PlayerName).Append("\",\"target\":\"").Append(TargetName).Append('"')
               .Append(",\"speedKmh\":").Append(SpeedKmh.ToString("0.0", ci))
               .Append(",\"fwdKmh\":").Append((Player.controller.ForwardSpeed * 3.6f).ToString("0.0", ci))
