@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CarWreck.Driving.DriveProfile
   displayName: Compact Hatchback
   description: 'Agile & light: quick, sharp steering, less momentum'
-  damageSoftness: 1.25
+  damageSoftness: 1
   acceleration: 15.5
   maxSpeed: 29
   reverseAcceleration: 12.5

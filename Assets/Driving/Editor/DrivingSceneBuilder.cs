@@ -151,14 +151,14 @@ namespace CarWreck.Driving.EditorTools
                     p.acceleration = 15.5f; p.maxSpeed = 29f; p.reverseAcceleration = 12.5f; p.reverseMaxSpeed = 13.5f;
                     p.brakeDeceleration = 30f; p.coastDeceleration = 1.4f;
                     p.steerRateLow = 125f; p.steerRateHigh = 42f; p.steerRise = 7f; p.steerReturn = 11f; p.steerResponse = 30f;
-                    p.grip = 11f; p.maxGripAcceleration = 28f; p.brakingGripScale = 0.6f; p.downforce = 0.2f; p.damageSoftness = 1.25f;
+                    p.grip = 11f; p.maxGripAcceleration = 28f; p.brakingGripScale = 0.6f; p.downforce = 0.2f; p.damageSoftness = 1f;
                 }),
                 Profile("Pickup", "Compact Pickup", "Heavy & deliberate: slow to turn, solid hits", p =>
                 {
                     p.acceleration = 9.5f; p.maxSpeed = 26f; p.reverseAcceleration = 8.5f; p.reverseMaxSpeed = 11.5f;
                     p.brakeDeceleration = 19f; p.coastDeceleration = 1.0f;
                     p.steerRateLow = 78f; p.steerRateHigh = 26f; p.steerFullAuthoritySpeed = 3.5f; p.steerRise = 3.2f; p.steerReturn = 6f; p.steerResponse = 22f;
-                    p.grip = 7f; p.maxGripAcceleration = 20f; p.brakingGripScale = 0.5f; p.downforce = 0.25f; p.damageSoftness = 0.8f;
+                    p.grip = 7f; p.maxGripAcceleration = 20f; p.brakingGripScale = 0.5f; p.downforce = 0.25f; p.damageSoftness = 1f;
                 }),
             };
             var wire = AssetDatabase.LoadAssetAtPath<Material>(DamageLabAssets.MaterialFolder + "/Wireframe.mat") ?? DamageLabAssets.WireframeMaterial();
