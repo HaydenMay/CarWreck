@@ -77,6 +77,14 @@ namespace CarWreck.Driving
         [Tooltip("Impacts whose deformation took longer than this (ms) are flagged as hitches.")]
         public float hitchMilliseconds = 40f;
 
+        [Header("Damage-aware colliders (the Collision Lab's VehicleHitbox, refitted after hits)")]
+        [Tooltip("Refit each car's physics shell to its crushed bodywork after a hit (VehicleHitbox.ApplyPending), so later contacts meet the damaged surface instead of the undamaged one. Off = the shell stays at its undamaged size.")]
+        public bool refitColliders = true;
+        [Tooltip("Seconds after a car's latest damaging hit before its shell is refitted, so the solver has finished resolving that hit. A further hit in the meantime restarts the wait.")]
+        public float colliderSettleDelay = 0.2f;
+        [Tooltip("A pending refit is applied after this long at the latest, however often the car is hit meanwhile.")]
+        public float colliderMaxDelay = 1f;
+
         /// <summary>One built vehicle (player or target).</summary>
         public class Slot
         {
@@ -88,6 +96,8 @@ namespace CarWreck.Driving
             public System.Action<CollisionDamageReceiver.Report> handler;
             public Vector3 startPos;
             public Quaternion startRot;
+            public float refitWait, refitAge;       // seconds since the latest / the first damaging hit still waiting for a collider refit
+            public int refits;                      // collider refits applied since the car was built (diagnostics)
             public Rigidbody Body => rig.body;
             public VehicleDamageModel Model => rig.model;
             public CollisionDamageReceiver Receiver => rig.receiver;
@@ -330,9 +340,37 @@ namespace CarWreck.Driving
             if (reportTimer <= 0f) { reportTimer = 0.25f; ReportToPage(); }
         }
 
+        // FixedUpdate runs before each physics step, so a collider change made here is never made while the solver is working.
+        void FixedUpdate() => AfterPhysicsStep(Time.fixedDeltaTime);
+
+        /// <summary>
+        /// The arena's equivalent of the Collision Lab's safe point (CollisionLabController.AfterPhysicsStep): once a car has been quiet
+        /// for <see cref="colliderSettleDelay"/> after a damaging hit (or <see cref="colliderMaxDelay"/> after the first of a burst), its shell is
+        /// refitted to the deformed mesh. Called by FixedUpdate, and by the edit-mode validation after each Physics.Simulate step.
+        /// </summary>
+        public void AfterPhysicsStep(float dt)
+        {
+            if (!refitColliders) return;
+            RefitIfDue(Player, dt);
+            RefitIfDue(Target, dt);
+        }
+
+        void RefitIfDue(Slot s, float dt)
+        {
+            if (s == null || s.rig == null || s.rig.hitbox == null) return;
+            var hb = s.rig.hitbox;
+            if (!hb.HasPending) { s.refitWait = s.refitAge = 0f; return; }
+            s.refitWait += dt; s.refitAge += dt;
+            if (s.refitWait < colliderSettleDelay && s.refitAge < colliderMaxDelay) return;
+            hb.ApplyPending();
+            s.refitWait = s.refitAge = 0f;
+            s.refits++;
+        }
+
         void OnImpact(Slot who, bool isPlayer, CollisionDamageReceiver.Report r)
         {
             if (!r.applied) return;
+            who.refitWait = 0f;      // a new hit restarts the settle wait (the hitbox itself was marked pending by the model)
             float now = Time.unscaledTime;
             bool hitch = r.deformMilliseconds >= hitchMilliseconds;
             string line = $"{r.region} {r.closingSpeed * 3.6f:0} km/h into {r.other}: strength {r.strength * 100f:0}%, deformation {r.deformMilliseconds:0} ms{(hitch ? " (hitch)" : "")}";
@@ -432,6 +470,7 @@ namespace CarWreck.Driving
                 s.Model.SetDamageImmediate(0f, 0f, 0f, 0f);
             }
             if (s.rig.hitbox != null) s.rig.hitbox.ApplyPending();
+            s.refitWait = s.refitAge = 0f;
             var rb = s.Body;
             rb.linearVelocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
@@ -449,6 +488,15 @@ namespace CarWreck.Driving
             if (ui != null && on == "1") ui.SetTouch(true, false);
         }
 
+        /// <summary>Largest distance (m) any face of the car's damage-aware shell has retracted from its undamaged position (page report only).</summary>
+        static float ShellRetraction(Slot s)
+        {
+            float m = 0f;
+            if (s == null || s.rig == null || s.rig.hitbox == null || s.rig.hitbox.Faces == null) return m;
+            foreach (var f in s.rig.hitbox.Faces) m = Mathf.Max(m, f.original - f.current);
+            return float.IsNaN(m) ? 0f : m;
+        }
+
         void ReportToPage()
         {
 #if UNITY_WEBGL && !UNITY_EDITOR
@@ -460,6 +508,7 @@ namespace CarWreck.Driving
             sb.Append("{\"scene\":\"drive\",\"menu\":").Append(MenuOpen ? "true" : "false")
               .Append(",\"mode\":").Append((int)targetMode).Append(",\"tspeedSet\":").Append(targetSpeedKmh.ToString("0", ci)).Append(",\"tdrv\":\"").Append(Target.driver != null ? Target.driver.Current.ToString() : "-").Append('"')
               .Append(",\"enemy\":\"").Append(Target.enemy != null ? Target.enemy.Current.ToString() : "-").Append("\",\"edist\":").Append(Target.enemy != null ? Target.enemy.DistanceToPlayer.ToString("0", ci) : "0").Append(",\"ehits\":").Append(Target.enemy != null ? Target.enemy.HitsLanded : 0).Append(",\"estuck\":").Append(Target.enemy != null ? Target.enemy.RecoveriesTriggered : 0)
+              .Append(",\"prefits\":").Append(Player.refits).Append(",\"trefits\":").Append(Target.refits).Append(",\"pshell\":").Append(ShellRetraction(Player).ToString("0.000", ci)).Append(",\"tshell\":").Append(ShellRetraction(Target).ToString("0.000", ci))
               .Append(",\"vehicle\":\"").Append(PlayerName).Append("\",\"target\":\"").Append(TargetName).Append('"')
               .Append(",\"speedKmh\":").Append(SpeedKmh.ToString("0.0", ci))
               .Append(",\"fwdKmh\":").Append((Player.controller.ForwardSpeed * 3.6f).ToString("0.0", ci))

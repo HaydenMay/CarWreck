@@ -48,6 +48,7 @@ namespace CarWreck.Driving.EditorTools
                 Physics.Simulate(Dt);
                 game.Player.Receiver.Step(Dt);
                 game.Target.Receiver.Step(Dt);
+                game.AfterPhysicsStep(Dt);                                  // the arena's collider-refit safe point (FixedUpdate at runtime)
                 each?.Invoke(i);
             }
         }
@@ -514,6 +515,176 @@ namespace CarWreck.Driving.EditorTools
                 Check("H. Switching back to the parked target restores the original stationary scenario", game.Target.enemy == null && game.Target.driver == null && UnityEngine.Object.FindObjectsByType<EnemyDriver>(FindObjectsSortMode.None).Length == 0
                       && Vector3.Distance(T.position, game.Target.startPos) < 0.1f && T.linearVelocity.magnitude < 0.1f && Vector3.Distance(new Vector3(P.position.x, 0, P.position.z), game.playerSpawn.position) < 0.1f,
                       $"target at {T.position.ToString("F1")} speed {T.linearVelocity.magnitude:0.00} m/s; no EnemyDriver left in the scene");
+
+                // ================================================================ damage-aware colliders (the Collision Lab's VehicleHitbox, refitted by the arena)
+                sb.AppendLine("  -- damage-aware colliders (muscle car player, pickup target, head-on in open ground) --");
+                {
+                    game.SelectPlayer(0); game.SelectTarget(2);
+                    game.SetTargetMode((int)DrivingGame.TargetMode.Parked);
+                    game.refitColliders = true;
+                    game.Player.Receiver.logImpacts = false; game.Target.Receiver.logImpacts = false;
+                    foreach (Transform clo in game.obstacles) if (!clo.name.StartsWith("Wall")) clo.gameObject.SetActive(false);
+
+                    float ClRetract(DrivingGame.Slot clS, string clRegion) { var f = clS.rig.hitbox.FaceOf(clRegion, 2, +1f); return f.original - f.current; }
+                    float ClMax(DrivingGame.Slot clS) => clS.rig.hitbox.Faces.Max(f => f.original - f.current);
+                    bool ClPristine(DrivingGame.Slot clS) => clS.rig.hitbox.Faces.All(f => f.current == f.original) && !clS.rig.hitbox.HasPending;
+                    // collider front face minus front-most visible metal along the centre lane at mid height (car space, m)
+                    float ClGap(DrivingGame.Slot clS)
+                    {
+                        var clRoot = clS.rig.root.transform; var clFc = clS.rig.hitbox.Find("FrontCentre").Outer;
+                        float clY = clFc.min.y + 0.65f * clFc.size.y, clBest = float.PositiveInfinity, clCol = float.NaN, clVis = float.NegativeInfinity;
+                        var clRay = new Ray(clRoot.TransformPoint(new Vector3(0f, clY, clFc.max.z + 4f)), clRoot.TransformDirection(Vector3.back));
+                        foreach (var clB in clS.rig.root.GetComponentsInChildren<BoxCollider>())
+                            if (clB.enabled && !clB.isTrigger && clB.Raycast(clRay, out var clH, 12f) && clH.distance < clBest) { clBest = clH.distance; clCol = clRoot.InverseTransformPoint(clH.point).z; }
+                        foreach (var clPart in clS.Model.Parts)
+                            for (int clI = 0; clI < clPart.VehiclePositions.Length; clI++)
+                            {
+                                Vector3 clV = clPart.DeformedVehiclePosition(clI);
+                                if (Mathf.Abs(clV.x) < 0.08f && Mathf.Abs(clV.y - clY) < 0.1f) clVis = Mathf.Max(clVis, clV.z);
+                            }
+                        return clCol - clVis;
+                    }
+
+                    CollisionDamageReceiver.Report? clRP = null, clRT = null;
+                    Action<CollisionDamageReceiver.Report> clHP = r => { if (r.applied && clRP == null) clRP = r; };
+                    Action<CollisionDamageReceiver.Report> clHT = r => { if (r.applied && clRT == null) clRT = r; };
+                    game.Player.Receiver.ImpactRegistered += clHP; game.Target.Receiver.ImpactRegistered += clHT;
+                    void ClHit(float clKmh, float clOff = 0f, Action<int> clEach = null)
+                    {
+                        float clV = clKmh / 3.6f * 0.5f;
+                        T.position = new Vector3(0f, T.position.y, 4.5f); T.rotation = Quaternion.Euler(0f, 180f, 0f); T.transform.SetPositionAndRotation(T.position, T.rotation);
+                        T.linearVelocity = Vector3.back * clV; T.angularVelocity = Vector3.zero;
+                        Place(clOff, -4.5f, 0f, clV);
+                        game.Player.Receiver.ClearCooldowns(); game.Target.Receiver.ClearCooldowns();
+                        clRP = clRT = null;
+                        Step(70, 0f, 0f, clEach);
+                    }
+
+                    // --- A: undamaged cars, and the first impact is unaffected by the refit
+                    game.refitColliders = false; game.ResetAll(); ClHit(100f);
+                    float clZoff = clRT.Value.contactPoint.z, clSoff = clRT.Value.strength;
+                    game.ResetAll(); game.refitColliders = true;
+                    Step(5, 0f, 0f);
+                    bool clPrist = ClPristine(game.Player) && ClPristine(game.Target);
+                    float clG0P = ClGap(game.Player), clG0T = ClGap(game.Target);
+                    ClHit(100f);
+                    Check("Colliders A. Undamaged cars keep their original shell, and the first impact is identical with the refit on or off",
+                          clPrist && Mathf.Abs(clRT.Value.contactPoint.z - clZoff) < 0.01f && Mathf.Abs(clRT.Value.strength - clSoff) < 0.01f,
+                          $"undamaged shells pristine {clPrist}; first-hit contact z {clZoff:0.000} (off) vs {clRT.Value.contactPoint.z:0.000} (on), strength {clSoff * 100f:0.0}% vs {clRT.Value.strength * 100f:0.0}%");
+
+                    // --- B: moderate frontal
+                    game.ResetAll(); int clRP0 = game.Player.refits, clRT0 = game.Target.refits;
+                    ClHit(60f);
+                    float clBt = ClRetract(game.Target, "FrontCentre"), clBp = ClRetract(game.Player, "FrontCentre");
+                    float clGapT = ClGap(game.Target) - clG0T, clGapP = ClGap(game.Player) - clG0P;
+                    Check("Colliders B. Moderate frontal hit: both shells retract about as far as the dent is deep, one refit each",
+                          clBt > 0.02f && clBt < 0.12f && clBp > 0.01f && clBp < 0.12f && game.Target.refits - clRT0 == 1 && game.Player.refits - clRP0 == 1 && Mathf.Abs(clGapT) < 0.04f && Mathf.Abs(clGapP) < 0.04f && !game.Target.rig.hitbox.HasPending,
+                          $"front-centre box face retracted pickup {clBt * 100f:0.0} cm / muscle {clBp * 100f:0.0} cm; centre-lane gap to the metal pickup {clGapT:0.000} / muscle {clGapP:0.000} m (refit off: about the dent depth, 0.06); refits pickup {game.Target.refits - clRT0} / muscle {game.Player.refits - clRP0}");
+
+                    // --- C: severe frontal
+                    game.ResetAll();
+                    ClHit(170f);
+                    clBt = ClRetract(game.Target, "FrontCentre"); clBp = ClRetract(game.Player, "FrontCentre");
+                    clGapT = ClGap(game.Target) - clG0T; clGapP = ClGap(game.Player) - clG0P;
+                    Check("Colliders C. Severe frontal hit (170 km/h closing): the shells follow the deep dent",
+                          clBt > 0.30f && clBp > 0.30f && clGapT < 0.10f && clGapP < 0.10f,
+                          $"front-centre box face retracted pickup {clBt * 100f:0.0} cm / muscle {clBp * 100f:0.0} cm; centre-lane excess gap pickup {clGapT:0.000} / muscle {clGapP:0.000} m (refit off: about 0.5)");
+                    float clSevereRetract = clBt;
+
+                    // --- D: repeated hits meet the retracted shell; one refit per hit, no duplicates; cost
+                    game.ResetAll(); clRP0 = game.Player.refits; clRT0 = game.Target.refits;
+                    var clZ = new System.Collections.Generic.List<float>(); var clMs = new System.Collections.Generic.List<float>();
+                    for (int clK = 0; clK < 3; clK++)
+                    {
+                        int clUpd = game.Target.rig.hitbox.UpdateCount;
+                        ClHit(100f);
+                        clZ.Add(clRT.Value.contactPoint.z);
+                        if (game.Target.rig.hitbox.UpdateCount != clUpd) clMs.Add(game.Target.rig.hitbox.LastUpdateMilliseconds);
+                    }
+                    clGapT = ClGap(game.Target) - clG0T;
+                    Check("Colliders D. Repeated hits: each hit meets the shell left by the last one; one refit per damaging hit",
+                          clZ[0] - clZ[2] > 0.15f && clZ[1] < clZ[0] - 0.05f && game.Target.refits - clRT0 == 3 && game.Player.refits - clRP0 == 3 && clGapT < 0.10f,
+                          $"struck car's contact point z {clZ[0]:0.000} -> {clZ[1]:0.000} -> {clZ[2]:0.000} (refit off: unchanged); refits pickup {game.Target.refits - clRT0} / muscle {game.Player.refits - clRP0} for 3 hits; centre-lane excess gap {clGapT:0.000} m; refit {(clMs.Count > 0 ? clMs.Average() : 0f):0.00} ms avg / {(clMs.Count > 0 ? clMs.Max() : 0f):0.00} ms max (editor)");
+                    Check("Colliders J. Refit cost", clMs.Count == 3 && clMs.Max() < 10f, $"{clMs.Count} refits, {(clMs.Count > 0 ? clMs.Max() : 0f):0.00} ms max in the editor (budget 10 ms; WebGL not measured here)");
+
+                    // --- I: two damaged cars pressed together stay stable
+                    float clThP = game.Player.Receiver.energyThreshold, clThT = game.Target.Receiver.energyThreshold;
+                    game.Player.Receiver.energyThreshold = game.Target.Receiver.energyThreshold = 1e12f;
+                    T.position = new Vector3(0f, T.position.y, 3.5f); T.rotation = Quaternion.Euler(0f, 180f, 0f); T.transform.SetPositionAndRotation(T.position, T.rotation); T.linearVelocity = Vector3.zero; T.angularVelocity = Vector3.zero;
+                    Place(0f, -3.5f, 0f);
+                    float clAng = 0f, clUp = 0f; bool clNan = false;
+                    Step(150, 1f, 0f, i => { clAng = Mathf.Max(clAng, P.angularVelocity.magnitude, T.angularVelocity.magnitude); clUp = Mathf.Max(clUp, Mathf.Abs(P.linearVelocity.y), Mathf.Abs(T.linearVelocity.y)); clNan |= float.IsNaN(P.position.x) || float.IsNaN(T.position.x); });
+                    game.Player.Receiver.energyThreshold = clThP; game.Target.Receiver.energyThreshold = clThT;
+                    Check("Colliders I. Two damaged cars pressed nose to nose (3 s, driven) stay stable", !clNan && clAng < 1f && clUp < 0.5f && T.linearVelocity.magnitude > 2f,
+                          $"max angular speed {clAng:0.00} rad/s, max vertical speed {clUp:0.00} m/s, NaN {clNan}; the pickup was pushed to {T.linearVelocity.magnitude:0.0} m/s");
+
+                    // --- F: offset impact retracts only what was hit
+                    game.ResetAll(); clRT0 = game.Target.refits;
+                    ClHit(100f, 0.9f);
+                    float clFl = ClRetract(game.Target, "FrontLeft"), clFc = ClRetract(game.Target, "FrontCentre"), clFr = ClRetract(game.Target, "FrontRight");
+                    float clRear = game.Target.rig.hitbox.Faces.Where(f => f.region.name.StartsWith("Rear")).Select(f => f.original - f.current).DefaultIfEmpty(0f).Max();
+                    float clSpread = Mathf.Max(clFl, clFc, clFr) - Mathf.Min(clFl, clFc, clFr);
+                    Check("Colliders F. Offset impact: only the struck side retracts, the rest of the shell is unchanged", clSpread > 0.10f && clRear < 0.005f && game.Target.refits - clRT0 == 1,
+                          $"pickup front faces retracted left {clFl * 100f:0} / centre {clFc * 100f:0} / right {clFr * 100f:0} cm, rear faces {clRear * 100f:0.0} cm, {game.Target.refits - clRT0} refit");
+
+                    // --- scheduling: not during the hit, but soon after it; and the switch works
+                    game.ResetAll();
+                    int clImpactStep = -1, clRefitStep = -1; int clU0 = game.Target.rig.hitbox.UpdateCount;
+                    ClHit(100f, 0f, i =>
+                    {
+                        if (clImpactStep < 0 && clRT != null) clImpactStep = i;
+                        if (clImpactStep >= 0 && clRefitStep < 0 && game.Target.rig.hitbox.UpdateCount != clU0) clRefitStep = i;
+                    });
+                    float clDelayS = (clRefitStep - clImpactStep) * Dt;
+                    Check("Colliders scheduling: the shell is refitted only after the settle delay, never within the hit's own steps", clImpactStep >= 0 && clRefitStep > clImpactStep && clDelayS >= game.colliderSettleDelay - 0.021f && clDelayS <= game.colliderMaxDelay + 0.05f,
+                          $"hit registered at step {clImpactStep}, shell refitted {clDelayS:0.00} s later (settle delay {game.colliderSettleDelay:0.00} s, cap {game.colliderMaxDelay:0.00} s)");
+                    game.ResetAll(); game.refitColliders = false;
+                    ClHit(170f);
+                    bool clOffNo = ClMax(game.Target) == 0f && game.Target.rig.hitbox.HasPending;
+                    game.refitColliders = true; Step(30, 0f, 0f);
+                    Check("Colliders: with the switch off the shell stays undamaged (pending); turning it on applies the pending refit", clOffNo && !game.Target.rig.hitbox.HasPending && ClRetract(game.Target, "FrontCentre") > 0.30f,
+                          $"switch off: no face moved, refit pending {clOffNo}; switched on: retraction {ClRetract(game.Target, "FrontCentre") * 100f:0} cm");
+
+                    // --- G: reset x3 restores everything
+                    bool clResetOk = true; string clWhy = "";
+                    var clRetracts = new System.Collections.Generic.List<float>();
+                    for (int clK = 0; clK < 3; clK++)
+                    {
+                        game.ResetAll(); ClHit(170f);
+                        clRetracts.Add(ClRetract(game.Target, "FrontCentre"));
+                        game.ResetAll(); Step(5, 0f, 0f);
+                        bool clClean = ClPristine(game.Player) && ClPristine(game.Target) && MaxDisplacement(game.Player) < 1e-4f && MaxDisplacement(game.Target) < 1e-4f
+                                       && Mathf.Abs(ClGap(game.Target) - clG0T) < 0.005f && Vector3.Distance(T.position, game.Target.startPos) < 0.2f && Vector3.Distance(P.position, game.Player.startPos) < 0.2f
+                                       && T.linearVelocity.magnitude < 0.5f && P.linearVelocity.magnitude < 0.5f;
+                        if (!clClean) { clResetOk = false; clWhy += $" reset {clK + 1} not clean;"; }
+                    }
+                    Check("Colliders G. Reset x3 after a severe hit: shells, meshes, poses and velocities restored; the same hit retracts the same again",
+                          clResetOk && clRetracts.Max() - clRetracts.Min() < 0.03f, clResetOk ? $"3 of 3 clean; retraction of each repeat of the same hit {string.Join(" / ", clRetracts.Select(r => (r * 100f).ToString("0.0")))} cm" : clWhy);
+
+                    // --- E: AI vehicle (the enemy) gets the same refit
+                    game.SetTargetMode((int)DrivingGame.TargetMode.Enemy);
+                    game.SelectTarget(2);
+                    game.ResetAll();
+                    Step(1000, 0f, 0f, i => { });
+                    Step(60, 0f, 0f);
+                    bool clBoth = game.Player.Model.ImpactCount > 0 && game.Target.Model.ImpactCount > 0;
+                    Check("Colliders E. AI vehicle: the enemy's shell is refitted after its own attack (one refit per hit, nothing left pending)", game.Target.enemy != null && clBoth && game.Player.refits > 0 && game.Target.refits > 0 && !game.Player.rig.hitbox.HasPending && !game.Target.rig.hitbox.HasPending,
+                          $"impacts player {game.Player.Model.ImpactCount} / enemy {game.Target.Model.ImpactCount}; refits since the cars were built player {game.Player.refits} / enemy {game.Target.refits}; face retraction player {ClMax(game.Player) * 100f:0} cm / enemy {ClMax(game.Target) * 100f:0} cm (the enemy only took a {game.Target.Receiver.Last.strength * 100f:0}% hit, {MaxDisplacement(game.Target):0.000} m deep and {game.Target.Receiver.Last.footprint.halfU * 2f:0.00} m wide: a dent that small and narrow leaves the median-fitted face where it was)");
+                    // The enemy driver is a car like any other: when it is rammed hard (test F's set-up) its shell retracts too.
+                    game.ResetAll();
+                    var clEn = game.Target.enemy; clEn.startDelay = 100f; clEn.Restart();
+                    Vector3 clToE = T.position - P.position; clToE.y = 0f;
+                    Place(T.position.x - clToE.normalized.x * 30f, T.position.z - clToE.normalized.z * 30f, Quaternion.LookRotation(clToE).eulerAngles.y);
+                    Step(300, i => P.linearVelocity.magnitude < 18f ? 1f : 0f, 0f);
+                    Step(60, 0f, 0f);
+                    Check("Colliders E. AI vehicle rammed by the player: the enemy's shell retracts like any other car's", game.Target.Model.ImpactCount > 0 && ClMax(game.Target) > 0.02f && !game.Target.rig.hitbox.HasPending && !game.Player.rig.hitbox.HasPending,
+                          $"enemy hit strength {game.Target.Receiver.Last.strength * 100f:0}%, deepest dent {MaxDisplacement(game.Target):0.000} m, face retraction enemy {ClMax(game.Target) * 100f:0} cm / player {ClMax(game.Player) * 100f:0} cm");
+                    clEn.startDelay = 1.5f; clEn.Restart();
+                    game.Player.Receiver.ImpactRegistered -= clHP;
+                    game.SetTargetMode((int)DrivingGame.TargetMode.Parked);
+                    game.ResetAll();
+                    Step(5, 0f, 0f);
+                }
 
             }
             finally
