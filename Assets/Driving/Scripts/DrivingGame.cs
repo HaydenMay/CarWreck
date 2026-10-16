@@ -25,9 +25,11 @@ namespace CarWreck.Driving
         public Transform playerSpawn, targetSpawn;
         [Tooltip("Spawn points for the moving-target scenarios (same lane, east side of the arena, clear of obstacles).")]
         public Transform sameDirPlayerSpawn, sameDirTargetSpawn, headOnPlayerSpawn, headOnTargetSpawn;
+        [Tooltip("Where the enemy starts in the ENEMY encounter (the player starts at playerSpawn).")]
+        public Transform enemySpawn;
         public int playerIndex = 0, targetIndex = 2;
 
-        public enum TargetMode { Parked, SameDirection, HeadOn }
+        public enum TargetMode { Parked, SameDirection, HeadOn, Enemy }
         [Header("Target scenario")]
         public TargetMode targetMode = TargetMode.Parked;
         [Tooltip("Speed the moving target drives at (km/h); also its speed at the moment of reset. Menu buttons change it in steps.")]
@@ -35,6 +37,20 @@ namespace CarWreck.Driving
         public float minTargetSpeedKmh = 10f, maxTargetSpeedKmh = 80f, targetSpeedStepKmh = 10f;
         [Tooltip("Length of the straight test route (m). A target that reaches the end brakes to a stop.")]
         public float routeLength = 95f;
+
+        [Header("Enemy encounter (ENEMY mode)")]
+        [Tooltip("Speed the enemy tries to hold (km/h).")]
+        public float enemySpeedKmh = 70f;
+        [Tooltip("Seconds before the enemy starts moving after a start or reset.")]
+        public float enemyStartDelay = 1.5f;
+        [Tooltip("Heading error (degrees) that gives the enemy full steering lock. Smaller = twitchier.")]
+        public float enemyFullLockAngle = 35f;
+        [Tooltip("Distance (m) inside which an aligned enemy commits to its attack line.")]
+        public float enemyAttackCommitDistance = 14f;
+        [Tooltip("Seconds a stuck enemy reverses before pursuing again.")]
+        public float enemyRecoverDuration = 1.3f;
+        [Tooltip("How slowly the enemy notices the player changing direction (s). 0 = perfect tracking; larger = easier to fool with a swerve.")]
+        public float enemyReactionTime = 0.4f;
 
         [Header("Scene")]
         public ChaseCamera chaseCamera;
@@ -68,6 +84,7 @@ namespace CarWreck.Driving
             public VehicleDefinition def;
             public ArcadeCarController controller;   // player, and the moving target
             public TargetDriver driver;              // moving target only
+            public EnemyDriver enemy;                // enemy encounter only
             public System.Action<CollisionDamageReceiver.Report> handler;
             public Vector3 startPos;
             public Quaternion startRot;
@@ -125,7 +142,7 @@ namespace CarWreck.Driving
         // ------------------------------------------------------------------ building vehicles
 
         Transform PlayerSpawnFor(TargetMode m) => m == TargetMode.SameDirection ? sameDirPlayerSpawn : m == TargetMode.HeadOn ? headOnPlayerSpawn : playerSpawn;
-        Transform TargetSpawnFor(TargetMode m) => m == TargetMode.SameDirection ? sameDirTargetSpawn : m == TargetMode.HeadOn ? headOnTargetSpawn : targetSpawn;
+        Transform TargetSpawnFor(TargetMode m) => m == TargetMode.SameDirection ? sameDirTargetSpawn : m == TargetMode.HeadOn ? headOnTargetSpawn : m == TargetMode.Enemy ? enemySpawn : targetSpawn;
 
         /// <summary>The parked target (own high-friction material, no controller) or a driven one (same low-friction shell, controller and handling profile as the player's cars).</summary>
         Slot SpawnTarget() => Spawn(targetIndex, TargetSpawnFor(targetMode), targetMode == TargetMode.Parked ? targetRig : playerRig, false, targetMode != TargetMode.Parked);
@@ -169,7 +186,17 @@ namespace CarWreck.Driving
             receiver.severeDepthGain = severeCrushDepthGain;
             slot.handler = r => OnImpact(slot, isPlayer, r);
             receiver.ImpactRegistered += slot.handler;
-            if (driven)
+            if (driven && targetMode == TargetMode.Enemy)
+            {
+                // Enemy: an EnemyDriver feeds the car's own controller (steering, throttle, brake only). It starts at rest and pursues the player.
+                var e = rig.root.AddComponent<EnemyDriver>();
+                e.receiver = receiver;
+                e.player = Player != null ? Player.Body : null;
+                e.startDelay = enemyStartDelay; e.fullLockAngle = enemyFullLockAngle; e.attackCommitDistance = enemyAttackCommitDistance; e.recoverDuration = enemyRecoverDuration; e.reactionTime = enemyReactionTime;
+                e.Begin(enemySpeedKmh / 3.6f);
+                slot.enemy = e;
+            }
+            else if (driven)
             {
                 // Moving target: a TargetDriver feeds the car's own controller (physics only; the transform is never written). It starts at speed.
                 slot.driver = rig.root.AddComponent<TargetDriver>();
@@ -203,6 +230,7 @@ namespace CarWreck.Driving
             Despawn(Player);
             playerIndex = index;
             Player = Spawn(playerIndex, PlayerSpawnFor(targetMode), playerRig, true);
+            if (Target != null && Target.enemy != null) Target.enemy.player = Player.Body;
             if (chaseCamera != null) { chaseCamera.target = Player.Body; if (MenuOpen) chaseCamera.SetMenuFocus(Player.rig.root.transform); }
             ClearHud();
         }
@@ -220,10 +248,10 @@ namespace CarWreck.Driving
 
         // ------------------------------------------------------------------ target scenario (stationary / same direction / head-on)
 
-        /// <summary>0 = parked target, 1 = moving target driving the same way as the player, 2 = moving target driving towards the player.</summary>
+        /// <summary>0 = parked target, 1 = moving target driving the same way as the player, 2 = moving target driving towards the player, 3 = the ENEMY (pursues and rams the player).</summary>
         public void SetTargetMode(int mode)
         {
-            var m = (TargetMode)Mathf.Clamp(mode, 0, 2);
+            var m = (TargetMode)Mathf.Clamp(mode, 0, 3);
             if (m == targetMode && Target != null) return;
             targetMode = m;
             Despawn(Target);
@@ -237,15 +265,25 @@ namespace CarWreck.Driving
             ClearHud();
         }
 
+        /// <summary>The speed the menu's -/+ buttons change: the moving target's speed, or the enemy's top speed in ENEMY mode.</summary>
+        public float ActiveSpeedKmh => targetMode == TargetMode.Enemy ? enemySpeedKmh : targetSpeedKmh;
+
         public void SetTargetSpeedKmh(float kmh)
         {
-            targetSpeedKmh = Mathf.Clamp(Mathf.Round(kmh / 1f), minTargetSpeedKmh, maxTargetSpeedKmh);
+            kmh = Mathf.Clamp(Mathf.Round(kmh), minTargetSpeedKmh, maxTargetSpeedKmh);
+            if (targetMode == TargetMode.Enemy)
+            {
+                enemySpeedKmh = kmh;
+                if (Target != null && Target.enemy != null) Target.enemy.desiredSpeed = kmh / 3.6f;
+                return;
+            }
+            targetSpeedKmh = kmh;
             if (Target != null && Target.driver != null) Target.driver.desiredSpeed = targetSpeedKmh / 3.6f;
         }
 
-        public void StepTargetSpeed(int direction) => SetTargetSpeedKmh(targetSpeedKmh + direction * targetSpeedStepKmh);
+        public void StepTargetSpeed(int direction) => SetTargetSpeedKmh(ActiveSpeedKmh + direction * targetSpeedStepKmh);
 
-        public string TargetModeLabel => targetMode == TargetMode.Parked ? "parked" : targetMode == TargetMode.SameDirection ? $"same direction, {targetSpeedKmh:0} km/h" : $"head-on, {targetSpeedKmh:0} km/h";
+        public string TargetModeLabel => targetMode == TargetMode.Parked ? "parked" : targetMode == TargetMode.Enemy ? $"ENEMY, top speed {enemySpeedKmh:0} km/h" : targetMode == TargetMode.SameDirection ? $"same direction, {targetSpeedKmh:0} km/h" : $"head-on, {targetSpeedKmh:0} km/h";
 
         // ------------------------------------------------------------------ menu / pause
 
@@ -356,6 +394,7 @@ namespace CarWreck.Driving
         {
             ResetSlot(Player);
             ResetSlot(Target);
+            if (Target.enemy != null) Target.enemy.Restart();   // enemy: back to Waiting, counters cleared (ResetSlot already zeroed its velocity)
             if (Target.driver != null)
             {
                 // Moving scenario: the target starts each run already at its test speed (an initial velocity, then its own controller drives).
@@ -420,6 +459,7 @@ namespace CarWreck.Driving
             var ci = CultureInfo.InvariantCulture;
             sb.Append("{\"scene\":\"drive\",\"menu\":").Append(MenuOpen ? "true" : "false")
               .Append(",\"mode\":").Append((int)targetMode).Append(",\"tspeedSet\":").Append(targetSpeedKmh.ToString("0", ci)).Append(",\"tdrv\":\"").Append(Target.driver != null ? Target.driver.Current.ToString() : "-").Append('"')
+              .Append(",\"enemy\":\"").Append(Target.enemy != null ? Target.enemy.Current.ToString() : "-").Append("\",\"edist\":").Append(Target.enemy != null ? Target.enemy.DistanceToPlayer.ToString("0", ci) : "0").Append(",\"ehits\":").Append(Target.enemy != null ? Target.enemy.HitsLanded : 0).Append(",\"estuck\":").Append(Target.enemy != null ? Target.enemy.RecoveriesTriggered : 0)
               .Append(",\"vehicle\":\"").Append(PlayerName).Append("\",\"target\":\"").Append(TargetName).Append('"')
               .Append(",\"speedKmh\":").Append(SpeedKmh.ToString("0.0", ci))
               .Append(",\"fwdKmh\":").Append((Player.controller.ForwardSpeed * 3.6f).ToString("0.0", ci))

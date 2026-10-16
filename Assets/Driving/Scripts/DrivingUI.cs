@@ -157,12 +157,12 @@ namespace CarWreck.Driving
                 targetButtons[i] = MenuButton("Target" + i, mr, i < shortNames.Length ? shortNames[i] : game.vehicles[i].displayName, 21, TextAnchor.MiddleCenter,
                     new Vector2(36 + i * 196, -340), new Vector2(186, 58), () => { game.SelectTarget(idx); RefreshMenu(); });
             }
-            modeButtons = new Button[3];
-            string[] modeNames = { "PARKED", "SAME WAY", "HEAD-ON" };
-            for (int i = 0; i < 3; i++)
+            modeButtons = new Button[4];
+            string[] modeNames = { "PARKED", "SAME WAY", "HEAD-ON", "ENEMY" };
+            for (int i = 0; i < 4; i++)
             {
                 int idx = i;
-                modeButtons[i] = MenuButton("Mode" + i, mr, modeNames[i], 21, TextAnchor.MiddleCenter, new Vector2(36 + i * 196, -406), new Vector2(186, 58), () => { game.SetTargetMode(idx); RefreshMenu(); });
+                modeButtons[i] = MenuButton("Mode" + i, mr, modeNames[i], 19, TextAnchor.MiddleCenter, new Vector2(36 + i * 147, -406), new Vector2(137, 58), () => { game.SetTargetMode(idx); RefreshMenu(); });
             }
             MenuButton("SpeedDown", mr, "-", 34, TextAnchor.MiddleCenter, new Vector2(36, -472), new Vector2(110, 58), () => { game.StepTargetSpeed(-1); RefreshMenu(); });
             speedLabel = Label("SpeedLabel", mr, "", 21, TextAnchor.MiddleCenter, FontStyle.Bold);
@@ -182,7 +182,7 @@ namespace CarWreck.Driving
             for (int i = 0; i < playerButtons.Length; i++) playerButtons[i].targetGraphic.color = i == game.playerIndex ? Chosen : Dark;
             for (int i = 0; i < targetButtons.Length; i++) targetButtons[i].targetGraphic.color = i == game.targetIndex ? Chosen : Dark;
             for (int i = 0; i < modeButtons.Length; i++) modeButtons[i].targetGraphic.color = i == (int)game.targetMode ? Chosen : Dark;
-            speedLabel.text = game.targetMode == DrivingGame.TargetMode.Parked ? "TARGET SPEED: parked" : $"TARGET SPEED  {game.targetSpeedKmh:0} km/h";
+            speedLabel.text = game.targetMode == DrivingGame.TargetMode.Parked ? "TARGET SPEED: parked" : game.targetMode == DrivingGame.TargetMode.Enemy ? $"ENEMY TOP SPEED  {game.enemySpeedKmh:0} km/h" : $"TARGET SPEED  {game.targetSpeedKmh:0} km/h";
             speedLabel.color = game.targetMode == DrivingGame.TargetMode.Parked ? new Color(1f, 1f, 1f, 0.45f) : Color.white;
         }
 
