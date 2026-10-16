@@ -128,3 +128,9 @@ Change (configuration only, no engine code): `DrivingGame.damageEnergyScale` = 1
 ## Free look (build 20261016-0210)
 
 Swipe (touch) or drag (mouse) on empty screen to orbit the camera around the car; vertical movement raises/lowers it. The view eases back behind the car 3 s after the last swipe, and a swipe cancels the post-crash damage view. In the menu a drag spins the car preview. `LookDragPad` is an invisible full-screen layer behind all buttons, so pedal/steering fingers never reach it; verified with a synthetic two-finger test (gas held while swiping). Not tested on a real device.
+
+## Energy split between vehicles (build 20261016-0219)
+
+The receiver computed the energy a collision dissipates and then gave all of it to each car, so two-car hits applied twice the dissipated energy (walls were right: the wall absorbs nothing). `CollisionDamageReceiver` now has an opt-in `shareEnergyWithVehicles` (default **off**, so the Collision Lab and its validation are unchanged) with `sharedEnergyFraction` (default 0.5). When on and the other body also has a receiver, this car applies only that fraction. `DrivingGame.shareEnergyBetweenVehicles` turns it on; `damageEnergyScale` was lowered from 100,000 to 80,000 J to compensate. One two-line change in the shared receiver, no deformation code touched.
+
+Desktop WebGL, muscle car into parked pickup: 55 km/h gives 38%, 65 km/h gives 49%, 86 km/h gives 70% (both cars); reverse into a wall at 43 km/h gives 71% (walls unaffected by the split). Editor sim at 72 km/h closing: 43-58% depending on the pair; a 44 km/h reverse hit into a pickup gives 22-26%. Equal stiffness is assumed (0.5 each); making one vehicle softer or stiffer than another is a later per-vehicle setting. Collision Lab validation re-run: unchanged results. Driving validation: 34/34.
