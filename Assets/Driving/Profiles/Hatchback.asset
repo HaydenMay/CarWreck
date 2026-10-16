@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 49d5adfb7c1fb2146bd6dd5da407fa5a, type: 3}
+  m_Name: Hatchback
+  m_EditorClassIdentifier: Assembly-CSharp::CarWreck.Driving.DriveProfile
+  displayName: Compact Hatchback
+  description: 'Agile & light: quick, sharp steering, less momentum'
+  acceleration: 15.5
+  maxSpeed: 29
+  reverseAcceleration: 12.5
+  reverseMaxSpeed: 13.5
+  brakeDeceleration: 30
+  coastDeceleration: 1.4
+  driveResistance: 3
+  steerRateLow: 125
+  steerRateHigh: 42
+  steerFullAuthoritySpeed: 3
+  steerResponse: 30
+  steerRise: 7
+  steerReturn: 11
+  grip: 11
+  maxGripAcceleration: 28
+  brakingGripScale: 0.6
+  downforce: 0.2
+  levelingStrength: 10
+  levelingDamping: 3

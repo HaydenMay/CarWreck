@@ -46,6 +46,38 @@ namespace CarWreck.Driving
 
         void Awake() => cam = GetComponent<Camera>();
 
+        // ---- vehicle-selection view: a slow orbit round the chosen car, parked to one side so the menu does not cover it
+        Transform menuFocus;
+        float menuAngle;
+        public float menuSpin = 22f;
+        public float menuDistance = 8.5f;
+        public float menuShift = 2.6f;
+
+        public void SetMenuFocus(Transform focus)
+        {
+            if (focus != null && menuFocus != focus) menuAngle = focus.eulerAngles.y + 150f;
+            menuFocus = focus;
+        }
+
+        public void ClearMenu() { menuFocus = null; Snap(); }
+
+        void MenuOrbit()
+        {
+            if (cam == null) cam = GetComponent<Camera>();
+            float dt = Mathf.Min(Time.unscaledDeltaTime, 0.05f);
+            menuAngle += menuSpin * dt;
+            Vector3 p = menuFocus.position;
+            Vector3 pos = p + Quaternion.Euler(0f, menuAngle, 0f) * new Vector3(0f, 2.4f, -menuDistance);
+            Vector3 look = p + Vector3.up * 0.7f;
+            Quaternion wanted = Quaternion.LookRotation(look - pos, Vector3.up);
+            look -= wanted * Vector3.right * menuShift;          // look left of the car: the car sits right of centre
+            wanted = Quaternion.LookRotation(look - pos, Vector3.up);
+            float k = 1f - Mathf.Exp(-7f * dt);
+            transform.position = Vector3.Lerp(transform.position, pos, k);
+            transform.rotation = Quaternion.Slerp(transform.rotation, wanted, k);
+            if (cam != null) cam.fieldOfView = Mathf.Lerp(cam.fieldOfView, 42f, k);
+        }
+
         public void Snap()
         {
             snapped = false;
@@ -79,6 +111,7 @@ namespace CarWreck.Driving
 
         void LateUpdate()
         {
+            if (menuFocus != null) { MenuOrbit(); return; }
             if (target == null) return;
             if (cam == null) cam = GetComponent<Camera>();
             Transform t = target.transform;

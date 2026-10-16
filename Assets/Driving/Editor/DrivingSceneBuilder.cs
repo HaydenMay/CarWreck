@@ -103,8 +103,8 @@ namespace CarWreck.Driving.EditorTools
             Block("CrashWallSideL", obstacles, new Vector3(-9.5f, 1.25f, 20.2f), new Vector3(1.6f, 2.5f, 5.2f), 0f, hazard, 0f);
             Block("CrashWallSideR", obstacles, new Vector3(9.5f, 1.25f, 20.2f), new Vector3(1.6f, 2.5f, 5.2f), 0f, hazard, 0f);
 
-            // Staggered pillars to weave through.
-            foreach (var (x, z) in new[] { (-15f, -30f), (-5f, -24f), (5f, -18f), (15f, -12f), (-12f, -2f), (8f, 4f) })
+            // Pillars, kept out of the middle: the target vehicle parks there with open ground all round.
+            foreach (var (x, z) in new[] { (-34f, -30f), (-26f, -24f), (26f, -30f), (34f, -22f), (-30f, 12f), (30f, 10f) })
                 Block("Pillar", obstacles, new Vector3(x, 1.5f, z), new Vector3(1.3f, 3f, 1.3f), 0f, pillar, 0f);
 
             // Concrete barriers at angles.
@@ -130,18 +130,45 @@ namespace CarWreck.Driving.EditorTools
             rampGO.GetComponent<MeshRenderer>().sharedMaterial = ramp;
             rampGO.isStatic = true;
 
-            // ---------------------------------------------------------------- the car
-            var def = AssetDatabase.LoadAssetAtPath<VehicleDefinition>(VehicleDefinitionSetup.MusclePath) ?? VehicleDefinitionSetup.Build()[0];
-            var rigSettings = new VehicleRigSettings
+            // ---------------------------------------------------------------- vehicles (built at runtime by DrivingGame from their definitions)
+            var vehicles = new[]
             {
-                bodyPhysicsMaterial = DrivePhysicsMaterial(),
-                wireframe = AssetDatabase.LoadAssetAtPath<Material>(DamageLabAssets.MaterialFolder + "/Wireframe.mat") ?? DamageLabAssets.WireframeMaterial(),
+                LoadDefinition(VehicleDefinitionSetup.MusclePath),
+                LoadDefinition(VehicleDefinitionSetup.HatchPath),
+                LoadDefinition(VehicleDefinitionSetup.Folder + "/CompactPickup.asset"),
             };
-            var rig = VehicleRig.Build(def, null, new Vector3(0f, 0f, -50f), rigSettings);
-            // Lab-only debug views: not needed while driving.
-            Object.DestroyImmediate(rig.footprintDebug);
-            Object.DestroyImmediate(rig.colliderDebug);
-            var controller = rig.root.AddComponent<ArcadeCarController>();
+            var profiles = new[]
+            {
+                Profile("Muscle", "Muscle Car", "Powerful & balanced: strong launch, high top speed", p =>
+                {
+                    p.acceleration = 13f; p.maxSpeed = 30f; p.reverseAcceleration = 11f; p.reverseMaxSpeed = 13.5f;
+                    p.brakeDeceleration = 26f; p.coastDeceleration = 1.2f;
+                    p.steerRateLow = 100f; p.steerRateHigh = 34f; p.steerRise = 5f; p.steerReturn = 9f; p.steerResponse = 28f;
+                    p.grip = 9f; p.maxGripAcceleration = 26f; p.brakingGripScale = 0.55f; p.downforce = 0.22f;
+                }),
+                Profile("Hatchback", "Compact Hatchback", "Agile & light: quick, sharp steering, less momentum", p =>
+                {
+                    p.acceleration = 15.5f; p.maxSpeed = 29f; p.reverseAcceleration = 12.5f; p.reverseMaxSpeed = 13.5f;
+                    p.brakeDeceleration = 30f; p.coastDeceleration = 1.4f;
+                    p.steerRateLow = 125f; p.steerRateHigh = 42f; p.steerRise = 7f; p.steerReturn = 11f; p.steerResponse = 30f;
+                    p.grip = 11f; p.maxGripAcceleration = 28f; p.brakingGripScale = 0.6f; p.downforce = 0.2f;
+                }),
+                Profile("Pickup", "Compact Pickup", "Heavy & deliberate: slow to turn, solid hits", p =>
+                {
+                    p.acceleration = 9.5f; p.maxSpeed = 26f; p.reverseAcceleration = 8.5f; p.reverseMaxSpeed = 11.5f;
+                    p.brakeDeceleration = 19f; p.coastDeceleration = 1.0f;
+                    p.steerRateLow = 78f; p.steerRateHigh = 26f; p.steerFullAuthoritySpeed = 3.5f; p.steerRise = 3.2f; p.steerReturn = 6f; p.steerResponse = 22f;
+                    p.grip = 7f; p.maxGripAcceleration = 20f; p.brakingGripScale = 0.5f; p.downforce = 0.25f;
+                }),
+            };
+            var wire = AssetDatabase.LoadAssetAtPath<Material>(DamageLabAssets.MaterialFolder + "/Wireframe.mat") ?? DamageLabAssets.WireframeMaterial();
+            var playerRig = new VehicleRigSettings { bodyPhysicsMaterial = DrivePhysicsMaterial(), wireframe = wire };
+            var targetRig = new VehicleRigSettings { bodyPhysicsMaterial = ParkedPhysicsMaterial(), wireframe = wire };
+            var playerSpawn = new GameObject("PlayerSpawn").transform;
+            playerSpawn.SetPositionAndRotation(new Vector3(0f, 0f, -50f), Quaternion.Euler(0f, 0f, 0f));
+            // The target parks sideways to the approach (broadside to the player's start), 42 m ahead, open ground all round it.
+            var targetSpawn = new GameObject("TargetSpawn").transform;
+            targetSpawn.SetPositionAndRotation(new Vector3(0f, 0f, -8f), Quaternion.Euler(0f, 90f, 0f));
 
             // ---------------------------------------------------------------- camera, UI, game
             var camGO = new GameObject("Main Camera") { tag = "MainCamera" };
@@ -156,25 +183,25 @@ namespace CarWreck.Driving.EditorTools
             cd.antialiasing = AntialiasingMode.None;
             camGO.AddComponent<AudioListener>();
             var chase = camGO.AddComponent<ChaseCamera>();
-            chase.target = rig.body;
-            camGO.transform.position = rig.root.transform.position + new Vector3(0f, 3.1f, -7.5f);
-            camGO.transform.LookAt(rig.root.transform.position + Vector3.up);
+            camGO.transform.position = playerSpawn.position + new Vector3(0f, 3.1f, -7.5f);
+            camGO.transform.LookAt(playerSpawn.position + Vector3.up);
 
             var input = new GameObject("Driving Input").AddComponent<DriveInput>();
             var ui = new GameObject("Driving UI").AddComponent<DrivingUI>();
             ui.input = input;
             var game = new GameObject("DrivingGame").AddComponent<DrivingGame>();
-            game.controller = controller;
-            game.model = rig.model;
-            game.receiver = rig.receiver;
-            game.hitbox = rig.hitbox;
-            game.body = rig.body;
+            game.vehicles = vehicles;
+            game.profiles = profiles;
+            game.playerRig = playerRig;
+            game.targetRig = targetRig;
+            game.playerSpawn = playerSpawn;
+            game.targetSpawn = targetSpawn;
+            game.playerIndex = 0;
+            game.targetIndex = 2;
             game.chaseCamera = chase;
             game.input = input;
             game.ui = ui;
             game.obstacles = obstacles;
-            game.bodyBounds = rig.geometry.body;
-            game.tyreContactY = rig.geometry.wheels.min.y;
             ui.game = game;
             new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));
 
@@ -184,10 +211,48 @@ namespace CarWreck.Driving.EditorTools
             if (!scenes.Any(s => s.path == ScenePath)) scenes.Add(new EditorBuildSettingsScene(ScenePath, true));
             EditorBuildSettings.scenes = scenes.ToArray();
             AssetDatabase.SaveAssets();
-            Debug.Log($"[Driving] Built {ScenePath}: {def.displayName}, {rig.body.mass:0} kg, body {rig.geometry.body.size.ToString("F2")}, lifted {rig.geometry.groundLift:0.000} m; warnings: {string.Join(" | ", rig.warnings)}");
+            string list = string.Join(", ", vehicles.Select(v => v.displayName + " " + v.mass + " kg"));
+            Debug.Log($"[Driving] Built {ScenePath}: {vehicles.Length} vehicles ({list}), player spawn {playerSpawn.position}, target spawn {targetSpawn.position}");
         }
 
         // ------------------------------------------------------------------ helpers
+
+
+        static VehicleDefinition LoadDefinition(string path)
+        {
+            var d = AssetDatabase.LoadAssetAtPath<VehicleDefinition>(path);
+            if (d == null || d.model == null) throw new System.Exception($"Vehicle definition missing or without a model: {path}");
+            return d;
+        }
+
+        static DriveProfile Profile(string file, string displayName, string description, System.Action<DriveProfile> set)
+        {
+            string path = $"{Root}/Profiles/{file}.asset";
+            if (!AssetDatabase.IsValidFolder(Root + "/Profiles")) AssetDatabase.CreateFolder(Root, "Profiles");
+            var p = AssetDatabase.LoadAssetAtPath<DriveProfile>(path);
+            if (p == null) { p = ScriptableObject.CreateInstance<DriveProfile>(); AssetDatabase.CreateAsset(p, path); }
+            JsonUtility.FromJsonOverwrite(JsonUtility.ToJson(ScriptableObject.CreateInstance<DriveProfile>()), p);   // back to code defaults first
+            p.displayName = displayName;
+            p.description = description;
+            set(p);
+            EditorUtility.SetDirty(p);
+            return p;
+        }
+
+        static PhysicsMaterial ParkedPhysicsMaterial()
+        {
+            const string path = Root + "/Art/CarParked.physicMaterial";
+            var m = AssetDatabase.LoadAssetAtPath<PhysicsMaterial>(path);
+            if (m == null) { m = new PhysicsMaterial("CarParked"); AssetDatabase.CreateAsset(m, path); }
+            // Parked with the brakes on: it slides a little when hit and then stops, instead of skating away.
+            m.dynamicFriction = 0.5f;
+            m.staticFriction = 0.7f;
+            m.bounciness = 0f;
+            m.frictionCombine = PhysicsMaterialCombine.Average;
+            m.bounceCombine = PhysicsMaterialCombine.Minimum;
+            EditorUtility.SetDirty(m);
+            return m;
+        }
 
         static GameObject Block(string name, Transform parent, Vector3 pos, Vector3 size, float yawDeg, Material mat, float mass)
         {

@@ -21,15 +21,17 @@ namespace CarWreck.Driving
         [Tooltip("Top forward speed (m/s). 30 m/s = 108 km/h.")]
         public float maxSpeed = 30f;
         [Tooltip("Reverse acceleration (m/s²).")]
-        public float reverseAcceleration = 7f;
+        public float reverseAcceleration = 11f;
         [Tooltip("Top reverse speed (m/s).")]
-        public float reverseMaxSpeed = 10f;
+        public float reverseMaxSpeed = 13f;
 
         [Header("Braking")]
         [Tooltip("Deceleration (m/s²) while braking against the direction of travel.")]
         public float brakeDeceleration = 26f;
         [Tooltip("Deceleration (m/s²) with no input (engine drag / rolling resistance).")]
         public float coastDeceleration = 1.2f;
+        [Tooltip("Extra push cancelling ground friction so the speed caps are (nearly) the real top speeds. Passive drag from the low-friction hull otherwise holds the car well below them.")]
+        public float driveResistance = 3f;
 
         [Header("Steering")]
         [Tooltip("Turn rate (deg/s) at low speed with full steering.")]
@@ -89,6 +91,19 @@ namespace CarWreck.Driving
 
         void Awake() => rb = GetComponent<Rigidbody>();
 
+        /// <summary>Copy a vehicle profile's handling values (the controller stays the same code for every vehicle).</summary>
+        public void Apply(DriveProfile p)
+        {
+            if (p == null) return;
+            acceleration = p.acceleration; maxSpeed = p.maxSpeed;
+            reverseAcceleration = p.reverseAcceleration; reverseMaxSpeed = p.reverseMaxSpeed;
+            brakeDeceleration = p.brakeDeceleration; coastDeceleration = p.coastDeceleration; driveResistance = p.driveResistance;
+            steerRateLow = p.steerRateLow; steerRateHigh = p.steerRateHigh; steerFullAuthoritySpeed = p.steerFullAuthoritySpeed;
+            steerResponse = p.steerResponse; steerRise = p.steerRise; steerReturn = p.steerReturn;
+            grip = p.grip; maxGripAcceleration = p.maxGripAcceleration; brakingGripScale = p.brakingGripScale;
+            downforce = p.downforce; levelingStrength = p.levelingStrength; levelingDamping = p.levelingDamping;
+        }
+
         /// <summary>Place the four ground probes at the body corners (local space, <paramref name="bodyBottomY"/> = tyre contact height).</summary>
         public void Configure(Bounds body, float bodyBottomY)
         {
@@ -142,7 +157,7 @@ namespace CarWreck.Driving
                     else
                     {
                         float r = Mathf.Clamp01(vF / maxSpeed);
-                        accel = acceleration * throttle * Mathf.Max(0f, 1f - r * r * r);
+                        accel = (acceleration + driveResistance) * throttle * Mathf.Max(0f, 1f - r * r * r);
                     }
                 }
                 else if (throttle < -0.01f)
@@ -151,7 +166,7 @@ namespace CarWreck.Driving
                     else
                     {
                         float r = Mathf.Clamp01(-vF / reverseMaxSpeed);
-                        accel = -reverseAcceleration * -throttle * Mathf.Max(0f, 1f - r * r * r);
+                        accel = -(reverseAcceleration + driveResistance) * -throttle * Mathf.Max(0f, 1f - r * r * r);
                     }
                 }
                 else

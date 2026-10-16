@@ -32,6 +32,10 @@ namespace CarWreck.Driving
 
         public void RequestReset() => resetPressed = true;
 
+        bool menuPressed;
+        public bool ConsumeMenu() { bool m = menuPressed; menuPressed = false; return m; }
+        public void RequestMenu() => menuPressed = true;
+
         /// <summary>True the first time a touch has been seen this session (the HUD then shows the touch controls).</summary>
         public bool TouchSeen { get; private set; }
 
@@ -48,6 +52,7 @@ namespace CarWreck.Driving
                 if (kb.aKey.isPressed || kb.leftArrowKey.isPressed) steer -= 1f;
                 if (kb.dKey.isPressed || kb.rightArrowKey.isPressed) steer += 1f;
                 if (kb.rKey.wasPressedThisFrame) resetPressed = true;
+                if (kb.escapeKey.wasPressedThisFrame || kb.mKey.wasPressedThisFrame || kb.tabKey.wasPressedThisFrame) menuPressed = true;
                 k = gas > 0f || brake > 0f || steer != 0f;
             }
 
@@ -62,6 +67,7 @@ namespace CarWreck.Driving
                 if (pad.dpad.left.isPressed) steer = -1f;
                 if (pad.dpad.right.isPressed) steer = 1f;
                 if (pad.buttonNorth.wasPressedThisFrame || pad.startButton.wasPressedThisFrame) resetPressed = true;
+                if (pad.selectButton.wasPressedThisFrame) menuPressed = true;
                 g = gas > 0f || brake > 0f || steer != 0f;
             }
 

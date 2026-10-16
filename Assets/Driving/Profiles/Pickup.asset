@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 49d5adfb7c1fb2146bd6dd5da407fa5a, type: 3}
+  m_Name: Pickup
+  m_EditorClassIdentifier: Assembly-CSharp::CarWreck.Driving.DriveProfile
+  displayName: Compact Pickup
+  description: 'Heavy & deliberate: slow to turn, solid hits'
+  acceleration: 9.5
+  maxSpeed: 26
+  reverseAcceleration: 8.5
+  reverseMaxSpeed: 11.5
+  brakeDeceleration: 19
+  coastDeceleration: 1
+  driveResistance: 3
+  steerRateLow: 78
+  steerRateHigh: 26
+  steerFullAuthoritySpeed: 3.5
+  steerResponse: 22
+  steerRise: 3.2
+  steerReturn: 6
+  grip: 7
+  maxGripAcceleration: 20
+  brakingGripScale: 0.5
+  downforce: 0.25
+  levelingStrength: 10
+  levelingDamping: 3
