@@ -245,8 +245,8 @@ namespace CarWreck.Driving.EditorTools
             var m = AssetDatabase.LoadAssetAtPath<PhysicsMaterial>(path);
             if (m == null) { m = new PhysicsMaterial("CarParked"); AssetDatabase.CreateAsset(m, path); }
             // Parked with the brakes on: it slides a little when hit and then stops, instead of skating away.
-            m.dynamicFriction = 0.5f;
-            m.staticFriction = 0.7f;
+            m.dynamicFriction = 0.35f;
+            m.staticFriction = 0.5f;
             m.bounciness = 0f;
             m.frictionCombine = PhysicsMaterialCombine.Average;
             m.bounceCombine = PhysicsMaterialCombine.Minimum;

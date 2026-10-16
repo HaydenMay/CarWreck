@@ -31,6 +31,11 @@ namespace CarWreck.Driving
         public DrivingUI ui;
         [Tooltip("Parent of the arena obstacles: dynamic ones are put back at their start pose on reset.")]
         public Transform obstacles;
+        [Header("Damage mapping (the receivers' own settings; the engine itself is untouched)")]
+        [Tooltip("Collision energy (J) above which a hit leaves damage. Receiver default 1500.")]
+        public float damageEnergyThreshold = 1500f;
+        [Tooltip("Energy above the threshold for about 63% strength. The receiver default (60000) saturates at about 70 km/h, so every hard hit looked the same; a larger value spreads damage across the speed range so harder hits do visibly more.")]
+        public float damageEnergyScale = 100000f;
         [Tooltip("Impacts whose deformation took longer than this (ms) are flagged as hitches.")]
         public float hitchMilliseconds = 40f;
 
@@ -126,6 +131,8 @@ namespace CarWreck.Driving
             // per-body cooldown still stops one contact from being counted twice).
             receiver.oneImpactPerLaunch = false;
             receiver.logImpacts = true;
+            receiver.energyThreshold = damageEnergyThreshold;
+            receiver.energyScale = damageEnergyScale;
             slot.handler = r => OnImpact(slot, isPlayer, r);
             receiver.ImpactRegistered += slot.handler;
             Physics.SyncTransforms();
