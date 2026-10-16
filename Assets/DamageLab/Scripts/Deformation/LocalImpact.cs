@@ -12,6 +12,9 @@ namespace DamageLab.Deformation
         public Vector3 direction; // incoming ray direction (unit), the way the metal is pushed
         public Vector3 normal;    // outward surface normal at the hit point
         public float strength;    // 0..1
+        // Optional crush multiplier for hits far beyond full strength (the energy keeps rising after strength saturates).
+        // 0 or 1 = none; the receiver sets it only when its severe-crush mapping is enabled.
+        public float depthScale;
         // Optional: the impacting object's shape. When set (physical collisions), the dent takes the shape of the
         // contact patch instead of the round localized profile; the footprint is resolved when the impact is added.
         public BoxImpactor impactor;
@@ -116,7 +119,14 @@ namespace DamageLab.Deformation
         Vector3[] wheelCenters = new Vector3[0];
         float cabinStart = 1.05f;
 
-        public ImpactField(ImpactSettings settings) { cfg = settings ?? new ImpactSettings(); }
+        readonly float capacityScale;
+
+        /// <param name="capacityScale">Multiplies every vertex's crush capacity (1 = the profile's limits).</param>
+        public ImpactField(ImpactSettings settings, float capacityScale = 1f)
+        {
+            cfg = settings ?? new ImpactSettings();
+            this.capacityScale = Mathf.Max(0.1f, capacityScale);
+        }
 
         public int Count => states.Count;
 
@@ -183,7 +193,7 @@ namespace DamageLab.Deformation
                 c = Mathf.Min(c, Mathf.Lerp(cfg.wheelLimit, c, t * t * (3f - 2f * t)));
             }
             // Stiff parts (bumpers, lights) give less.
-            return c * (0.6f + 0.4f * Mathf.Clamp01(crumple));
+            return c * (0.6f + 0.4f * Mathf.Clamp01(crumple)) * capacityScale;
         }
 
         /// <summary>Add one impact; returns its index for <see cref="Contribution"/>.</summary>
@@ -236,7 +246,7 @@ namespace DamageLab.Deformation
         float BaseDepth(in LocalImpact im)
         {
             float facing = Mathf.Clamp01(Vector3.Dot(-im.direction.normalized, im.normal));
-            return cfg.maxDepth * Mathf.Pow(Mathf.Clamp01(im.strength), cfg.depthExponent) * Mathf.Lerp(cfg.grazingDepth, 1f, facing);
+            return cfg.maxDepth * Mathf.Pow(Mathf.Clamp01(im.strength), cfg.depthExponent) * Mathf.Lerp(cfg.grazingDepth, 1f, facing) * Mathf.Max(1f, im.depthScale);
         }
 
         /// <summary>Earlier damage at a spot (sum of earlier footprints, weighted by their depth): the metal there is

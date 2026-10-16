@@ -34,6 +34,13 @@ namespace DamageLab.CollisionTest
         public float energyThreshold = 1500f;
         [Tooltip("Energy above the threshold for strength ≈ 63%. Strength = 1 - exp(-(E - threshold) / scale).")]
         public float energyScale = 60000f;
+        [Tooltip("Severe crush (0 = off: the Collision Lab is unaffected). Strength saturates long before highway energies, so above this " +
+                 "energy (J) the dent keeps deepening: depth x (1 + severeDepthGain x (1 - exp(-(E - severeEnergy) / severeEnergyScale))).")]
+        public float severeEnergy;
+        [Tooltip("Energy (J) above severeEnergy for 63% of the extra severe-crush depth.")]
+        public float severeEnergyScale = 250000f;
+        [Tooltip("Largest extra depth from severe crush, as a fraction of the full-strength depth (2 = up to 3x as deep).")]
+        public float severeDepthGain = 2f;
         [Tooltip("How much the sideways (scraping) velocity tilts the push direction (0 = pure contact normal).")]
         [Range(0f, 1f)] public float tangentialDirectionWeight = 0.5f;
 
@@ -338,6 +345,13 @@ namespace DamageLab.CollisionTest
             return Mathf.Clamp(0.5f + momentumShareRange * (1f - 2f * attack), 0.5f - momentumShareRange, 0.5f + momentumShareRange);
         }
 
+        /// <summary>Crush multiplier for energies past strength saturation (1 = none; see <see cref="severeEnergy"/>).</summary>
+        public float SevereDepthScale(float energy)
+        {
+            if (severeEnergy <= 0f || energy <= severeEnergy) return 1f;
+            return 1f + Mathf.Max(0f, severeDepthGain) * (1f - Mathf.Exp(-(energy - severeEnergy) / Mathf.Max(1f, severeEnergyScale)));
+        }
+
         void Process(Rigidbody other, Pending p)
         {
             lastHit[other] = clock;
@@ -379,6 +393,7 @@ namespace DamageLab.CollisionTest
                 direction = localDir,
                 normal = -root.InverseTransformDirection(n),
                 strength = strength,
+                depthScale = SevereDepthScale(energy),
             };
             if (p.box.valid) impact.impactor = p.box;   // already in vehicle space
 
