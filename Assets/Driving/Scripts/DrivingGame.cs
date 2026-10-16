@@ -49,6 +49,15 @@ namespace CarWreck.Driving
         public float damageEnergyScale = 80000f;
         [Tooltip("Vehicle-vs-vehicle hits: the two cars share the energy the collision dissipates by momentum (the car that was attacking takes less, a stationary or retreating one takes more) instead of each taking all of it.")]
         public bool shareEnergyBetweenVehicles = true;
+        [Tooltip("Severe crush: above this energy (J, this car's share) a hit keeps crushing deeper instead of stopping at full strength, " +
+                 "so a highway head-on wrecks the front end while a car-park bump stays a dent. 0 = off.")]
+        public float severeCrushEnergy = 100000f;
+        [Tooltip("Energy (J) above severeCrushEnergy for 63% of the extra depth.")]
+        public float severeCrushEnergyScale = 250000f;
+        [Tooltip("Largest extra crush, as a fraction of the full-strength depth (2 = up to 3x as deep).")]
+        public float severeCrushDepthGain = 2f;
+        [Tooltip("Multiplies how far each car's metal can be crushed (1 = the damage profile's limits, tuned for the Collision Lab).")]
+        public float crushCapacityScale = 1.8f;
         [Tooltip("Impacts whose deformation took longer than this (ms) are flagged as hitches.")]
         public float hitchMilliseconds = 40f;
 
@@ -128,6 +137,7 @@ namespace CarWreck.Driving
             // Lab-only debug views: not needed here.
             Kill(rig.footprintDebug);
             Kill(rig.colliderDebug);
+            rig.model.impactCapacityScale = crushCapacityScale;
             rig.model.Initialize();
             rig.hitbox.Setup();
             var slot = new Slot { def = def, rig = rig };
@@ -154,6 +164,9 @@ namespace CarWreck.Driving
             receiver.energyThreshold = damageEnergyThreshold;
             receiver.energyScale = damageEnergyScale;
             receiver.shareEnergyWithVehicles = shareEnergyBetweenVehicles;
+            receiver.severeEnergy = severeCrushEnergy;
+            receiver.severeEnergyScale = severeCrushEnergyScale;
+            receiver.severeDepthGain = severeCrushDepthGain;
             slot.handler = r => OnImpact(slot, isPlayer, r);
             receiver.ImpactRegistered += slot.handler;
             if (driven)

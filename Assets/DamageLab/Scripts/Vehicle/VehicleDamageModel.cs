@@ -41,6 +41,9 @@ namespace DamageLab.Vehicle
         public ImpactOverflow impactOverflow = ImpactOverflow.Reject;
         [Tooltip("Build concave MeshColliders from the original meshes for click picking. Turn off when the car has a dynamic Rigidbody (Collision Lab).")]
         public bool createPickingColliders = true;
+        [Tooltip("Multiplies how far the metal can be crushed by localized impacts (1 = the profile's panel / cabin / wheel limits). " +
+                 "Read when the model is initialized.")]
+        public float impactCapacityScale = 1f;
 
         [Header("Debug")]
         public Material wireframeMaterial;
@@ -438,7 +441,7 @@ namespace DamageLab.Vehicle
                 rp.Precompute(fields);
                 rigidParts.Add(rp);
             }
-            impactField = new ImpactField(profile.impact);
+            impactField = new ImpactField(profile.impact, impactCapacityScale);
             var wheelCenters = new Vector3[rigidParts.Count];
             for (int i = 0; i < rigidParts.Count; i++) wheelCenters[i] = rigidParts[i].VehicleCenter;
             impactField.SetStructure(wheelCenters, profile.roofLineStart);
