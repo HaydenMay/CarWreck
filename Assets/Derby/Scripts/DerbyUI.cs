@@ -38,7 +38,7 @@ namespace CarWreck.Derby
         readonly List<(string text, float time)> feed = new List<(string, float)>();
         readonly List<Participant> sorted = new List<Participant>();
 
-        class Plate { public RectTransform rect; public Text name; public Image barBack, bar; public Participant who; }
+        class Plate { public RectTransform rect; public Text name; public Image barBack, bar; public Participant who; public int alive = -1; }
         readonly List<Plate> plates = new List<Plate>();
 
         // menu
@@ -135,7 +135,8 @@ namespace CarWreck.Derby
             bool humanWon = m.Winner == game.Human;
             resultTitle.text = m.IsDraw ? "DRAW" : humanWon ? "YOU WIN!" : m.Winner != null ? m.Winner.name + " WINS" : "MATCH OVER";
             resultTitle.color = humanWon ? new Color(1f, 0.82f, 0.25f) : m.IsDraw ? Color.white : new Color(1f, 0.55f, 0.45f);
-            resultSub.text = $"{(m.rules.mode == GameMode.PointsDerby ? "POINTS DERBY" : "LAST CAR STANDING")}   -   YOUR PLACE  {game.Human.placement} / {m.participants.Count}\n<size=20>{m.ResultText}</size>";
+            string reason = m.ResultText.Contains("  -  ") ? m.ResultText.Substring(m.ResultText.IndexOf("  -  ") + 5) : "";
+            resultSub.text = $"{(m.rules.mode == GameMode.PointsDerby ? "POINTS DERBY" : "LAST CAR STANDING")}   -   YOUR PLACE  {game.Human.placement} / {m.participants.Count}" + (reason.Length > 0 ? $"\n<size=20>{reason}</size>" : "");
             // up to ResultRows rows in rank order; the player's row always shows
             var rows = new List<Participant>(m.Ranking);
             if (rows.Count > ResultRows) { int hi = rows.IndexOf(game.Human); rows.RemoveRange(ResultRows, rows.Count - ResultRows); if (hi >= ResultRows) rows[ResultRows - 1] = game.Human; }
@@ -152,7 +153,7 @@ namespace CarWreck.Derby
                 cells[2].text = p.score.ToString("N0");
                 cells[3].text = p.wrecksDealt.ToString();
                 cells[4].text = p.timesWrecked.ToString();
-                cells[5].text = m.rules.mode == GameMode.LastCarStanding ? (p.IsActive ? "SURVIVED" : "OUT") : p.hitsDealt + " hits";
+                cells[5].text = m.rules.mode == GameMode.LastCarStanding ? (p.IsActive ? "ALIVE" : "OUT") : p.hitsDealt + " hits";
             }
             ApplyVisibility();
         }
@@ -163,10 +164,10 @@ namespace CarWreck.Derby
         {
             if (game == null) return;
             bool inMatch = !game.MenuOpen && game.Match != null;
-            if (hudRoot != null) hudRoot.SetActive(inMatch);
-            if (cornerRoot != null) cornerRoot.SetActive(inMatch);
-            if (namePlateRoot != null) namePlateRoot.SetActive(inMatch);
             bool results = inMatch && game.Match.State == MatchState.Results;
+            if (hudRoot != null) hudRoot.SetActive(inMatch && !results);
+            if (cornerRoot != null) cornerRoot.SetActive(inMatch && !results);
+            if (namePlateRoot != null) namePlateRoot.SetActive(inMatch && !results);
             if (touchRoot != null) touchRoot.SetActive(touchVisible && inMatch && !results);
             if (hintText != null) hintText.gameObject.SetActive(!touchVisible && inMatch && !results);
             if (resultsRoot != null && !results) resultsRoot.SetActive(false);
@@ -190,7 +191,7 @@ namespace CarWreck.Derby
         {
             var m = game.Match; var h = game.Human;
             bool points = m.rules.mode == GameMode.PointsDerby;
-            int active = m.ActiveCount;
+            int active = m.State == MatchState.Countdown ? m.participants.Count : m.ActiveCount;
             scoreText.text = points ? $"SCORE  {h.score:N0}" : $"CARS LEFT  {active}";
             subText.text = points ? $"RANK {game.HumanRank()} / {m.participants.Count}     ·     {Mathf.Max(0, m.participants.Count - 1)} OPPONENTS" : $"SCORE {h.score:N0}     ·     RANK {game.HumanRank()} / {m.participants.Count}";
             // timer line
@@ -198,7 +199,7 @@ namespace CarWreck.Derby
             switch (m.State)
             {
                 case MatchState.Countdown: t = points ? FormatTime(m.rules.pointsDuration) : "GET READY"; break;
-                case MatchState.FinalShowdown: t = "FINAL SHOWDOWN  " + FormatTime(m.ShowdownRemaining); tc = new Color(1f, 0.4f, 0.3f); break;
+                case MatchState.FinalShowdown: t = "SHOWDOWN  " + FormatTime(m.ShowdownRemaining); tc = new Color(1f, 0.4f, 0.3f); break;
                 case MatchState.Results: t = "FINISHED"; break;
                 default:
                     if (points) { t = FormatTime(m.TimeRemaining); if (m.TimeRemaining < 15f) tc = new Color(1f, 0.55f, 0.35f); }
@@ -222,7 +223,7 @@ namespace CarWreck.Derby
                 if (!has) continue;
                 var p = sorted[i];
                 boardName[i].text = $"{i + 1}  {p.name}";
-                boardName[i].color = p == h ? new Color(1f, 0.85f, 0.4f) : p.IsActive || points ? Color.white : new Color(1f, 1f, 1f, 0.4f);
+                boardName[i].color = p == h ? new Color(1f, 0.85f, 0.4f) : p.IsActive || points || p.status == ParticipantStatus.Waiting ? Color.white : new Color(1f, 1f, 1f, 0.4f);
                 boardScore[i].text = !points && !p.IsActive && p.status != ParticipantStatus.Waiting ? "OUT" : p.score.ToString("N0");
                 boardScore[i].color = boardName[i].color;
                 boardSwatch[i].color = game.palette != null && game.palette.Count > 0 ? game.palette.Get(p.paintIndex).body : Color.white;
@@ -262,6 +263,8 @@ namespace CarWreck.Derby
             return c != 0 ? c : a.id.CompareTo(b.id);
         }
 
+        static string DurationText(float s) => s < 90f ? $"{Mathf.RoundToInt(s)} seconds" : $"{Mathf.RoundToInt(s / 60f)} minutes";
+
         static string FormatTime(float s) { int t = Mathf.CeilToInt(Mathf.Max(0f, s)); return $"{t / 60}:{t % 60:00}"; }
 
         // ------------------------------------------------------------------ name plates over the cars
@@ -281,17 +284,20 @@ namespace CarWreck.Derby
                 {
                     sp = cam.WorldToScreenPoint(p.car.Body.position + Vector3.up * 2.3f);
                     show = sp.z > 1f && sp.z < 90f;
+                    sp.x = Mathf.Clamp(sp.x, 90f * canvas.scaleFactor, Screen.width - 90f * canvas.scaleFactor);
+                    sp.y = Mathf.Clamp(sp.y, 20f * canvas.scaleFactor, Screen.height - 60f * canvas.scaleFactor);
                 }
                 pl.rect.gameObject.SetActive(show);
                 if (!show) continue;
                 if (pl.who != p)
                 {
-                    pl.who = p; pl.name.text = p.name;
+                    pl.who = p; pl.alive = -1;
                     pl.name.color = game.palette != null && game.palette.Count > 0 ? Color.Lerp(game.palette.Get(p.paintIndex).body, Color.white, 0.25f) : Color.white;
                 }
                 bool alive = p.IsActive;
                 pl.barBack.gameObject.SetActive(alive); pl.bar.gameObject.SetActive(alive);
-                pl.name.text = alive ? p.name : p.name + " (WRECKED)";
+                int aliveFlag = alive ? 1 : 0;
+                if (pl.alive != aliveFlag) { pl.alive = aliveFlag; pl.name.text = alive ? p.name : p.name + " (WRECKED)"; }
                 float f = p.DurabilityFraction;
                 pl.bar.rectTransform.anchorMax = new Vector2(Mathf.Max(0.001f, f), 1f);
                 pl.bar.color = f > 0.6f ? new Color(0.35f, 0.85f, 0.35f) : f > 0.3f ? new Color(0.98f, 0.8f, 0.2f) : new Color(0.95f, 0.3f, 0.25f);
@@ -405,9 +411,9 @@ namespace CarWreck.Derby
             feedText.color = new Color(1f, 1f, 1f, 0.9f);
             // top centre: timer and mode
             timerText = Label("Timer", hr, "", 48, TextAnchor.UpperCenter, FontStyle.Bold);
-            Anchor(timerText.rectTransform, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -14), new Vector2(620, 58));
+            Anchor(timerText.rectTransform, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(100, -14), new Vector2(620, 58));
             modeText = Label("Mode", hr, "", 20, TextAnchor.UpperCenter, FontStyle.Bold);
-            Anchor(modeText.rectTransform, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -68), new Vector2(620, 26));
+            Anchor(modeText.rectTransform, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(100, -68), new Vector2(620, 26));
             modeText.color = new Color(1f, 1f, 1f, 0.7f);
             // centre: banner (countdown, WRECK!, wrecked ...) and its sub line, points popup
             bannerText = Label("Banner", hr, "", 120, TextAnchor.MiddleCenter, FontStyle.Bold);
@@ -488,7 +494,7 @@ namespace CarWreck.Derby
             var ml = Label("ModeLabel", mr, "GAME MODE", 20, TextAnchor.UpperLeft, FontStyle.Bold);
             Anchor(ml.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(36, -376), new Vector2(580, 24));
             modeButtons = new Button[2];
-            modeButtons[0] = MenuButton("ModePoints", mr, "<b>POINTS DERBY</b>\n<size=17>3 minutes - respawn</size>", 22, TextAnchor.MiddleCenter, new Vector2(36, -402), new Vector2(284, 76), () => { game.SelectMode(GameMode.PointsDerby); RefreshMenu(); });
+            modeButtons[0] = MenuButton("ModePoints", mr, "<b>POINTS DERBY</b>\n<size=17>timed - respawn</size>", 22, TextAnchor.MiddleCenter, new Vector2(36, -402), new Vector2(284, 76), () => { game.SelectMode(GameMode.PointsDerby); RefreshMenu(); });
             modeButtons[1] = MenuButton("ModeLast", mr, "<b>LAST CAR STANDING</b>\n<size=17>no respawns - final showdown</size>", 20, TextAnchor.MiddleCenter, new Vector2(330, -402), new Vector2(284, 76), () => { game.SelectMode(GameMode.LastCarStanding); RefreshMenu(); });
             modeDescription = Label("ModeDesc", mr, "", 19, TextAnchor.UpperLeft, FontStyle.Normal);
             Anchor(modeDescription.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(38, -484), new Vector2(580, 50));
@@ -510,7 +516,7 @@ namespace CarWreck.Derby
             modeButtons[1].targetGraphic.color = game.rules.mode == GameMode.LastCarStanding ? Chosen : Dark;
             carDescription.text = game.driveProfiles != null && game.playerVehicle < game.driveProfiles.Length ? game.driveProfiles[game.playerVehicle].description : "";
             modeDescription.text = game.rules.mode == GameMode.PointsDerby
-                ? $"{game.participantCount} cars, {Mathf.RoundToInt(game.rules.pointsDuration / 60f)} minutes. Hard hits score points. Wrecked cars respawn. Highest score wins."
+                ? $"{game.participantCount} cars, {DurationText(game.rules.pointsDuration)}. Hard hits score points. Wrecked cars respawn. Highest score wins."
                 : $"{game.participantCount} cars, one life each. Last car running wins. With two left, a {Mathf.RoundToInt(game.rules.showdownDuration)} s final showdown: highest score wins if time runs out.";
         }
 
