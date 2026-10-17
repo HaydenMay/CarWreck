@@ -118,13 +118,78 @@ See the table in C. Defaults: 5 participants, Points Derby, 180 s, 3 s countdown
 
 ## I. Tests
 
-See the results table at the end of this document.
+All scene checks run in the real DerbyArena with real PhysX stepped at 50 Hz (`CarWreck > Validate Derby`, or `DERBY_ONLY=pure|scene|perf|balance|exploit`); the rules checks need no scene. Final run on this branch: **79 PASS, 0 FAIL**. Arena physics in the editor is not repeatable run to run, so car-vs-car checks use margins, not exact counts. "Browser" means the built WebGL player run on localhost in the app's browser pane (a desktop browser, with an emulated phone viewport); no phone was used.
+
+| Test | Result | Evidence |
+|---|---|---|
+| A. All three existing vehicle models instantiate | PASS | Muscle Car 1400 kg, Compact Hatchback 950 kg, Compact Pickup 1350 kg: 14-box shell, damage model, controller; five cars by default use all three |
+| B. Same model, different colours | PASS | two muscle cars and two hatchbacks with different paints; 43/43 and 80/80 other materials shared; repainting 20 times adds no materials; smallest colour distance of the five paints 0.69 |
+| C. Paint does not affect deformation | PASS | the same hit on two differently painted cars: identical geometry (difference 0.00000000); repainting a dented car keeps dents and mesh objects |
+| D. Five participants spawn without overlap | PASS | also 2, 8 and 12: closest pairs 62, 23.7, 23.7, 12.2 m, none on an obstacle; nobody moves during the 3 s countdown |
+| E. AI targets other AI | PASS | in a 60 s match every AI had both AI and player targets |
+| F. AI targets the player | PASS | the player was a target for every AI at some point (19 % of target time in the 60 s run, 7 % in an earlier run) |
+| G. No special priority for the player | PASS | scores identical when human and AI control types are swapped; over 3000 random layouts the player is the best target for 26 % of choices (others 18-19 %, one in four expected); the player's share of target time was 7-19 % |
+| H. Profiles behave differently | PASS | same situation: Brawler takes the near car, Hunter the wounded one, Cautious avoids the car driving at it; same encounter, two 30 s runs each (charges / back-offs): Brawler 13 / 1, Hunter 11 / 0, Cautious 8 / 4, Rookie 10 / 2 |
+| I. AI V2 obstacle recovery | PASS | pinned against the wall and the corner wedge the AI moved 52 m and 89 m in 14 s with 3 and 1 recoveries; Enemy AI V2 validation 14/14 |
+| J. AI V2 charge behaviour | PASS | 5 charges, 4 hits, last at 48 km/h closing against a stationary player (210 kJ dealt) |
+| K. All participants can receive damage | PASS | each of the five received a verified hit from another car (61-78 kJ each) |
+| L. All participants can earn points | PASS | each of the five scored as the attacker; tiers, head-on and wall-assisted wrecks checked in the rules tests |
+| M. Repeated contact gives no duplicate points | PASS | ten identical events in 0.2 s score once; 100 taps in 5 s score at most 8 times; pressing against a car for 5 s after a ram added 0 to 10 points |
+| N. Wrecked vehicles are no longer targets | PASS | no AI keeps a wrecked car as its target; it takes no damage, scores nothing and counts as an obstacle |
+| O. Points Derby respawn, AI and player | PASS | both respawn after the delay with full durability and their score |
+| P. Respawn restores geometry and collision state | PASS | vertex checksum back to the fresh value, shell retraction 0.26 m before and 0 after, no impacts, no crush in progress, motion reset, paint restored |
+| Q. Points Derby ends at the timer | PASS | 180 s default (state at 179 s Active, at 180.1 s Results); 8 s variant in the real game |
+| R. Highest score wins, including an AI | PASS | an AI won in the real game and in the rules tests; ties go to more wrecks, fewer deaths, then a declared draw |
+| S. Last Car Standing has no respawns | PASS | wrecked car stays out for 6 s and for 20 s |
+| T. Final Showdown starts with two active | PASS | not with three; 59.7 s on the clock when it starts |
+| U. Showdown ends after an elimination | PASS | the survivor wins once |
+| V. Showdown timeout uses the tiebreaker | PASS | higher score; equal score: more durability; equal: a declared draw |
+| W. Simultaneous eliminations | PASS | same step, 0.1 s apart (decided by score), everyone wrecked (draw), a late hit after the result (ignored, single result event) |
+| X. Restart creates a clean match | PASS | scores, stats, damage and clocks reset; same car objects reused, no extra rigidbodies; browser: REMATCH gives a clean countdown |
+| Y. Return to menu works | PASS | AI cars removed, player's car repaired and kept, five menu-match-menu rounds with constant rigidbody count (27), meshes (372) and materials (97); browser: QUIT TO MENU and PAUSE verified |
+| Z. WebGL entry opens the playable game | PASS (local) | the built player opens the menu, STARTs a five-car derby, plays through countdown, active and results in both modes. Not checked on the hosted page: nothing is published |
+| Regression: driving validation | PASS | 88 / 88 |
+| Regression: Enemy AI V2 validation | PASS | 14 / 14 |
+| Regression: Collision Lab validation (verify, collision-verify, collision-geometry, collision-persist-a/b, collision-overflow, vehicle-switch) | PASS | 62 PASS tokens, 0 FAIL |
+| Regression: progressive crushing validation | PASS | 34 / 34 |
+| Performance: five-vehicle match | PASS (editor); NOT MEASURED on a device | see J |
+| Performance: repeated respawns | PASS | see J |
+| Performance: browser smoke test | PASS for function; frame rate NOT MEASURED | see J |
+| Mobile | landscape phone viewport (812 x 375) emulated: menu, HUD and touch controls fit; **no phone was used** | |
 
 ## J. Performance
 
-See the results at the end of this document.
+Editor (Mono, edit-mode stepping; WebGL differs per call, so these show scale, not device numbers):
+
+* Five-vehicle match, 30 s, four AI: 1.4 - 1.8 ms average per fixed step including physics, damage receivers, AI drivers, targeting and collider refits. The 99th percentile was 6.5 - 113 ms and the worst step 200 - 270 ms between runs: those spikes are the damage engine solving a hit (`VehicleDamageModel.AddImpact`, the same cost the arena has; the arena flags solves over 40 ms as hitches).
+* AI decisions: the Enemy AI V2 validation measures 4 microseconds average and 0 bytes per call. Targeting: at most 0.8 ms for one pass in the editor (cold JIT), every ~0.35 s per driver, staggered; in the browser the worst targeting pass was 0.1 - 0.2 ms.
+* Building a five-car match from the menu: 1.4 s in the editor, 0.73 - 0.86 s in the browser. A rematch reuses the cars and took 8 ms. A respawn (`ResetCar` on a damaged car) took 3.2 ms average, 4.5 ms worst.
+* 40 respawns: meshes 372 -> 372, rigidbodies 27 -> 27, materials +3 once (the charcoal wreck paint is created once per model, then constant), managed memory +5 MB.
+* Scaling smoke test (not a requirement, no claim of playability): 8 cars 2.8 - 3.9 ms per step, 12 cars 4.5 - 6.0 ms per step, no errors, targeting still under 1 ms. Hit solves, not the AI, are what get expensive with more cars.
+* Browser smoke test: the page reported no deformation hitches (`hitches` 0) over three five-car matches; the WebGL heap grew 256 -> 369 MB with the first match and 369 -> 531 MB the first time the AI cars were rebuilt, then stayed at 531 MB through four more menu/match rebuilds (the build allows up to 1024 MB; a low-end phone may not give that much, so a phone check is recommended). The frame rate could not be measured: the browser pane renders in software and its reported frame rate decays from 30 to about 5 fps within half a minute even in the unchanged driving arena (`?scene=drive`), so those numbers say nothing about a device.
+* Balance (informational, five AI-style drivers, defaults): Points Derby, two runs: each car wrecked 1 - 3 times in 180 s and scored 600 - 2000; Last Car Standing finished at 172 s and 155 s with the showdown starting at 146 s and 140 s. The Cautious profile won all four runs: it takes the least damage while still scoring, so low aggression is a good survival strategy under this scoring. If the owner finds that dull, the first dials are the scoring of hits against the wreck bonus, or the profile numbers.
 
 ## K. Files
 
 New: `Assets/Derby/Scripts/{MatchModel,VehiclePaint,AiTargeting,SpawnPlanner,DerbyGame,DerbyUI}.cs`, `Assets/Derby/Editor/{DerbySceneBuilder,DerbyValidation}.cs`, `Assets/Derby/Scenes/DerbyArena.unity`, generated textures, `Assets/Derby/Settings/{PaintPalette,Rookie}.asset`, `Assets/DamageLab/Materials/Derby*.mat`, this document.
 Modified: `Assets/Driving/Scripts/EnemyDriver.cs` (target setter, obstacle predicate, null guard), `Assets/Driving/Editor/DrivingWebBuild.cs` (scene list), `Assets/WebGLTemplates/CarWreck/index.html` (title and hint text), `ProjectSettings/EditorBuildSettings.asset` (derby scene first).
+
+## L. Branch and commits
+
+Branch `feature/first-playable-derby` (from `main` at 4ea5996). Commit hashes are in the final report; run `git log main..feature/first-playable-derby --oneline`. Not merged into `main`, not published.
+
+## M. Risks and mitigations
+
+1. **Not tested on a phone.** Layout, touch controls and the heap size are checked only in an emulated landscape viewport. Mitigation: owner playtest on the hosted preview before making it the default. The 531 MB heap is the thing to watch on low-end phones; the build already caps pixel density and memory growth.
+2. **The reported damage exploit is not reproduced and not fixed** (section H). Scoring and durability are only as reliable as the receiver reports. Needs the Opus investigation already reserved.
+3. **Hit solves can hitch** (up to a few hundred ms in the editor; the browser run showed none in three short matches). Five cars means more hits than the arena has, so this is the most likely thing to feel rough on a slow device. Unchanged engine code; a real-device number is needed before judging.
+4. **Low-aggression drivers do well** (see balance). Easy to retune in the profile assets and `MatchRules`.
+5. **Last Car Standing wait.** A player who is out early watches the rest finish (the camera follows the nearest survivor; no fast-forward or skip; pause and quit are available). A skip button would be the follow-up.
+6. **Respawn is a teleport after a 3 s hulk.** No explosion, smoke or fade, and no sound anywhere in the project yet.
+7. **AI limits carried over from V2:** head-on dodging is hard, a stationary player is rammed repeatedly, detours plan one obstacle cluster at a time. The new targeting adds no new combat behaviour.
+8. **Diagnostics are only a URL away** (`?scene=drive`); the Collision Lab and Damage Lab keep their own builds and scenes. The page parameters (`cars`, `mode`, `time`, `showdown`, `hp`) are for testing and are not shown in the UI.
+
+## N. Deployment readiness
+
+The new scene is the first scene of the WebGL build, so the next approved publish (`DrivingWebBuild.Build`, then `bash Docs/Driving/publish-preview.sh`) opens the CarWreck menu instead of the driving test menu. Functionally it is ready for owner review: both modes run start to finish in a browser build, restart and menu return work, and every required check passes. It should not become the default experience before a real-phone playtest, because the frame rate, the memory footprint and the touch feel are the unmeasured parts. Not merged, not published.
+

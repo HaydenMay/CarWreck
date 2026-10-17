@@ -867,6 +867,7 @@ namespace CarWreck.Derby.EditorTools
             int mesh0 = Resources.FindObjectsOfTypeAll<Mesh>().Length, mat0 = Resources.FindObjectsOfTypeAll<Material>().Length, rb0 = UnityEngine.Object.FindObjectsByType<Rigidbody>(FindObjectsSortMode.None).Length;
             long mem0 = GC.GetTotalMemory(true);
             var respawnMs = new List<double>();
+            int matMid = 0;
             for (int round = 0; round < 40; round++)
             {
                 var v = ps[1 + round % 4];
@@ -875,12 +876,24 @@ namespace CarWreck.Derby.EditorTools
                 ws.Restart();
                 int guard = 0; while (!v.IsActive && guard++ < 400) game.ManualStep(Dt);
                 ws.Stop(); respawnMs.Add(ws.Elapsed.TotalMilliseconds);
+                if (round == 11) matMid = Resources.FindObjectsOfTypeAll<Material>().Length;   // every model has been wrecked and repainted once by now
             }
             Resources.UnloadUnusedAssets(); GC.Collect();
             int mesh1 = Resources.FindObjectsOfTypeAll<Mesh>().Length, mat1 = Resources.FindObjectsOfTypeAll<Material>().Length, rb1 = UnityEngine.Object.FindObjectsByType<Rigidbody>(FindObjectsSortMode.None).Length;
             long mem1 = GC.GetTotalMemory(true);
-            Check("PERF2. 40 respawns do not leak meshes, materials or bodies, and managed memory stays bounded", mesh1 <= mesh0 + 2 && mat1 <= mat0 && rb1 == rb0 && mem1 - mem0 < 24L * 1024 * 1024, $"meshes {mesh0} -> {mesh1}, materials {mat0} -> {mat1}, rigidbodies {rb0} -> {rb1}, managed memory {(mem1 - mem0) / 1024f / 1024f:0.0} MB growth; respawns done {game.Respawns}");
-            Check("PERF3. A respawn is not a hitch (the whole respawn wait including ram + simulation, per 0.5 s delay)", true, $"loop time per respawn (simulating ~1.5 s of play each) {respawnMs.Average():0} ms average");
+            Check("PERF2. 40 respawns do not leak meshes, materials or bodies, and managed memory stays bounded", mesh1 <= mesh0 + 2 && mat1 == matMid && mat1 <= mat0 + game.vehicles.Length && rb1 == rb0 && mem1 - mem0 < 24L * 1024 * 1024, $"meshes {mesh0} -> {mesh1}, materials {mat0} -> {matMid} after the first 12 respawns (the charcoal wreck paint is created once per model) -> {mat1} at the end, rigidbodies {rb0} -> {rb1}, managed memory {(mem1 - mem0) / 1024f / 1024f:0.0} MB growth; respawns done {game.Respawns}");
+            // the respawn operation itself (reset of geometry, colliders, motion, AI, paint) on damaged cars
+            var resetMs = new List<double>();
+            var spotA = new SpawnPlanner.Spot { position = new Vector3(0f, 0f, 30f), yaw = 180f };
+            for (int round = 0; round < 30; round++)
+            {
+                var v = ps[1 + round % 4];
+                Ram(ps[(round + 2) % 5 == v.id ? 0 : (round + 2) % 5], v, 17f, 1.2f);
+                ws.Restart(); game.ResetCar(v.car, spotA); ws.Stop(); resetMs.Add(ws.Elapsed.TotalMilliseconds);
+                PlaceCar(v, new Vector3(-30f + 15f * (round % 5), 0f, 44f), 180f, 0f);
+            }
+            resetMs.Sort();
+            Check("PERF3. The respawn operation on a damaged car is not a hitch", resetMs[(int)(resetMs.Count * 0.9)] < 40.0, $"ResetCar on damaged cars: {resetMs.Average():0.0} ms average, {resetMs.Last():0.0} ms worst over 30 resets (editor, Mono)");
 
             // scaling smoke test above five (not a release requirement)
             foreach (int n in new[] { 8, 12 })
