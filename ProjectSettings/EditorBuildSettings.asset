@@ -6,6 +6,9 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/Derby/Scenes/DerbyArena.unity
+    guid: 500e1115d32f0a74994e01b9d67c9dea
+  - enabled: 1
     path: Assets/DamageLab/Scenes/VehicleDamageLab.unity
     guid: 3a186120240017240ba1a580c0fa1096
   - enabled: 1

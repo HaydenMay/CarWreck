@@ -85,8 +85,11 @@ namespace CarWreck.Driving
         public float DistanceToPlayer { get; private set; }
         public bool Detouring => wpIndex < wpCount;
         public string ProfileName => profile != null ? profile.displayName : "Default";
+        /// <summary>The body the driver goes after (the player in the arena; any eligible opponent in a derby). Change it with <see cref="SetTarget"/> at run time.</summary>
         public Rigidbody player;
         public CollisionDamageReceiver receiver;
+        /// <summary>Optional: which car bodies count as obstacles (a wrecked hulk does, a living opponent does not). Null = no car is an obstacle (the arena behaviour).</summary>
+        public System.Predicate<Rigidbody> carIsObstacle;
 
         ArcadeCarController controller;
         Rigidbody body;
@@ -129,6 +132,22 @@ namespace CarWreck.Driving
             desiredSpeed = speedMetresPerSecond;
             if (receiver != null) { receiver.ImpactRegistered -= OnImpact; receiver.ImpactRegistered += OnImpact; }
             Restart();
+        }
+
+        public Rigidbody Target => player;
+
+        /// <summary>
+        /// Go after another body. Safe at any time: the target's velocity estimate restarts from the new body, the detour is dropped and an attack that was aimed at the old
+        /// target (line-up, back-off, charge) is given up; the car keeps its speed and heading and simply pursues the new one. Null = nothing to attack (the car coasts).
+        /// </summary>
+        public void SetTarget(Rigidbody t)
+        {
+            if (t == player) return;
+            player = t;
+            if (t != null) seenVelocity = t.linearVelocity;
+            ClearDetour();
+            planTimer = closeTimer = circleTimer = 0f;
+            if (Current == State.Commit || Current == State.LineUp || Current == State.Reposition) Enter(State.Pursue);
         }
 
         /// <summary>Use a profile (null = default 0.5 / 0.5). Safe at any time; takes effect immediately.</summary>
@@ -227,7 +246,7 @@ namespace CarWreck.Driving
         {
             var rb = c.attachedRigidbody;
             if (rb == null || rb == body) return false;                                    // ground and other static scenery: not an obstacle
-            if (rb.TryGetComponent<ArcadeCarController>(out _) || rb.TryGetComponent<CollisionDamageReceiver>(out _)) return false;   // cars are targets, not obstacles
+            if (rb.TryGetComponent<ArcadeCarController>(out _) || rb.TryGetComponent<CollisionDamageReceiver>(out _)) return carIsObstacle != null && carIsObstacle(rb);   // cars are targets, not obstacles (unless the game says this one is a dead hulk)
             return rb.isKinematic || rb.mass >= obstacleMinMass;
         }
 
@@ -350,7 +369,8 @@ namespace CarWreck.Driving
         public void Drive(float dt)
         {
             if (controller == null) Awake();
-            if (player == null || dt <= 0f) return;
+            if (dt <= 0f) return;
+            if (player == null) { controller.Throttle = 0f; controller.SteerInput = 0f; return; }   // nothing to attack: coast
             clock += dt;
             stateTime += dt;
             seenVelocity = Vector3.Lerp(seenVelocity, player.linearVelocity, 1f - Mathf.Exp(-dt / Mathf.Max(0.02f, reactionTime)));   // imperfect eyes (more lag at low skill)
