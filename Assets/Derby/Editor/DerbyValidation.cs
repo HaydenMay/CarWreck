@@ -44,7 +44,7 @@ namespace CarWreck.Derby.EditorTools
             try
             {
                 if (only == "" || only == "pure") PureRules();
-                if (only == "" || only == "scene" || only == "perf")
+                if (only == "" || only == "scene" || only == "perf" || only == "balance" || only == "exploit")
                 {
                     Physics.simulationMode = SimulationMode.Script;
                     EditorSceneManager.OpenScene(DerbySceneBuilder.ScenePath, OpenSceneMode.Single);
@@ -54,6 +54,8 @@ namespace CarWreck.Derby.EditorTools
                     foreach (var rb in UnityEngine.Object.FindObjectsByType<Rigidbody>(FindObjectsSortMode.None)) { }
                     if (only == "" || only == "scene") SceneChecks();
                     if (only == "" || only == "perf") Performance();
+                    if (only == "balance") Balance();
+                    if (only == "exploit") ExploitProbe();
                 }
             }
             catch (Exception e) { sb.AppendLine("EXCEPTION: " + e); fails++; }
@@ -271,7 +273,7 @@ namespace CarWreck.Derby.EditorTools
             game.participantCount = cars;
             game.rules.mode = mode;
             game.rules.countdownSeconds = countdown;
-            game.rules.pointsDuration = 180f; game.rules.showdownDuration = 60f; game.rules.respawnDelay = 3f; game.rules.durabilityEnergy = 450000f;
+            game.rules.pointsDuration = 180f; game.rules.showdownDuration = 60f; game.rules.respawnDelay = 3f; game.rules.durabilityEnergy = 650000f;
             tweak?.Invoke(game.rules);
             game.StartMatch();
             foreach (var p in game.Participants) p.car.Receiver.logImpacts = false;
@@ -665,7 +667,7 @@ namespace CarWreck.Derby.EditorTools
             Check("M. Physical repeated contact: 5 s of pressing against the victim after a ram gives no farming (a few light pushes at most)", att.score - scoreAfterRam <= 30, $"ram scored {first.attackerScore:0}; pressing for 5 s added {att.score - scoreAfterRam}");
 
             // N: a wrecked car stops being a target for the AI at once
-            FreshMatch(5, GameMode.PointsDerby, 0.1f, r => r.durabilityEnergy = 450000f);
+            FreshMatch(5, GameMode.PointsDerby, 0.1f, r => r.durabilityEnergy = 650000f);
             ps = game.Participants; StepSeconds(8f);
             var victim = ps.First(p => p.control == ControlType.AI);
             int hunters = ps.Count(p => p != victim && p.control == ControlType.AI && game.Targeting.TargetOf(p.id) == victim.id);
@@ -743,7 +745,7 @@ namespace CarWreck.Derby.EditorTools
             Check("W. Both finalists wrecked in the same step in the real game: one result, the higher score", game.Match.State == MatchState.Results && game.Match.Winner == ps[0] && !game.Match.IsDraw, $"winner {game.Match.Winner?.name}, '{game.Match.ResultText}'");
 
             // X: restart
-            FreshMatch(5, GameMode.PointsDerby, 0.1f, r => r.durabilityEnergy = 450000f);
+            FreshMatch(5, GameMode.PointsDerby, 0.1f, r => r.durabilityEnergy = 650000f);
             ps = game.Participants;
             StepSeconds(20f);
             Ram(ps[1], ps[2], 18f);
@@ -776,6 +778,67 @@ namespace CarWreck.Derby.EditorTools
                   $"rigidbodies per round {string.Join("/", rbCounts)} (menu {rbMenu}), meshes {string.Join("/", meshCounts)}, materials {string.Join("/", matCounts)}");
             // quick participant-count switch inside one session
             game.participantCount = 5;
+        }
+
+
+
+        // ==================================================================== the reported damage exploit (informational: Opus owns the collision code)
+        static void ExploitProbe()
+        {
+            sb.AppendLine("  -- exploit probe: head-on, the second car brakes to a stop shortly before impact (what the owner reported: stationary player 0 %, attacker 97 %) --");
+            sb.AppendLine("     columns: victim speed at start / braking starts at gap / closing speed at contact | victim energy kJ, attacker energy kJ | points victim, points attacker | victim strength, attacker strength");
+            int zeroVictim = 0, trials = 0;
+            foreach (float v0 in new[] { 10f, 15f })
+                foreach (float gap in new[] { 16f, 10f, 6f, 3f })
+                {
+                    FreshMatch(5, GameMode.PointsDerby, 0.1f, r => r.durabilityEnergy = 1e9f);
+                    var ps = game.Participants; var a = ps[1]; var v = ps[0];
+                    AiOff(); Park(a, v);
+                    PlaceCar(v, new Vector3(14f, 0f, -40f), 270f, v0);
+                    PlaceCar(a, new Vector3(-16f, 0f, -40f), 90f, 17f);
+                    float closingAtContact = 0f; bool braking = false;
+                    var ra = a.car.Receiver; var rv = v.car.Receiver;
+                    for (int i = 0; i < 150; i++)
+                    {
+                        float dist = Vector3.Distance(a.car.Body.position, v.car.Body.position) - 4.8f;
+                        if (!braking && dist < gap) braking = true;
+                        a.car.controller.Throttle = a.car.controller.ForwardSpeed < 17f ? 1f : 0f; a.car.controller.SteerInput = 0f;
+                        v.car.controller.Throttle = braking ? -1f : (v.car.controller.ForwardSpeed < v0 ? 1f : 0f); v.car.controller.SteerInput = 0f;
+                        if (closingAtContact == 0f && dist < 0.3f) closingAtContact = (a.car.Body.linearVelocity - v.car.Body.linearVelocity).magnitude;
+                        game.ManualStep(Dt);
+                    }
+                    trials++;
+                    if (v.damageTaken <= 0f && a.damageTaken > 5000f) zeroVictim++;
+                    sb.AppendLine($"       {v0:0} m/s / {gap:0} m / {closingAtContact:0.0} m/s | {v.damageTaken / 1000f:0.0}, {a.damageTaken / 1000f:0.0} | {v.score}, {a.score} | {(rv.HasReport ? rv.Last.strength : 0f):0.00}, {(ra.HasReport ? ra.Last.strength : 0f):0.00}  (victim receiver events {rv.EventCount}, attacker {ra.EventCount})");
+                }
+            sb.AppendLine($"    cases where the braking car took no damage while the other car took more than 5 kJ: {zeroVictim} of {trials}");
+        }
+
+        // ==================================================================== balance simulation (informational)
+        static void Balance()
+        {
+            sb.AppendLine("  -- balance simulation: five AI-style drivers, default rules (the human car is driven by an EnemyDriver for this test only) --");
+            foreach (var mode in new[] { GameMode.PointsDerby, GameMode.LastCarStanding })
+                for (int run = 0; run < 2; run++)
+                {
+                    FreshMatch(5, mode, 0.1f);
+                    var hc = game.Human.car;
+                    var bot = hc.rig.root.AddComponent<EnemyDriver>();
+                    bot.receiver = hc.Receiver; bot.arenaHalf = game.arenaHalf; bot.SetProfile(game.aiProfiles[1]); bot.Begin(game.aiSpeedKmh / 3.6f); bot.startDelay = 0.2f; bot.Restart();
+                    hc.enemy = bot;
+                    int maxSteps = mode == GameMode.PointsDerby ? 9100 : 36000;
+                    float showdownAt = -1f; int steps = 0;
+                    for (; steps < maxSteps && game.Match.State != MatchState.Results; steps++)
+                    {
+                        game.ManualStep(Dt);
+                        if (showdownAt < 0f && game.Match.State == MatchState.FinalShowdown) showdownAt = game.Match.Clock;
+                    }
+                    var m = game.Match;
+                    sb.AppendLine($"    {mode} run {run + 1}: {(m.State == MatchState.Results ? "finished" : "NOT FINISHED")} at {m.Clock:0} s; winner {m.Winner?.name ?? "none"} ('{m.ResultText}'); showdown began {(showdownAt < 0 ? "never" : showdownAt.ToString("0") + " s")}; respawns {game.Respawns}");
+                    sb.AppendLine("      " + string.Join(" | ", m.Ranking.Select(p => $"{p.name} score {p.score}, wrecks dealt {p.wrecksDealt}, wrecked {p.timesWrecked}, hits {p.hitsDealt}/{p.hitsTaken}")));
+                    hc.enemy = null; UnityEngine.Object.DestroyImmediate(bot);
+                }
+            game.GoToMenu();
         }
 
         // ==================================================================== performance (editor)

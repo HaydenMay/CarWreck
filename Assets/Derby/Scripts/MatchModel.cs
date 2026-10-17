@@ -83,7 +83,9 @@ namespace CarWreck.Derby
 
         [Header("Durability")]
         [Tooltip("Collision energy (J) a 1400 kg car absorbs before it is wrecked. Heavier cars scale with mass. Energy is the damage receiver's own number for what the hit did to this car (after the two cars share the collision energy).")]
-        public float durabilityEnergy = 450000f;
+        public float durabilityEnergy = 650000f;
+        [Tooltip("Last Car Standing multiplies durability by this (one life each, so cars must last longer than in Points Derby, where they come back).")]
+        public float lastCarStandingDurabilityScale = 2f;
         public float durabilityReferenceMass = 1400f;
         [Tooltip("How much of the energy of a hit against walls and obstacles counts against durability (0 = environment cannot hurt a car).")]
         public float environmentDamageFactor = 0.4f;
@@ -99,7 +101,7 @@ namespace CarWreck.Derby
         public float creditWindow = 4f;
 
         public bool RespawnsEnabled => mode == GameMode.PointsDerby;
-        public float DurabilityFor(float massKg) => durabilityEnergy * Mathf.Max(0.1f, massKg) / Mathf.Max(1f, durabilityReferenceMass);
+        public float DurabilityFor(float massKg) => durabilityEnergy * (mode == GameMode.LastCarStanding ? lastCarStandingDurabilityScale : 1f) * Mathf.Max(0.1f, massKg) / Mathf.Max(1f, durabilityReferenceMass);
 
         /// <summary>Tier index (0..) for the victim-side energy of a hit, -1 when it is too light to score.</summary>
         public int TierFor(float energy)

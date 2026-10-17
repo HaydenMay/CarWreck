@@ -134,7 +134,7 @@ namespace CarWreck.Derby
             if (Application.isPlaying) OpenMenu();
         }
 
-        /// <summary>Page parameters (development / scaling checks): ?cars=N, ?mode=last|points, ?scene=drive (the diagnostic driving arena).</summary>
+        /// <summary>Page parameters (development / smoke tests, none needed to play): ?cars=N, ?mode=last|points, ?time=seconds (Points Derby length), ?showdown=seconds, ?hp=multiplier (durability), ?scene=drive (the diagnostic driving arena).</summary>
         bool HandleUrl()
         {
             string url = Application.absoluteURL;
@@ -148,6 +148,10 @@ namespace CarWreck.Derby
                 if (k == "scene" && v == "drive") { SceneManager.LoadScene("DriveArena"); isSetUp = false; return true; }
                 if (k == "cars" && int.TryParse(v, out int n)) participantCount = Mathf.Clamp(n, 2, 16);
                 if (k == "mode") rules.mode = v.StartsWith("last") ? GameMode.LastCarStanding : GameMode.PointsDerby;
+                var ci = CultureInfo.InvariantCulture;
+                if (k == "time" && float.TryParse(v, NumberStyles.Float, ci, out float secs)) rules.pointsDuration = Mathf.Clamp(secs, 5f, 900f);
+                if (k == "showdown" && float.TryParse(v, NumberStyles.Float, ci, out float sd)) rules.showdownDuration = Mathf.Clamp(sd, 3f, 300f);
+                if (k == "hp" && float.TryParse(v, NumberStyles.Float, ci, out float hp)) rules.durabilityEnergy *= Mathf.Clamp(hp, 0.05f, 10f);
             }
             return false;
         }

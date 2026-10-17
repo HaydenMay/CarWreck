@@ -353,12 +353,12 @@ namespace CarWreck.Derby
             cornerRoot = new GameObject("CornerButtons", typeof(RectTransform));
             var cr = (RectTransform)cornerRoot.transform;
             Stretch(cr, root);
-            var menuBtn = SmallButton("Menu", cr, "PAUSE", new Vector2(-24, -24), new Vector2(150, 76), 26);
+            var menuBtn = SmallButton("Menu", cr, "PAUSE", new Vector2(-20, -20), new Vector2(180, 64), 26);
             menuBtn.OnChanged = held => { if (held) input.RequestMenu(); };
-            var toggleBtn = SmallButton("TouchToggle", cr, "TOUCH: OFF", new Vector2(-24 - 150 - 10, -24), new Vector2(170, 76), 20);
+            var toggleBtn = SmallButton("TouchToggle", cr, "TOUCH: OFF", new Vector2(-20, -20 - 72), new Vector2(180, 64), 20);
             toggleBtn.OnChanged = held => { if (held) SetTouch(!touchVisible, true); };
             touchToggleLabel = toggleBtn.GetComponentInChildren<Text>();
-            var flipBtn = SmallButton("Unflip", cr, "RIGHT CAR", new Vector2(-24 - 150 - 10 - 170 - 10, -24), new Vector2(170, 76), 20);
+            var flipBtn = SmallButton("Unflip", cr, "RIGHT CAR", new Vector2(-20, -20 - 144), new Vector2(180, 64), 20);
             flipBtn.OnChanged = held => { if (held) input.RequestReset(); };
             cornerRoot.SetActive(false);
 
@@ -405,9 +405,9 @@ namespace CarWreck.Derby
             feedText.color = new Color(1f, 1f, 1f, 0.9f);
             // top centre: timer and mode
             timerText = Label("Timer", hr, "", 48, TextAnchor.UpperCenter, FontStyle.Bold);
-            Anchor(timerText.rectTransform, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(60, -14), new Vector2(560, 58));
+            Anchor(timerText.rectTransform, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -14), new Vector2(620, 58));
             modeText = Label("Mode", hr, "", 20, TextAnchor.UpperCenter, FontStyle.Bold);
-            Anchor(modeText.rectTransform, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(60, -68), new Vector2(560, 26));
+            Anchor(modeText.rectTransform, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -68), new Vector2(620, 26));
             modeText.color = new Color(1f, 1f, 1f, 0.7f);
             // centre: banner (countdown, WRECK!, wrecked ...) and its sub line, points popup
             bannerText = Label("Banner", hr, "", 120, TextAnchor.MiddleCenter, FontStyle.Bold);
