@@ -756,7 +756,7 @@ namespace CarWreck.Derby
                 if (i > 0) sb.Append(',');
                 int tgt = Targeting.TargetOf(q.id);
                 sb.Append("{\"n\":\"").Append(q.name).Append("\",\"s\":").Append(q.score).Append(",\"d\":").Append((q.DurabilityFraction * 100f).ToString("0", ci))
-                  .Append(",\"st\":\"").Append(q.status.ToString()[0]).Append("\",\"t\":").Append(tgt).Append('}');
+                  .Append(",\"st\":\"").Append(q.status.ToString()[0]).Append("\",\"t\":").Append(tgt).Append(",\"bk\":").Append(q.car != null && q.car.enemy != null ? q.car.enemy.Breakaways : 0).Append('}');
             }
             sb.Append("]}");
             CarWreckBridge.Report(sb.ToString());
