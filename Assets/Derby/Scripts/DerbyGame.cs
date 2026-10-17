@@ -214,6 +214,7 @@ namespace CarWreck.Derby
                 e.player = null;
                 e.arenaHalf = arenaHalf;
                 e.carIsObstacle = IsHulk;
+                WireDriver(e);
                 e.measureCost = true;
                 e.seed = 101 + p.id * 17 + MatchesStarted;
                 e.SetProfile(p.profile);
@@ -527,6 +528,47 @@ namespace CarWreck.Derby
             c.controller.Throttle = 0f; c.controller.SteerInput = 0f;
             if (c.enemy != null) { c.enemy.SetTarget(null); c.enemy.Restart(); c.enemy.enabled = false; }
             ApplyPaint(c, c.participant.paintIndex);
+        }
+
+        // ------------------------------------------------------------------ what the AI drivers may ask the game (breakaway)
+
+        /// <summary>Gives a driver the game's view of the other cars (positions of living cars near it, how many are already breaking away, where they are heading).</summary>
+        public void WireDriver(EnemyDriver e)
+        {
+            e.nearbyCars = NearbyCars;
+            e.breakawayAllowed = BreakawayAllowed;
+            e.destinationTaken = DestinationTaken;
+        }
+
+        int NearbyCars(Rigidbody self, Vector3[] buffer, float radius)
+        {
+            int n = 0; float r2 = radius * radius; Vector3 p = self.position;
+            foreach (var q in Participants)
+            {
+                if (q.car == null || !q.IsActive || q.car.Body == self) continue;
+                Vector3 d = q.car.Body.position - p; d.y = 0f;
+                if (d.sqrMagnitude > r2) continue;
+                if (n < buffer.Length) buffer[n++] = q.car.Body.position;
+            }
+            return n;
+        }
+
+        /// <summary>At most about a third of the field breaks away at once, so a cluster never empties in one go.</summary>
+        bool BreakawayAllowed(EnemyDriver self)
+        {
+            int away = 0;
+            foreach (var q in Participants) if (q.car != null && q.car.enemy != null && q.car.enemy != self && q.car.enemy.Current == EnemyDriver.State.Breakaway) away++;
+            return away < Mathf.Max(1, (Participants.Count + 1) / 3);
+        }
+
+        bool DestinationTaken(Vector3 p, EnemyDriver self)
+        {
+            foreach (var q in Participants)
+            {
+                var e = q.car != null ? q.car.enemy : null;
+                if (e != null && e != self && e.Current == EnemyDriver.State.Breakaway && (e.BreakawayDestination - p).sqrMagnitude < 196f) return true;
+            }
+            return false;
         }
 
         // ------------------------------------------------------------------ damage -> match

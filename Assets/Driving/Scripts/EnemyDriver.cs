@@ -25,7 +25,7 @@ namespace CarWreck.Driving
         /// <summary>Centre-to-centre distance (m) at which two cars touch nose to nose, about.</summary>
         const float ContactDistance = 4.8f;
 
-        public enum State { Waiting, Pursue, LineUp, Reposition, Commit, Overshoot, Recover }
+        public enum State { Waiting, Pursue, LineUp, Reposition, Commit, Overshoot, Recover, Breakaway }
 
         [Header("Driver")]
         [Tooltip("Aggression and skill. Null = a middling driver (0.5 / 0.5).")]
@@ -69,6 +69,31 @@ namespace CarWreck.Driving
         public float reactionTime, leadMax, predictionQuality, fullLockAngle, chargeSteerLimit, believedTurnRate;
         public float alignTolerance, minChargeSpeed, chargeRange, minImpactSpeed, lineUpRange, minRunway, repositionChance, repositionCooldown, engageTimeout, chargeSpeedFactor, overshootTime, lookAheadScale, opportunityThreshold;
 
+        // ------------------------------------------------------------------ breakaway (derby): leave a cluster that produces poor attacks, build a run-up elsewhere, come back
+        [Header("Breakaway (needs the game to supply nearbyCars; off in the driving arena)")]
+        public bool breakawayEnabled = true;
+        [Tooltip("Positions of the other living cars within a radius of this body (fills the array, returns the count). Null = no breakaway.")]
+        public System.Func<Rigidbody, Vector3[], float, int> nearbyCars;
+        [Tooltip("Lets the game cap how many drivers break away at the same time.")]
+        public System.Func<EnemyDriver, bool> breakawayAllowed;
+        [Tooltip("True when another driver is already heading for (about) this point.")]
+        public System.Func<Vector3, EnemyDriver, bool> destinationTaken;
+        // derived from the profile (ApplyProfile)
+        public float breakawayThreshold, breakawayChance, breakawayCooldown, breakawayMaxTime, breakawayDistance, breakawayCandidates, breakawayNoise;
+        public int Breakaways { get; private set; }
+        public int BreakawaysCompleted { get; private set; }
+        public int BreakawaysAborted { get; private set; }
+        /// <summary>Why breakaway checks that reached the pressure threshold did not start one (diagnostics): no crowd, the chance roll, the game cap, no usable destination.</summary>
+        public int RejectedCrowd { get; private set; }
+        public int RejectedChance { get; private set; }
+        public int RejectedCap { get; private set; }
+        public int RejectedNoDestination { get; private set; }
+        public int AbortTimeout { get; private set; }
+        public int AbortProgress { get; private set; }
+        public int AbortRecover { get; private set; }
+        /// <summary>How unproductive the recent fighting was (back-offs, recoveries and weak hits add, strong hits and time take away). A breakaway needs it above the profile's threshold.</summary>
+        public float Pressure => pressure;
+        public Vector3 BreakawayDestination => breakawayDest;
         public State Current { get; private set; } = State.Waiting;
         /// <summary>Hits that damaged the enemy while it was hitting (or being hit by) the player.</summary>
         public int HitsLanded { get; private set; }
@@ -99,7 +124,11 @@ namespace CarWreck.Driving
         float circleTimer, circleBlockedUntil;
         float throttleOut;
         bool repositionForCircling;
-        bool avoidBraking;
+        bool avoidBraking, rearBlocked;
+        float pressure, breakawayBlockedUntil, breakawayStarted, breakawayProgressTimer, breakawayBestDist, breakawayEvalUntil;
+        int failedBreakaways;
+        Vector3 breakawayDest;
+        readonly Vector3[] near = new Vector3[16];
         Vector3 seenVelocity;
         bool repositionBackOff;
         float repositionSide;
@@ -189,6 +218,15 @@ namespace CarWreck.Driving
             engageTimeout = Mathf.Lerp(6f, 3f, a);            // s without an attack after which it stops being picky
             chargeSpeedFactor = Mathf.Lerp(1.0f, 1.2f, a);       // charge speed relative to the speed setting
             opportunityThreshold = Mathf.Lerp(0.6f, 0.15f, a);   // quality (0..1) an attack must reach
+            // breakaway: how much unproductive fighting a driver tolerates (aggressive drivers a lot, careful ones little; skill notices sooner), how often it
+            // acts on it, how long it may take, how far it goes, how many places it weighs and how sloppy the choice is
+            breakawayThreshold = Mathf.Lerp(1.6f, 3.4f, a) - 0.6f * s;   // Cautious 1.75, Hunter 2.2, Rookie 2.5, Brawler 2.8 units of pressure
+            breakawayChance = Mathf.Clamp01(Mathf.Lerp(0.95f, 0.5f, a) + 0.1f * s);
+            breakawayCooldown = Mathf.Lerp(14f, 10f, a);
+            breakawayMaxTime = Mathf.Lerp(8f, 6f, a);
+            breakawayDistance = chargeRange + 6f;
+            breakawayCandidates = Mathf.Round(Mathf.Lerp(6f, 12f, s));
+            breakawayNoise = Mathf.Lerp(0.6f, 0.05f, s);
         }
 
         /// <summary>Back to the start state (the game places the car first). Clears every piece of combat state.</summary>
@@ -206,6 +244,7 @@ namespace CarWreck.Driving
             stuckTimer = flippedTimer = decisionTimer = closeTimer = planTimer = detourAge = 0f;
             clock = 0f; lastAttackClock = 0f; repositionBlockedUntil = 0f;
             HitsLanded = ObstacleHits = RecoveriesTriggered = AttacksCommitted = Repositions = DetoursPlanned = 0;
+            Breakaways = BreakawaysCompleted = BreakawaysAborted = failedBreakaways = RejectedCrowd = RejectedChance = RejectedCap = RejectedNoDestination = 0; histCount = histHead = 0; histTimer = 0f; Milling = false; pressure = 0f; breakawayBlockedUntil = 0f; breakawayEvalUntil = 0f;
             LastChargeSpeed = LastHitClosingSpeed = 0f;
             ClearDetour();
             clearToTarget = true; forwardBlocked = false; forwardHitDistance = float.PositiveInfinity; avoidSteer = 0f;
@@ -219,6 +258,9 @@ namespace CarWreck.Driving
             bool withPlayer = player != null && r.other == player.name;
             if (withPlayer) { HitsLanded++; LastHitClosingSpeed = r.closingSpeed; lastAttackClock = clock; }
             else ObstacleHits++;
+            // fighting that goes nowhere builds pressure (weak taps), a real hit relieves it
+            if (r.closingSpeed < 5f) AddPressure(0.7f);
+            else if (r.closingSpeed >= Mathf.Max(7f, minImpactSpeed)) pressure = Mathf.Max(0f, pressure - Mathf.Lerp(0.5f, 1.2f, aggression));   // a real hit is progress, most of all to an aggressive driver
             if (Current == State.Commit || Current == State.Pursue || Current == State.LineUp) Enter(State.Overshoot);
         }
 
@@ -227,16 +269,12 @@ namespace CarWreck.Driving
         /// <summary>Time the decisions (page report only): the slowest Drive call since the last Restart, in ms.</summary>
         public bool measureCost;
         public float WorstDriveMilliseconds { get; private set; }
+        /// <summary>Slowest choice of a breakaway destination (ms); only measured when measureCost is on.</summary>
+        public float WorstBreakawayMilliseconds { get; private set; }
         readonly System.Diagnostics.Stopwatch costWatch = new System.Diagnostics.Stopwatch();
+        readonly System.Diagnostics.Stopwatch pickWatch = new System.Diagnostics.Stopwatch();
 
-        void Update()
-        {
-            if (!measureCost) { Drive(Time.deltaTime); return; }
-            costWatch.Restart();
-            Drive(Time.deltaTime);
-            costWatch.Stop();
-            WorstDriveMilliseconds = Mathf.Max(WorstDriveMilliseconds, (float)costWatch.Elapsed.TotalMilliseconds);
-        }
+        void Update() => Drive(Time.deltaTime);
 
         static Vector3 Flat(Vector3 v) { v.y = 0f; return v; }
 
@@ -368,10 +406,28 @@ namespace CarWreck.Driving
         /// <summary>One decision (public so the editor validation, which has no Update, can step it).</summary>
         public void Drive(float dt)
         {
+            if (!measureCost) { DriveInner(dt); return; }
+            costWatch.Restart();
+            DriveInner(dt);
+            costWatch.Stop();
+            double ms = costWatch.Elapsed.TotalMilliseconds;
+            WorstDriveMilliseconds = Mathf.Max(WorstDriveMilliseconds, (float)ms);
+            totalDriveMs += ms; DriveCalls++;
+        }
+
+        public int DriveCalls { get; private set; }
+        double totalDriveMs;
+        /// <summary>Mean cost of a Drive call (ms) since the driver was created (only measured when measureCost is on).</summary>
+        public float MeanDriveMilliseconds => DriveCalls > 0 ? (float)(totalDriveMs / DriveCalls) : 0f;
+
+        void DriveInner(float dt)
+        {
             if (controller == null) Awake();
             if (dt <= 0f) return;
             if (player == null) { controller.Throttle = 0f; controller.SteerInput = 0f; return; }   // nothing to attack: coast
             clock += dt;
+            pressure = Mathf.Max(0f, pressure - 0.1f * dt);
+            TrackMilling(body.position, dt);
             stateTime += dt;
             seenVelocity = Vector3.Lerp(seenVelocity, player.linearVelocity, 1f - Mathf.Exp(-dt / Mathf.Max(0.02f, reactionTime)));   // imperfect eyes (more lag at low skill)
 
@@ -399,6 +455,8 @@ namespace CarWreck.Driving
                 decisionTimer = decisionInterval;
                 Probe(pos, fwd, fwdSpeed, aimPoint);
                 UpdateDetour(pos, aimPoint);
+                if (breakawayEnabled && nearbyCars != null) MaybeBreakaway(pos, fwd);
+                if (Current == State.Breakaway) rearBlocked = obstacleAwareness && Cast(pos, -fwd, 8f, 1.0f, out _);
             }
             if (detourAge >= 0f && Detouring) detourAge += dt;
 
@@ -412,20 +470,22 @@ namespace CarWreck.Driving
 
                 case State.Pursue:
                 case State.LineUp:
+                case State.Breakaway:
                 {
-                    bool lineUp = Current == State.LineUp;
-                    Vector3 target = SteerTarget(pos, fwd, aimPoint);
+                    bool lineUp = Current == State.LineUp, breakaway = Current == State.Breakaway;
+                    float refDist = breakaway ? Flat(breakawayDest - pos).magnitude : dist;   // the distance that matters: to the player, or to the breakaway destination
+                    Vector3 target = breakaway ? breakawayDest : SteerTarget(pos, fwd, aimPoint);
                     bool wall = WallAhead(pos, fwd, fwdSpeed, out Vector3 toCentre);
                     Vector3 aim = wall ? toCentre : Flat(target - pos);
                     float angle = Vector3.SignedAngle(fwd, aim, Vector3.up);
                     float absAngle = Mathf.Abs(angle);
                     steer = Mathf.Clamp(angle / fullLockAngle, -1f, 1f);
                     // LineUp slows down to a controllable approach speed, except when the player is pulling away (then it must keep its speed up to catch it)
-                    float speedGoal = lineUp && dist < chargeRange - 2f && closing > 0.25f * desiredSpeed ? Mathf.Max(minChargeSpeed * 1.3f, 0.65f * desiredSpeed) : desiredSpeed;
+                    float speedGoal = breakaway ? 0.85f * desiredSpeed : lineUp && dist < chargeRange - 2f && closing > 0.25f * desiredSpeed ? Mathf.Max(minChargeSpeed * 1.3f, 0.65f * desiredSpeed) : desiredSpeed;
                     // Braking decision (skill): the bearing must be nearly nulled before the car reaches its charge range, so the speed is limited to what the car can turn through in the
                     // distance that is left (v <= turn rate x room / error). A skilled driver judges the car's turn rate correctly and slows in time; a poor one thinks it turns tighter than it
                     // does, carries too much speed and arrives off the line. Once inside charge range it crawls until lined up, then accelerates into the charge.
-                    if (clearToTarget && dist < lineUpRange && absAngle > 6f && closing > 3f)   // only while it is the faster car closing in: never slow down behind a player who is running away
+                    if (!breakaway && clearToTarget && dist < lineUpRange && absAngle > 6f && closing > 3f)   // only while it is the faster car closing in: never slow down behind a player who is running away
                     {
                         float tolRange = Mathf.Min(alignTolerance, Mathf.Atan2(Mathf.Lerp(1.4f, 4.5f, aggression) * Mathf.Lerp(1f, 0.6f, skill), chargeRange) * Mathf.Rad2Deg);
                         float err = Mathf.Max(1f, absAngle - tolRange) * Mathf.Deg2Rad;
@@ -439,17 +499,20 @@ namespace CarWreck.Driving
                     float turnLimit = Mathf.Lerp(9f, 6f, skill);
                     if (absAngle > 70f) throttle = fwdSpeed > turnLimit ? -0.5f * Mathf.Lerp(0.4f, 1f, skill) : 0.55f;
                     else if (absAngle > 40f) throttle = Mathf.Min(throttle, Mathf.Lerp(0.8f, 0.6f, skill));
-                    if (dist < 10f) { steer *= 0.7f; throttle = Mathf.Min(throttle, 0.8f); }   // very close: no frantic circling
+                    if (!breakaway && dist < 10f) { steer *= 0.7f; throttle = Mathf.Min(throttle, 0.8f); }   // very close: no frantic circling
                     if (wall) throttle = Mathf.Min(throttle, 0.6f);
+                    // breakaway with the destination behind a car that is pinned nose to nose: back straight out towards it (steering is mirrored in reverse) instead of crawling round in a circle
+                    if (breakaway && absAngle > 115f && fwdSpeed < 6f && stateTime < 2f && !rearBlocked) { steer = angle >= 0f ? -1f : 1f; throttle = -1f; }
                     // something solid dead ahead (and it is not the player): steer round it and brake in time
-                    if (obstacleAwareness && forwardBlocked && forwardHitDistance < StopDistance(fwdSpeed) + 6f && forwardHitDistance < dist - 1f)
+                    if (obstacleAwareness && forwardBlocked && forwardHitDistance < StopDistance(fwdSpeed) + 6f && forwardHitDistance < refDist - 1f)
                     {
                         steer = avoidSteer;
                         throttle = forwardHitDistance < StopDistance(fwdSpeed) ? -0.6f : Mathf.Min(throttle, 0.3f);
                         avoidBraking = true;
                     }
 
-                    if (!wall && clearToTarget && !Detouring && decisionTimer >= decisionInterval - 1e-4f) EvaluateCombat(pos, fwd, fwdSpeed, dist, closing, angle, aimDir);
+                    if (breakaway) UpdateBreakaway(pos, dt);
+                    else if (!wall && clearToTarget && !Detouring && decisionTimer >= decisionInterval - 1e-4f) EvaluateCombat(pos, fwd, fwdSpeed, dist, closing, angle, aimDir);
                     else if (Current == State.LineUp && (!clearToTarget || Detouring || stateTime > lineUpMaxTime)) Enter(State.Pursue);
                     else if (Current == State.Pursue && !Detouring && clearToTarget && dist < lineUpRange && !wall) Enter(State.LineUp);
                     break;
@@ -535,6 +598,8 @@ namespace CarWreck.Driving
             if (stuckTimer > stuckTime && Current != State.Recover)
             {
                 RecoveriesTriggered++;
+                AddPressure(1.2f);
+                if (Current == State.Breakaway) { AbortRecover++; EndBreakaway(false); }
                 stuckTimer = 0f;
                 if (Current == State.Commit || Current == State.LineUp) lastAttackClock = clock;
                 planTimer = 0f; detourSide = 0f;     // after being stuck, re-plan the approach from scratch (and allow the other side)
@@ -552,7 +617,7 @@ namespace CarWreck.Driving
         /// <summary>Keep, refresh or drop the detour. Runs every decision tick (cheap unless a plan is needed).</summary>
         void UpdateDetour(Vector3 pos, Vector3 aimPoint)
         {
-            if (!obstacleAwareness || Current == State.Recover || Current == State.Waiting) { ClearDetour(); return; }
+            if (!obstacleAwareness || Current == State.Recover || Current == State.Waiting || Current == State.Breakaway) { ClearDetour(); return; }
             planTimer -= decisionInterval;
             if (clearToTarget)
             {
@@ -663,8 +728,131 @@ namespace CarWreck.Driving
                 repositionPoint = best;
             }
             Repositions++;
+            AddPressure(1f);
             Enter(State.Reposition);
             return true;
+        }
+
+        // ------------------------------------------------------------------ milling: staying in the same few metres with the target close for several seconds
+
+        readonly Vector3[] posHistory = new Vector3[12];
+        int histCount, histHead;
+        float histTimer;
+        /// <summary>True while the driver has stayed within 8 m for the last 6 s with its target within 12 m (a clump that is going nowhere).</summary>
+        public bool Milling { get; private set; }
+
+        void TrackMilling(Vector3 pos, float dt)
+        {
+            histTimer += dt;
+            if (histTimer >= 0.5f)
+            {
+                histTimer = 0f;
+                posHistory[histHead] = pos; histHead = (histHead + 1) % posHistory.Length; histCount = Mathf.Min(histCount + 1, posHistory.Length);
+                Vector3 oldest = posHistory[histCount < posHistory.Length ? 0 : histHead];
+                Milling = histCount >= posHistory.Length && player != null && Current != State.Waiting && Current != State.Breakaway
+                          && Flat(pos - oldest).magnitude < 8f && DistanceToPlayer < 12f;
+            }
+            if (Milling) AddPressure(0.25f * dt);
+        }
+
+        // ------------------------------------------------------------------ breakaway
+
+        /// <summary>Adds unproductive-fighting pressure (also used by the validation to force the situation).</summary>
+        public void AddPressure(float x) { pressure = Mathf.Min(8f, pressure + x); }
+
+        /// <summary>
+        /// Decides whether to leave the cluster: enough unproductive fighting (pressure over the profile's threshold) AND a crowd (two or more other cars within 12 m, or a
+        /// two-car lock with much more pressure), then the profile's chance, the game's cap on simultaneous breakaways and a destination that works. Runs on the decision tick only.
+        /// </summary>
+        void MaybeBreakaway(Vector3 pos, Vector3 fwd)
+        {
+            if (Current != State.Pursue && Current != State.LineUp && Current != State.Overshoot) return;
+            if (pressure < breakawayThreshold || clock < breakawayBlockedUntil || player == null) return;
+            breakawayBlockedUntil = clock + 1f;                       // not re-evaluated every tick
+            int n = nearbyCars(body, near, 45f);
+            int close = 0;
+            for (int i = 0; i < n; i++) if (Flat(near[i] - pos).sqrMagnitude < 144f) close++;
+            if (!(close >= 2 || pressure >= 1.1f * breakawayThreshold)) { RejectedCrowd++; return; }
+            if (rng.NextDouble() > breakawayChance) { pressure *= 0.6f; RejectedChance++; return; }   // stays and fights; may try again later
+            if (breakawayAllowed != null && !breakawayAllowed(this)) { RejectedCap++; return; }
+            if (measureCost) pickWatch.Restart();
+            bool picked = PickBreakawayDestination(pos, fwd, n, out Vector3 d);
+            if (measureCost) { pickWatch.Stop(); WorstBreakawayMilliseconds = Mathf.Max(WorstBreakawayMilliseconds, (float)pickWatch.Elapsed.TotalMilliseconds); }
+            if (!picked) { RejectedNoDestination++; failedBreakaways++; pressure *= 0.6f; breakawayBlockedUntil = clock + 3f; return; }
+            breakawayDest = d; Breakaways++;
+            breakawayStarted = clock; breakawayProgressTimer = 0f; breakawayBestDist = Flat(d - pos).magnitude;
+            ClearDetour();
+            Enter(State.Breakaway);
+        }
+
+        /// <summary>
+        /// A point about one charge distance from the target, on the open side of the crowd: no car within 10 m of it, reachable in a straight line round the obstacles without
+        /// driving through the cluster, away from the arena edge, reached from a different angle than the last contact (skilled drivers weigh that). A few candidate bearings are tried,
+        /// the best wins; a low skill driver's choice is noisier.
+        /// </summary>
+        bool PickBreakawayDestination(Vector3 pos, Vector3 fwd, int n, out Vector3 best)
+        {
+            best = pos;
+            Vector3 anchor = Flat(player.position);
+            Vector3 toMe = Flat(pos - anchor);
+            float meAngle = Mathf.Atan2(toMe.x, toMe.z) * Mathf.Rad2Deg;
+            int k = Mathf.Max(4, (int)breakawayCandidates);
+            float phase = (float)rng.NextDouble() * 360f / k;
+            float lim = arenaHalf - 9f, bestScore = float.NegativeInfinity;
+            for (int i = 0; i < k; i++)
+            {
+                float ang = phase + i * 360f / k;
+                Vector3 p = anchor + new Vector3(Mathf.Sin(ang * Mathf.Deg2Rad), 0f, Mathf.Cos(ang * Mathf.Deg2Rad)) * breakawayDistance;
+                p.y = pos.y;
+                if (Mathf.Abs(p.x) > lim || Mathf.Abs(p.z) > lim)
+                {
+                    p.x = Mathf.Clamp(p.x, -lim, lim); p.z = Mathf.Clamp(p.z, -lim, lim);
+                    if (Flat(p - anchor).magnitude < 0.6f * breakawayDistance) continue;
+                }
+                Vector3 path = Flat(p - pos); float travel = path.magnitude;
+                if (travel < 12f) continue;
+                Vector3 pd = path / travel;
+                float open = 25f; bool blocked = false;
+                for (int j = 0; j < n; j++)
+                {
+                    open = Mathf.Min(open, Flat(near[j] - p).magnitude);
+                    // distance of the car to the stretch of the path that starts 7 m out (its immediate neighbours are behind us already)
+                    Vector3 a = pos + pd * 7f; Vector3 ab = p - a; float len2 = Flat(ab).sqrMagnitude;
+                    float t = len2 > 0.01f ? Mathf.Clamp01(Vector3.Dot(Flat(near[j] - a), Flat(ab)) / len2) : 0f;
+                    if (Flat(near[j] - (a + ab * t)).magnitude < 4.5f) { blocked = true; break; }
+                }
+                if (blocked || open < 10f) continue;
+                if (obstacleAwareness && !Clear(pos, p, 1.0f)) continue;
+                if (destinationTaken != null && destinationTaken(p, this)) continue;
+                float diff = Mathf.Abs(Mathf.DeltaAngle(ang, meAngle));
+                float flank = Mathf.Clamp01(1f - Mathf.Abs(diff - 100f) / 80f);          // a new angle on the target rather than the one that is going nowhere
+                float edge = Mathf.Clamp01((lim - Mathf.Max(Mathf.Abs(p.x), Mathf.Abs(p.z))) / 10f);
+                float turn = Mathf.Abs(Vector3.SignedAngle(Flat(fwd), pd, Vector3.up));
+                float score = 0.04f * open + 0.6f * skill * flank + 0.3f * edge - 0.02f * travel - 0.003f * turn + breakawayNoise * ((float)rng.NextDouble() * 2f - 1f);
+                if (score > bestScore) { bestScore = score; best = p; }
+            }
+            return bestScore > float.NegativeInfinity;
+        }
+
+        void UpdateBreakaway(Vector3 pos, float dt)
+        {
+            float d = Flat(breakawayDest - pos).magnitude;
+            if (d < 7f) { EndBreakaway(true); return; }
+            if (clock - breakawayStarted > breakawayMaxTime) { AbortTimeout++; EndBreakaway(false); return; }
+            breakawayProgressTimer += dt;
+            if (d < breakawayBestDist - 1f) { breakawayBestDist = d; breakawayProgressTimer = 0f; }
+            else if (breakawayProgressTimer > 3f) { AbortProgress++; EndBreakaway(false); }              // not getting anywhere: give up and fight
+        }
+
+        void EndBreakaway(bool reached)
+        {
+            if (Current != State.Breakaway) return;
+            if (reached) { BreakawaysCompleted++; failedBreakaways = 0; } else { BreakawaysAborted++; failedBreakaways++; }
+            pressure = 0f;
+            breakawayBlockedUntil = clock + breakawayCooldown * (1 + failedBreakaways);   // a failed attempt makes the next one wait longer
+            // back into the fight through the normal combat loop (LineUp, charge); the wait for a good attack is partly used up, more so for an aggressive driver
+            lastAttackClock = Mathf.Min(lastAttackClock, clock - engageTimeout - 3f * aggression);
+            Enter(State.Pursue);
         }
 
         /// <summary>True when the car, a moment from now at its current speed, would be too close to the arena edge; also returns the direction to the middle.</summary>
