@@ -89,7 +89,7 @@ namespace CarWreck.Derby
         {
             var e = self.car.enemy;
             float d = e.DistanceToPlayer;
-            bool fighting = e.Current == EnemyDriver.State.Commit || e.Current == EnemyDriver.State.Overshoot || e.Current == EnemyDriver.State.Reposition || e.Current == EnemyDriver.State.Recover || e.Current == EnemyDriver.State.Waiting;
+            bool fighting = e.Current == EnemyDriver.State.Commit || e.Current == EnemyDriver.State.Breakaway || e.Current == EnemyDriver.State.Overshoot || e.Current == EnemyDriver.State.Reposition || e.Current == EnemyDriver.State.Recover || e.Current == EnemyDriver.State.Waiting;
             if (fighting || d < 9f || d < rec.refDist - unreachableProgress || rec.refTime == 0f) { rec.refDist = d; rec.refTime = now; return; }
             if (now - rec.refTime > unreachableTime)
             {

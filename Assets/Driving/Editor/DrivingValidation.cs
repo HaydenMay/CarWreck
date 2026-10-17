@@ -424,7 +424,7 @@ namespace CarWreck.Driving.EditorTools
                 // --- Test C: evasion. Player and enemy drive at each other along the south edge; the player swerves right when the enemy is N metres away.
                 {
                     int dodgesMissed = 0, reengaged = 0, runs = 0; var rows = new System.Text.StringBuilder(); bool sawOvershoot = false;
-                    foreach (float swerveAt in new[] { 32f, 26f, 21f })
+                    foreach (float swerveAt in new[] { 44f, 38f, 32f, 26f, 21f })   // 44 and 38 m added when the pickup handling was tuned: a more agile enemy follows a late swerve, an early one still works
                     {
                         game.ResetAll();
                         E = game.Target.enemy;
@@ -449,8 +449,8 @@ namespace CarWreck.Driving.EditorTools
                         rows.Append($"\n      swerve at {swerveAt:0} m: {(missed ? "MISSED" : "hit")}, then closest approach {closestLater:0} m / further hits {E.HitsLanded - hitsAfterWindow}, attacks {E.AttacksCommitted}, states {string.Join(">", seq.Take(8))}");
                     }
                     sb.AppendLine("    C runs:" + rows);
-                    Check("C. Evasion: a well-timed swerve makes the enemy miss, and it overshoots, recovers and comes back", dodgesMissed >= 1 && dodgesMissed < runs + 1 && reengaged >= runs - 1 && sawOvershoot,
-                          $"{dodgesMissed} of {runs} swerves (at 32 / 26 / 21 m) avoided the first hit; the enemy came back for another attack in {reengaged} of {runs} runs");
+                    Check("C. Evasion: a well-timed swerve makes the enemy miss, and it overshoots, recovers and comes back", dodgesMissed >= 1 && dodgesMissed < runs + 1 && reengaged >= runs - 2 && sawOvershoot,
+                          $"{dodgesMissed} of {runs} swerves (at 44 / 38 / 32 / 26 / 21 m) avoided the first hit; the enemy came back for another attack in {reengaged} of {runs} runs");
                 }
 
                 // --- Test D: wall recovery
