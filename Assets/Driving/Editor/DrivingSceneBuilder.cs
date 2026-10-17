@@ -155,9 +155,9 @@ namespace CarWreck.Driving.EditorTools
                 }),
                 Profile("Pickup", "Compact Pickup", "Heavy & deliberate: slow to turn, solid hits", p =>
                 {
-                    p.acceleration = 9.5f; p.maxSpeed = 26f; p.reverseAcceleration = 8.5f; p.reverseMaxSpeed = 11.5f;
+                    p.acceleration = 11f; p.maxSpeed = 26f; p.reverseAcceleration = 9.5f; p.reverseMaxSpeed = 11.5f;
                     p.brakeDeceleration = 19f; p.coastDeceleration = 1.0f;
-                    p.steerRateLow = 78f; p.steerRateHigh = 26f; p.steerFullAuthoritySpeed = 3.5f; p.steerRise = 3.2f; p.steerReturn = 6f; p.steerResponse = 22f;
+                    p.steerRateLow = 90f; p.steerRateHigh = 36f; p.steerFullAuthoritySpeed = 3.5f; p.steerRise = 4.5f; p.steerReturn = 6f; p.steerResponse = 26f;
                     p.grip = 7f; p.maxGripAcceleration = 20f; p.brakingGripScale = 0.5f; p.downforce = 0.25f;
                 }),
             };
