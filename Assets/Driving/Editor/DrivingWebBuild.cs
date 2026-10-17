@@ -9,7 +9,7 @@ using Debug = UnityEngine.Debug;
 namespace CarWreck.Driving.EditorTools
 {
     /// <summary>
-    /// WebGL build of the driving scene into Builds/WebGLDrive, using the project's own page template
+    /// WebGL build into Builds/WebGLDrive: the CarWreck derby (DerbyArena, the default entry) plus the diagnostic driving arena (open it with ?scene=drive), using the project's own page template
     /// (Assets/WebGLTemplates/CarWreck: loading bar, touch-safe full-viewport canvas, rotate prompt).
     /// Gzip + decompression fallback, as the other lab builds, so it runs from any static host (GitHub Pages included).
     /// Run from the command line: Unity -batchmode -quit -projectPath . -executeMethod CarWreck.Driving.EditorTools.DrivingWebBuild.Build
@@ -24,7 +24,7 @@ namespace CarWreck.Driving.EditorTools
         public static void Build()
         {
             string id = DateTime.UtcNow.ToString("yyyyMMdd-HHmm") + "-" + Git("rev-parse --short HEAD");
-            PlayerSettings.productName = "CarWreck Driving Prototype";
+            PlayerSettings.productName = "CarWreck";
             PlayerSettings.companyName = "CarWreck";
             PlayerSettings.bundleVersion = id;
             PlayerSettings.WebGL.template = "PROJECT:CarWreck";
@@ -43,7 +43,7 @@ namespace CarWreck.Driving.EditorTools
 
             var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
             {
-                scenes = new[] { DrivingSceneBuilder.ScenePath },
+                scenes = new[] { CarWreck.Derby.EditorTools.DerbySceneBuilder.ScenePath, DrivingSceneBuilder.ScenePath },   // the derby is the entry scene; the driving arena stays reachable with ?scene=drive
                 locationPathName = OutputPath,
                 target = BuildTarget.WebGL,
                 options = BuildOptions.None,

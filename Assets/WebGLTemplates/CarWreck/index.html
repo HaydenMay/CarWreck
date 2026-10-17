@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#101214">
   <meta http-equiv="Cache-Control" content="no-cache">
-  <title>CarWreck - Driving Prototype</title>
+  <title>CarWreck</title>
   <style>
     :root {
       --bg: #101214; --plate: #1b1e21; --line: #31363b; --fg: #eceef0; --dim: #a3a8ae;
@@ -77,11 +77,11 @@
     <button id="fs" type="button" aria-label="Toggle fullscreen" title="Fullscreen">&#x26F6;</button>
     <div id="loader" role="status" aria-live="polite">
       <div class="plate">
-        <p class="eyebrow">CarWreck</p>
-        <h1>Driving Prototype</h1>
+        <p class="eyebrow">Demolition derby</p>
+        <h1>CarWreck</h1>
         <div class="bar"><div class="fill" id="fill"></div></div>
         <div class="status"><span id="label">Loading game...</span><span id="pct">0%</span></div>
-        <p class="hint" id="hint">Best in <b>landscape</b>. Desktop: <b>W / S</b> drive and brake, <b>A / D</b> steer, <b>R</b> reset. Phone: use the on-screen buttons.</p>
+        <p class="hint" id="hint">Best in <b>landscape</b>. Desktop: <b>W / S</b> drive and brake, <b>A / D</b> steer, <b>R</b> right a flipped car, <b>Esc</b> pause. Phone: use the on-screen buttons.</p>
         <p class="build" id="build"></p>
       </div>
     </div>
@@ -150,7 +150,7 @@
       const v = Math.round(p * 100);
       fill.style.width = v + "%";
       pct.textContent = v + "%";
-      if (p >= 0.9) label.textContent = "Starting the arena...";
+      if (p >= 0.9) label.textContent = "Starting the game...";
     }).then((instance) => {
       unity = instance;
       window.unityInstance = instance;
