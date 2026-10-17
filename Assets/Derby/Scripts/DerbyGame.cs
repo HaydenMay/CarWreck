@@ -306,6 +306,29 @@ namespace CarWreck.Derby
             }
         }
 
+        /// <summary>Each AI car gets the palette colour that is furthest from every colour already in the match (starting from the player's), so no two cars look alike for as long as the palette allows.</summary>
+        void AssignAiPaints()
+        {
+            if (palette == null || palette.Count == 0) return;
+            var chosen = new List<int> { playerPaint };
+            foreach (var p in aiParticipants)
+            {
+                int best = 0; float bestD = -1f;
+                for (int c = 0; c < palette.Count; c++)
+                {
+                    if (chosen.Contains(c) && chosen.Count < palette.Count) continue;
+                    float d = float.MaxValue;
+                    foreach (int k in chosen)
+                    {
+                        Color a = palette.Get(c).body, b = palette.Get(k).body;
+                        d = Mathf.Min(d, Mathf.Sqrt((a.r - b.r) * (a.r - b.r) + (a.g - b.g) * (a.g - b.g) + (a.b - b.b) * (a.b - b.b)));
+                    }
+                    if (d > bestD) { bestD = d; best = c; }
+                }
+                p.paintIndex = best; chosen.Add(best);
+            }
+        }
+
         void DespawnAi()
         {
             foreach (var p in aiParticipants) DestroyCar(p.car);
@@ -330,7 +353,8 @@ namespace CarWreck.Derby
             Participants.Clear();
             Participants.Add(Human);
             Participants.AddRange(aiParticipants);
-            candidates = SpawnPlanner.Candidates(spawnPoints, arenaHalf, Participants.Count);
+            AssignAiPaints();
+            candidates = SpawnPlanner.Candidates(spawnPoints, arenaHalf, Participants.Count, StaticBlocked);
             var layout = SpawnPlanner.InitialLayout(candidates, Participants.Count, MatchesStarted * 7919);
             // shuffle who gets which spot (seeded, so a match is reproducible but the player's neighbours change from match to match)
             var order = new List<int>(); for (int i = 0; i < layout.Length; i++) order.Add(i);
@@ -340,7 +364,6 @@ namespace CarWreck.Derby
             {
                 var p = Participants[i];
                 var spot = layout[order[i % layout.Length]];
-                if (p.control == ControlType.AI && palette != null && palette.Count > 0) p.paintIndex = (playerPaint + p.id) % palette.Count;   // colours follow the player's choice
                 if (p.car == null) { p.car = BuildCar(p, spot); RegisterCar(p.car); }
                 ResetCar(p.car, spot);
             }
@@ -461,13 +484,23 @@ namespace CarWreck.Derby
             }
         }
 
-        static readonly Collider[] overlapBuffer = new Collider[8];
+        static readonly Collider[] overlapBuffer = new Collider[16];
 
         /// <summary>True when a car standing at the spot would overlap something (another car, a hulk, an obstacle). The ground is below the check box.</summary>
-        bool SpotBlocked(SpawnPlanner.Spot s)
+        bool SpotBlocked(SpawnPlanner.Spot s) => Blocked(s, true);
+
+        /// <summary>The same, ignoring cars (used to choose the layout of a new match, when the old cars still stand where they were).</summary>
+        bool StaticBlocked(SpawnPlanner.Spot s) => Blocked(s, false);
+
+        bool Blocked(SpawnPlanner.Spot s, bool includeCars)
         {
             int n = Physics.OverlapBoxNonAlloc(s.position + Vector3.up * 1.3f, new Vector3(1.6f, 0.9f, 3.2f), overlapBuffer, Quaternion.Euler(0f, s.yaw, 0f), ~0, QueryTriggerInteraction.Ignore);
-            return n > 0;
+            for (int i = 0; i < n; i++)
+            {
+                var rb = overlapBuffer[i].attachedRigidbody;
+                if (includeCars || rb == null || !byBody.ContainsKey(rb)) return true;
+            }
+            return false;
         }
 
         /// <summary>Places a car on the spot with its geometry, damage, collision shell, motion and AI state restored (the Reset path the arena has used from the start).</summary>
@@ -490,7 +523,6 @@ namespace CarWreck.Derby
             c.controller.Throttle = 0f; c.controller.SteerInput = 0f;
             if (c.enemy != null) { c.enemy.SetTarget(null); c.enemy.Restart(); c.enemy.enabled = false; }
             ApplyPaint(c, c.participant.paintIndex);
-            if (c.participant.status != ParticipantStatus.Active) c.participant.status = ParticipantStatus.Waiting;
         }
 
         // ------------------------------------------------------------------ damage -> match

@@ -15,7 +15,7 @@ namespace CarWreck.Derby
         public struct Spot { public Vector3 position; public float yaw; }
 
         /// <summary>Authored points first, then generated ones (rings at 70 / 45 / 20 % of the half size, at least ~16 m apart) until there are <paramref name="minCount"/>.</summary>
-        public static List<Spot> Candidates(Transform authored, float half, int minCount)
+        public static List<Spot> Candidates(Transform authored, float half, int minCount, Func<Spot, bool> blocked = null)
         {
             var list = new List<Spot>();
             if (authored != null)
@@ -30,12 +30,13 @@ namespace CarWreck.Derby
                 float r = half * radii[ring % radii.Length] * (ring < radii.Length ? 1f : ring < 2 * radii.Length ? 0.9f : 0.8f);
                 int n = Mathf.Max(3, Mathf.FloorToInt(2f * Mathf.PI * r / 16f));
                 float offset = 17f * ring;
-                for (int i = 0; i < n && list.Count < Mathf.Max(minCount, 0) + 0; i++)
+                for (int i = 0; i < n && list.Count < minCount; i++)
                 {
                     float a = (offset + 360f * i / n) * Mathf.Deg2Rad;
                     var p = new Vector3(Mathf.Sin(a) * r, 0f, Mathf.Cos(a) * r);
-                    if (TooClose(list, p, 12f)) continue;
-                    list.Add(new Spot { position = p, yaw = FaceCentre(p) });
+                    var spot = new Spot { position = p, yaw = FaceCentre(p) };
+                    if (TooClose(list, p, 12f) || (blocked != null && blocked(spot))) continue;
+                    list.Add(spot);
                 }
             }
             return list;

@@ -147,7 +147,7 @@ namespace CarWreck.Derby
                 return new Tuning
                 {
                     near = Mathf.Lerp(0.6f, 1.5f, a),                       // brawlers: whoever is close
-                    weak = 0.25f + 0.6f * s + 0.3f * (1f - a),              // hunters (then cautious drivers): the wounded
+                    weak = 0.1f + 0.8f * s + 0.25f * (1f - a),              // hunters (then cautious drivers): the wounded
                     ahead = 0.3f + 0.5f * s,                                 // skilled drivers: easy interceptions
                     headOn = Mathf.Lerp(0.8f, 0f, a),                       // cautious drivers avoid a car coming straight at them
                     crowd = 0.2f,
@@ -175,7 +175,8 @@ namespace CarWreck.Derby
             float headOn = Mathf.Max(0f, Vector3.Dot(fc, -dir)) * Mathf.Clamp01(Vector3.Dot(cb.linearVelocity, -dir) / 8f);
             int others = 0;
             if (attackerCounts != null && attackerCounts.TryGetValue(c.id, out int n)) others = n - (TargetIs(self, c) ? 1 : 0);
-            float revenge = self.lastAttackerId == c.id && now - self.lastAttackedAt < 6f ? 1f - (now - self.lastAttackedAt) / 6f : 0f;
+            float age = now - self.lastAttackedAt;
+            float revenge = self.lastAttackerId == c.id && age >= 0f && age < 6f ? 1f - age / 6f : 0f;
             float noise = Hash01(self.id, c.id, (int)(now / 4f));
             return t.near * prox + t.weak * exposed + t.ahead * (facing * 0.6f + closing * 0.4f) - t.headOn * headOn - t.crowd * Mathf.Min(2, Mathf.Max(0, others)) + t.revenge * revenge + t.noise * noise;
         }
