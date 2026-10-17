@@ -97,11 +97,11 @@ Combat is Enemy AI V2 as before (aggression and skill still drive attack willing
 
 | Term | Brawler (0.85 / 0.50) | Hunter (0.65 / 0.90) | Cautious (0.25 / 0.50) | Rookie (0.60 / 0.25) |
 |---|---|---|---|---|
-| near (closer is better) | 1.37 | 1.19 | 0.83 | 1.0 |
-| weak (damaged opponents) | 0.54 | 0.91 | 0.69 | 0.5 |
-| ahead (easy interception) | 0.55 | 0.75 | 0.55 | 0.4 |
-| head-on penalty | 0.12 | 0.28 | 0.60 | 0.3 |
-| commitment bonus / minimum hold | 0.22 / 2.9 s | 0.32 / 3.4 s | 0.33 / 4.4 s | 0.2 / 3.4 s |
+| near (closer is better) | 1.37 | 1.19 | 0.83 | 1.14 |
+| weak (damaged opponents) | 0.54 | 0.91 | 0.69 | 0.40 |
+| ahead (easy interception) | 0.55 | 0.75 | 0.55 | 0.43 |
+| head-on penalty | 0.12 | 0.28 | 0.60 | 0.32 |
+| commitment bonus / minimum hold | 0.22 / 2.9 s | 0.32 / 3.4 s | 0.33 / 4.4 s | 0.23 / 3.5 s |
 
 Common terms: a small crowd penalty (dogpiles are allowed, just not the default), a fading revenge bonus for whoever hit this driver in the last 6 s (no permanent rivalries), and a slowly changing per-pair noise term so identical situations do not make every driver choose alike. The current target gets the commitment bonus; inside the hold time only a much better opportunity wins; a landed hit releases the hold; a wrecked target releases it at once; no progress for 7 s drops the target for 6 s. A fourth profile asset, Rookie (aggression 0.6, skill 0.25), was added so the four AI cars are four different drivers.
 
