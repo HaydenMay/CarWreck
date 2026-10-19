@@ -193,3 +193,5 @@ Branch `feature/first-playable-derby` (from `main` at 4ea5996). Commit hashes ar
 
 The new scene is the first scene of the WebGL build, so the next approved publish (`DrivingWebBuild.Build`, then `bash Docs/Driving/publish-preview.sh`) opens the CarWreck menu instead of the driving test menu. Functionally it is ready for owner review: both modes run start to finish in a browser build, restart and menu return work, and every required check passes. It should not become the default experience before a real-phone playtest, because the frame rate, the memory footprint and the touch feel are the unmeasured parts. Not merged, not published.
 
+
+> **Superseded in part:** the Last Car Standing Final Showdown described above (highest score wins on timeout, no repair) was replaced by the repaired-finalists duel decided by showdown damage; see `Docs/Derby/ai-v3-and-final-showdown.md`.
