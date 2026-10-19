@@ -16,3 +16,4 @@ MonoBehaviour:
   description: 'Keen but sloppy: charges often, lines up badly and misses a lot.'
   aggression: 0.6
   skill: 0.25
+  combatIntelligence: 0.15

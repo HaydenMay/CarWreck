@@ -133,6 +133,10 @@ namespace CarWreck.Driving.EditorTools
         {
             game.enemyProfileIndex = profile;
             game.ResetAll();
+            var v3 = Environment.GetEnvironmentVariable("EAI_V3");                       // Casual / Standard / Competitive: run every scenario with AI V3 at that difficulty
+            E.v3Enabled = !string.IsNullOrEmpty(v3);
+            if (E.v3Enabled) E.difficulty = v3 == "Casual" ? AiDifficulty.Casual : v3 == "Competitive" ? AiDifficulty.Competitive : AiDifficulty.Standard;
+            if (int.TryParse(Environment.GetEnvironmentVariable("EAI_MASK"), out int eaiMask)) E.v3Mask = eaiMask;
             E.SetProfile(game.EnemyProfile);
             E.startDelay = startDelay;
             E.obstacleAwareness = true;

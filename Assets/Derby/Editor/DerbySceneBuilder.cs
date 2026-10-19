@@ -250,7 +250,7 @@ namespace CarWreck.Derby.EditorTools
             if (p == null)
             {
                 p = ScriptableObject.CreateInstance<DriverProfile>();
-                p.displayName = "Rookie"; p.aggression = 0.6f; p.skill = 0.25f;
+                p.displayName = "Rookie"; p.aggression = 0.6f; p.skill = 0.25f; p.combatIntelligence = 0.15f;
                 p.description = "Keen but sloppy: charges often, lines up badly and misses a lot.";
                 AssetDatabase.CreateAsset(p, path);
             }

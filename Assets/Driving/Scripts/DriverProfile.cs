@@ -17,6 +17,8 @@ namespace CarWreck.Driving
         [Range(0f, 1f)] public float aggression = 0.5f;
         [Tooltip("How well the driver executes what it decided. 0 = loose alignment, late braking, overshoots, poor prediction; 1 = precise approach, good short-range prediction, quick correction. Recovery from obstacles is the same for every skill.")]
         [Range(0f, 1f)] public float skill = 0.5f;
+        [Tooltip("How well the driver judges which attacks are worth making: how it values run-up speed, target health and reachability, and how often it commits to a poor tap. Independent of aggression (how eagerly it fights) and skill (how well it drives). 0 = takes what comes, 1 = waits for and prepares the strong hit.")]
+        [Range(0f, 1f)] public float combatIntelligence = 0.5f;
 
         public const int PresetCount = 3;
 
@@ -27,15 +29,15 @@ namespace CarWreck.Driving
             switch (index)
             {
                 case 0:
-                    p.name = p.displayName = "Brawler"; p.aggression = 0.85f; p.skill = 0.5f;
+                    p.name = p.displayName = "Brawler"; p.aggression = 0.85f; p.skill = 0.5f; p.combatIntelligence = 0.3f;
                     p.description = "Seeks collisions constantly and takes imperfect chances. Rarely backs off.";
                     break;
                 case 1:
-                    p.name = p.displayName = "Hunter"; p.aggression = 0.65f; p.skill = 0.9f;
+                    p.name = p.displayName = "Hunter"; p.aggression = 0.65f; p.skill = 0.9f; p.combatIntelligence = 0.85f;
                     p.description = "Reads where you are going, lines up properly and hits hard. Backs off to build speed when it is too close.";
                     break;
                 default:
-                    p.name = p.displayName = "Cautious"; p.aggression = 0.25f; p.skill = 0.5f;
+                    p.name = p.displayName = "Cautious"; p.aggression = 0.25f; p.skill = 0.5f; p.combatIntelligence = 0.7f;
                     p.description = "Waits for a good angle and keeps its distance, but still comes in regularly.";
                     break;
             }
