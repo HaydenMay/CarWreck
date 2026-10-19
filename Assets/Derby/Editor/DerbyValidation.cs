@@ -181,36 +181,39 @@ namespace CarWreck.Derby.EditorTools
                 Wreck(m, 1, 0); Advance(m, 20f); m.Respawned(ps[1]);
                 Check("S1. Last Car Standing: no respawns, the wrecked car is out for good", due == 0 && ps[1].status == ParticipantStatus.Out && m.ActiveCount == 4, $"respawn events {due}, status {ps[1].status}");
             }
-            // ---- Last Car Standing: showdown
+            // ---- Last Car Standing: survival, then the final showdown (the full sequence and its edge cases are in ShowdownValidation)
             {
                 var (m, ps) = NewMatch(GameMode.LastCarStanding);
                 bool showdown = false; m.ShowdownStarted += () => showdown = true;
                 Wreck(m, 1, 0); Wreck(m, 2, 0); Advance(m, 1f);
-                bool notYet = m.State == MatchState.Active && !showdown;
-                Wreck(m, 3, 0); Advance(m, 0.1f);
-                Check("T1. The Final Showdown starts when exactly two cars are active, with the configured 60 s", notYet && m.State == MatchState.FinalShowdown && showdown && m.ShowdownRemaining > 59f, $"3 active -> {(notYet ? "no showdown" : "showdown too early")}; 2 active -> {m.State}, {m.ShowdownRemaining:0.0} s");
+                bool notYet = m.State == MatchState.Active && !m.ShowdownTriggered;
+                Wreck(m, 3, 0); Advance(m, 0.3f);
+                bool prepared = m.State == MatchState.ShowdownTransition && m.Finalists[0] == ps[0] && m.Finalists[1] == ps[4];
+                Advance(m, 1.6f);
+                Check("T1. With exactly two cars left the Final Showdown is prepared (transition), then the configured 60 s duel starts", notYet && prepared && m.State == MatchState.FinalShowdown && showdown && m.ShowdownRemaining > 58f, $"3 active -> {(notYet ? "no showdown" : "showdown too early")}; 2 active -> {(prepared ? "transition" : m.State.ToString())}, then {m.State}, {m.ShowdownRemaining:0.0} s");
                 Advance(m, 10f);
-                Check("T2. The showdown clock counts down", m.ShowdownRemaining < 50.5f && m.ShowdownRemaining > 49f, $"{m.ShowdownRemaining:0.0} s left");
+                Check("T2. The showdown clock counts down", m.ShowdownRemaining < 50.5f && m.ShowdownRemaining > 47f, $"{m.ShowdownRemaining:0.0} s left");
                 Wreck(m, 4, 0); Advance(m, 0.5f);
-                Check("U1. Showdown ends when one of the two is wrecked: the survivor wins, once", m.State == MatchState.Results && m.Winner == ps[0] && !m.IsDraw && ps[0].placement == 1 && ps[4].placement == 2, $"state {m.State}, winner {m.Winner?.name}, placements {string.Join("/", ps.Select(p => p.placement))}");
+                Check("U1. Showdown ends when one of the two is wrecked: the survivor wins, once", m.State == MatchState.Results && m.Winner == ps[0] && !m.IsDraw && ps[0].placement == 1 && ps[4].placement == 2 && m.Kind == ResultKind.WinByWreck, $"state {m.State}, winner {m.Winner?.name}, placements {string.Join("/", ps.Select(p => p.placement))}");
             }
             {
                 var (m, ps) = NewMatch(GameMode.LastCarStanding);
-                Wreck(m, 2); Wreck(m, 3); Wreck(m, 4);                 // two left: 0 and 1
-                Hit(m, 1, 0, 20000f); Hit(m, 0, 1, 50000f);            // the human leads 70 to 30, wrecks nobody
+                Wreck(m, 2); Wreck(m, 3); Wreck(m, 4); Advance(m, 1.9f);                // two left: 0 and 1; the duel is on
+                Hit(m, 1, 0, 20000f); Hit(m, 0, 1, 50000f);                            // the human deals more showdown damage
                 Advance(m, 61f);
-                Check("V1. Showdown timeout: the higher score wins", m.State == MatchState.Results && m.Winner == ps[0] && m.ResultText.Contains("TIME UP"), $"winner {m.Winner?.name} ({ps[0].score} v {ps[1].score}), '{m.ResultText}'");
+                Check("V1. Showdown timeout: the finalist that dealt more showdown damage wins", m.State == MatchState.Results && m.Winner == ps[0] && m.Kind == ResultKind.WinByShowdownDamage, $"winner {m.Winner?.name} (dealt {ps[0].showdownDamage * 100f:0.0}% v {ps[1].showdownDamage * 100f:0.0}%), '{m.ResultText}'");
                 var (m2, p2) = NewMatch(GameMode.LastCarStanding);
-                Wreck(m2, 2); Wreck(m2, 3); Wreck(m2, 4);
-                Hit(m2, 0, 1, 20000f); Hit(m2, 1, 0, 20000f);          // 30 each; the AI (1) took the same damage but we hand car 1 a lead in durability
-                p2[1].durability += 10000f;
+                Hit(m2, 1, 0, 20000f); Hit(m2, 1, 0, 20000f);                           // survival: the AI (1) builds a score lead
+                Wreck(m2, 2); Wreck(m2, 3); Wreck(m2, 4); Advance(m2, 1.9f);
+                int surv0 = p2[0].score, surv1 = p2[1].score; bool survivalLead = surv1 > surv0;
+                Hit(m2, 0, 1, 20000f);                                                  // showdown: only the human deals damage
                 Advance(m2, 61f);
-                Check("V2. Equal scores: the car with more durability left wins, and an AI can win", m2.Winner == p2[1], $"winner {m2.Winner?.name}");
+                Check("V2. The survival score is irrelevant at the timeout: the AI had the score lead, the human dealt the showdown damage and won", survivalLead && m2.Winner == p2[0], $"survival scores {surv0} v {surv1}, winner {m2.Winner?.name}");
                 var (m3, p3) = NewMatch(GameMode.LastCarStanding);
-                Wreck(m3, 2); Wreck(m3, 3); Wreck(m3, 4);
+                Wreck(m3, 2); Wreck(m3, 3); Wreck(m3, 4); Advance(m3, 1.9f);
                 Hit(m3, 0, 1, 20000f); Hit(m3, 1, 0, 20000f);
                 Advance(m3, 61f);
-                Check("V3. Exactly equal score and durability: a declared draw, not the player", m3.IsDraw && m3.Winner == null, $"draw {m3.IsDraw}, '{m3.ResultText}'");
+                Check("V3. Exactly equal showdown damage: a declared draw, not the player", m3.IsDraw && m3.Winner == null, $"draw {m3.IsDraw}, '{m3.ResultText}'");
             }
             // ---- simultaneous eliminations
             {
@@ -233,7 +236,7 @@ namespace CarWreck.Derby.EditorTools
                 Wreck(m5, 0); Advance(m5, 0.1f); Wreck(m5, 1); Advance(m5, 0.5f);   // the second wreck follows within the simultaneous window
                 Check("W5. Two finalists wrecked 0.1 s apart count as simultaneous: the higher score wins, even though the leader was wrecked last-but-not-first", m5.Winner == p5[1] && m5.State == MatchState.Results, $"winner {m5.Winner?.name}, '{m5.ResultText}'");
                 var (m4, p4) = NewMatch(GameMode.LastCarStanding);
-                Wreck(m4, 1); Wreck(m4, 2); Wreck(m4, 3); Advance(m4, 0.2f);
+                Wreck(m4, 1); Wreck(m4, 2); Wreck(m4, 3); Advance(m4, 1.9f);
                 bool onlyTwo = m4.State == MatchState.FinalShowdown;
                 Wreck(m4, 4, 0);
                 int after = Hit(m4, 0, 4, 5e4f);
@@ -247,7 +250,9 @@ namespace CarWreck.Derby.EditorTools
                 Check("E1. A match with one participant ends at once with that participant as winner", m.State == MatchState.Results && m.Winner == ps[0], $"state {m.State}");
                 var (m2, p2) = NewMatch(GameMode.LastCarStanding, 2);
                 Advance(m2, 0.1f);
-                Check("E2. Two participants: the showdown starts immediately", m2.State == MatchState.FinalShowdown, $"state {m2.State}");
+                Advance(m2, 5f); bool noDuel = m2.State == MatchState.Active && !m2.ShowdownTriggered;
+                Wreck(m2, 1, 0); Advance(m2, 0.5f);
+                Check("E2. Two participants: there is no survival phase to get through (no showdown until a car is eliminated); the first wreck ends the match", noDuel && m2.State == MatchState.Results && m2.Winner == p2[0], $"state {m2.State}, winner {m2.Winner?.name}");
                 var (m3, p3) = NewMatch(GameMode.PointsDerby, 12);
                 Check("E3. The match model has no participant cap (12 here)", m3.participants.Count == 12 && m3.ActiveCount == 12, $"{m3.ActiveCount} active");
                 var rule = FreeForAllRule.Instance; var a = p3[0]; var b = p3[1];
@@ -281,6 +286,7 @@ namespace CarWreck.Derby.EditorTools
         }
 
         static void StepSeconds(float s) { int n = Mathf.RoundToInt(s / Dt); for (int i = 0; i < n; i++) game.ManualStep(Dt); }
+        static void StepUntil(Func<bool> done, float maxSeconds) { int n = Mathf.RoundToInt(maxSeconds / Dt); for (int i = 0; i < n && !done(); i++) game.ManualStep(Dt); }
 
         static void AiOff() { foreach (var p in game.Participants) if (p.car.enemy != null) { p.car.enemy.enabled = false; p.car.controller.Throttle = 0f; p.car.controller.SteerInput = 0f; } }
 
@@ -724,7 +730,9 @@ namespace CarWreck.Derby.EditorTools
             StepSeconds(0.3f); bool threeLeft = game.Match.State == MatchState.Active;
             game.Match.ApplyDamage(new DamageEvent(ps[3].id, ps[0].id, 1e12f));
             StepSeconds(0.3f);
-            Check("T. The Final Showdown starts as soon as exactly two cars are active", threeLeft && game.Match.State == MatchState.FinalShowdown && game.Match.ShowdownRemaining > 59f, $"state {game.Match.State}, {game.Match.ShowdownRemaining:0.0} s");
+            Check("T. The Final Showdown is prepared as soon as exactly two cars are active", threeLeft && game.Match.State == MatchState.ShowdownTransition && game.Match.ShowdownTriggered, $"state {game.Match.State}");
+            StepUntil(() => game.Match.State == MatchState.FinalShowdown, 5f);
+            Check("T2. ...and the 60 s duel starts after the transition and the countdown", game.Match.State == MatchState.FinalShowdown && game.Match.ShowdownRemaining > 58f, $"state {game.Match.State}, {game.Match.ShowdownRemaining:0.0} s");
             game.Match.ApplyDamage(new DamageEvent(ps[4].id, ps[0].id, 1e12f));
             StepSeconds(0.5f);
             Check("U. The showdown ends when one of the two is wrecked: survivor wins", game.Match.State == MatchState.Results && game.Match.Winner == ps[0], $"state {game.Match.State}, winner {game.Match.Winner?.name}");
@@ -733,16 +741,18 @@ namespace CarWreck.Derby.EditorTools
             AiOff();
             ps = game.Participants;
             for (int i = 2; i < 5; i++) game.Match.ApplyDamage(new DamageEvent(ps[i].id, -1, 1e12f));
-            game.Match.ApplyDamage(new DamageEvent(1, 0, 50000f));      // human leads by 70 to 0
+            StepUntil(() => game.Match.State == MatchState.FinalShowdown, 5f); AiOff();
+            game.Match.ApplyDamage(new DamageEvent(1, 0, 0.1f * ps[1].maxDurability));      // the human deals showdown damage (10 % of the opponent's armour), the AI none
             StepSeconds(7f);
-            Check("V. Showdown timeout in the real game: the higher score wins", game.Match.State == MatchState.Results && game.Match.Winner == ps[0], $"winner {game.Match.Winner?.name}, '{game.Match.ResultText}'");
+            Check("V. Showdown timeout in the real game: the finalist with more showdown damage wins", game.Match.State == MatchState.Results && game.Match.Winner == ps[0] && game.Match.Kind == ResultKind.WinByShowdownDamage, $"winner {game.Match.Winner?.name}, '{game.Match.ResultText}'");
             FreshMatch(5, GameMode.LastCarStanding, 0.1f, r => r.durabilityEnergy = 1e9f);
             ps = game.Participants;
             for (int i = 2; i < 5; i++) game.Match.ApplyDamage(new DamageEvent(ps[i].id, -1, 1e12f));
-            game.Match.ApplyDamage(new DamageEvent(ps[1].id, ps[0].id, 50000f));
+            StepUntil(() => game.Match.State == MatchState.FinalShowdown, 5f); AiOff();
+            game.Match.ApplyDamage(new DamageEvent(ps[1].id, ps[0].id, 0.1f * ps[1].maxDurability));
             game.Match.ApplyDamage(new DamageEvent(0, -1, 1e12f)); game.Match.ApplyDamage(new DamageEvent(1, -1, 1e12f));
             StepSeconds(0.5f);
-            Check("W. Both finalists wrecked in the same step in the real game: one result, the higher score", game.Match.State == MatchState.Results && game.Match.Winner == ps[0] && !game.Match.IsDraw, $"winner {game.Match.Winner?.name}, '{game.Match.ResultText}'");
+            Check("W. Both finalists wrecked in the same step in the real game: one result, the higher showdown damage", game.Match.State == MatchState.Results && game.Match.Winner == ps[0] && !game.Match.IsDraw, $"winner {game.Match.Winner?.name}, '{game.Match.ResultText}'");
 
             // X: restart
             FreshMatch(5, GameMode.PointsDerby, 0.1f, r => r.durabilityEnergy = 650000f);
