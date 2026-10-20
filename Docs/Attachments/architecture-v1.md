@@ -497,7 +497,23 @@ Unanswered:
 - Real triangle and draw-call headroom on the target phone. Nothing has been measured.
 - Whether the `ManualStep` batch runner reproduces live AI matches closely enough for M0 statistics. To check in M0.
 
-## 10. Open decisions that need the user
+## 10. Decisions (owner responses recorded)
+
+| # | Decision | Outcome |
+|---|---|---|
+| 1 | Staged hybrid, Stage 1 visual-only first | **Approved** |
+| 2 | Capacities 8/10/12 | **Approved as placeholders**, to be retuned after playtests |
+| 3 | AI loadouts | **V1 = empty AI loadouts** (keeps the M0 baseline clean). **Direction from the owner:** higher difficulties should eventually field different vehicles *with* attachments. See "Future: difficulty-scaled AI loadouts" below |
+| 4 | Rigid-item crush gap (up to about 160 mm) | **Accepted for V1** |
+| 5 | Opus Stage 2 interface (§7.3) | **Accepted**, to be started after M2 (a separate go-ahead from the owner starts the Opus work) |
+
+### Future: difficulty-scaled AI loadouts (not V1)
+
+V1 already contains everything this needs, so nothing is built for it now:
+- `Participant.loadout` (§5) applies to AI cars as well as the human car. Both use the same `AttachmentMount` and `LoadoutValidator`.
+- A later `AiLoadoutPreset` data asset could map difficulty plus vehicle to a `Loadout` (and an optional vehicle roster), validated by the same capacity rules, so the AI is never given a build a player could not make.
+- **Gate:** once Stage 2 proxies exist, AI builds change contact geometry and therefore difficulty balance. Presets must wait for the M0 baseline, and should be measured against it with the same AI-only protocol (§7.4). Stage 1 (visual-only) presets are safe at any time, because they do not change physics or scoring.
+- Open for later: whether higher difficulties may exceed player capacity. This would be a balance decision for the owner and is not assumed.
 
 1. **Approve the staged hybrid**, with Stage 1 visual-only shipping first and no physical effect.
 2. **Capacities for V1 testing:** keep 8/10/12 as placeholders, or set other values?

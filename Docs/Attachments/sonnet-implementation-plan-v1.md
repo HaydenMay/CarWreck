@@ -147,6 +147,8 @@ M4 (after M3):
 
 ## 7. Scope exclusions and first assignment
 
+**Owner approval recorded** (architecture §10): staged hybrid approved; capacities 8/10/12 are placeholders; AI loadouts are empty in V1; crush gap accepted; Stage 2 interface accepted for after M2. Higher-difficulty AI with different vehicles and attachments is a stated future direction. It is out of scope for V1, but keep `Participant.loadout` working for AI cars, so that a later preset asset needs no refactor.
+
 Not in V1:
 - economy and currency;
 - unlocks and progression;
