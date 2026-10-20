@@ -41,17 +41,15 @@ namespace CarWreck.Derby
         class Plate { public RectTransform rect; public Text name; public Image barBack, bar; public Participant who; public int alive = -1; }
         readonly List<Plate> plates = new List<Plate>();
 
-        // menu
+        // menu: Home (Play / Garage), Play (match setup) and Garage (Vehicle and Loadout tabs)
+        enum MenuPage { Home, Play, Vehicle, Loadout }
+        MenuPage currentPage = MenuPage.Home;
+        GameObject pageHome, pagePlay, pageGarage, pageVehicle, pageLoadout;
         Button[] carButtons, modeButtons, swatchButtons, difficultyButtons;
         Image[] swatchRing;
-        Text carDescription, modeDescription, difficultyDescription;
-
-        // loadout panel (attachments, reached from the menu; the menu itself is full)
-        GameObject loadoutRoot;
-        RectTransform loadoutContent;
-        bool loadoutBuilt;
-        Button loadoutOpenButton, startButton, clearProblemsButton;
-        Text loadoutOpenLabel, startLabel, loadoutInfo, loadoutNote;
+        Text carDescription, modeDescription, difficultyDescription, homeSummary, playSummary;
+        Button startButton, clearProblemsButton, tabVehicle, tabLoadout, garageBack;
+        Text startLabel, capacityLabel, tabLoadoutLabel;
         readonly Button[] slotPrev = new Button[VehicleAttachmentFit.SlotCount], slotNext = new Button[VehicleAttachmentFit.SlotCount];
         readonly Text[] slotName = new Text[VehicleAttachmentFit.SlotCount];
         static readonly Color Bad = new Color(1f, 0.38f, 0.32f, 1f);
@@ -96,8 +94,7 @@ namespace CarWreck.Derby
 
         public void ShowMenu(bool on)
         {
-            if (on) { EnsureMenu(); RefreshMenu(); }
-            if (loadoutRoot != null) loadoutRoot.SetActive(false);   // the menu always opens on its main page
+            if (on) { EnsureMenu(); ShowPage(MenuPage.Home); }   // the menu always opens on Home
             if (menuRoot != null) menuRoot.SetActive(on);
             if (on) { if (resultsRoot != null) resultsRoot.SetActive(false); if (pauseRoot != null) pauseRoot.SetActive(false); }
             ApplyVisibility();
@@ -116,7 +113,6 @@ namespace CarWreck.Derby
             feed.Clear(); if (feedText != null) feedText.text = "";
             bannerUntil = pointsUntil = 0f;
             if (menuRoot != null) menuRoot.SetActive(false);
-            if (loadoutRoot != null) loadoutRoot.SetActive(false);
             if (resultsRoot != null) resultsRoot.SetActive(false);
             if (pauseRoot != null) pauseRoot.SetActive(false);
             ApplyVisibility();
@@ -199,7 +195,7 @@ namespace CarWreck.Derby
         void Update()
         {
             if (lookPad != null && lookPad.cam == null && game != null) lookPad.cam = game.chaseCamera;
-            if (menuRoot != null && menuRoot.activeSelf || loadoutRoot != null && loadoutRoot.activeSelf) FitMenu();
+            if (menuRoot != null && menuRoot.activeSelf) FitMenu();
             if (input != null && input.TouchSeen && !touchVisible && !userToggled) SetTouch(true, false);
             if (game == null || game.MenuOpen || game.Match == null) return;
             UpdateNamePlates();
@@ -498,18 +494,40 @@ namespace CarWreck.Derby
             hudRoot.SetActive(false);
         }
 
-        // ------------------------------------------------------------------ start menu
+        // ------------------------------------------------------------------ menu: Home, Play and Garage
 
         RectTransform menuContent;
         const float MenuHeight = 640f;
+        static readonly string[] ShortNames = { "MUSCLE CAR", "HATCHBACK", "PICKUP" };
+        static readonly Vector2 TopLeft = new Vector2(0, 1);
 
         /// <summary>The menu is laid out for a 640-unit-tall canvas; on a shorter canvas (a phone held sideways) the whole content block shrinks to fit so START is never off the screen.</summary>
         void FitMenu()
         {
-            if (root == null) return;
+            if (menuContent == null || root == null) return;
             float s = Mathf.Clamp(root.rect.height / MenuHeight, 0.5f, 1f);
-            if (menuContent != null && !Mathf.Approximately(menuContent.localScale.x, s)) menuContent.localScale = new Vector3(s, s, 1f);
-            if (loadoutContent != null && !Mathf.Approximately(loadoutContent.localScale.x, s)) loadoutContent.localScale = new Vector3(s, s, 1f);
+            if (!Mathf.Approximately(menuContent.localScale.x, s)) menuContent.localScale = new Vector3(s, s, 1f);
+        }
+
+        RectTransform NewPage(string name, Transform parent)
+        {
+            var go = new GameObject(name, typeof(RectTransform));
+            var r = (RectTransform)go.transform;
+            r.SetParent(parent, false);
+            Anchor(r, TopLeft, TopLeft, TopLeft, Vector2.zero, new Vector2(650, MenuHeight));
+            return r;
+        }
+
+        Text PlaceLabel(string name, Transform parent, string text, int size, TextAnchor anchor, FontStyle style, float x, float y, float w, float h)
+        {
+            var t = Label(name, parent, text, size, anchor, style);
+            Anchor(t.rectTransform, TopLeft, TopLeft, TopLeft, new Vector2(x, y), new Vector2(w, h));
+            return t;
+        }
+
+        static void Plain(Button b)
+        {
+            var colors = b.colors; colors.normalColor = colors.highlightedColor = colors.selectedColor = Color.white; colors.pressedColor = new Color(0.8f, 0.8f, 0.8f); b.colors = colors;
         }
 
         void EnsureMenu()
@@ -524,46 +542,100 @@ namespace CarWreck.Derby
             var contentGo = new GameObject("Content", typeof(RectTransform));
             menuContent = (RectTransform)contentGo.transform;
             menuContent.SetParent(bg, false);
-            Anchor(menuContent, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), Vector2.zero, new Vector2(650, MenuHeight));
-            var mr = menuContent;
+            Anchor(menuContent, TopLeft, TopLeft, TopLeft, Vector2.zero, new Vector2(650, MenuHeight));
 
-            var title = Label("Title", mr, "CARWRECK", 50, TextAnchor.UpperLeft, FontStyle.Bold);
-            Anchor(title.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(36, -8), new Vector2(580, 56));
-            title.color = Chosen;
-            var tag = Label("Tagline", mr, "DRIVE.  RAM.  WRECK.  WIN.", 22, TextAnchor.UpperLeft, FontStyle.Bold);
-            Anchor(tag.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(38, -62), new Vector2(580, 26));
+            BuildHome(NewPage("PageHome", menuContent));
+            BuildPlay(NewPage("PagePlay", menuContent));
+            BuildGarage(NewPage("PageGarage", menuContent));
+            FitMenu();
+            ShowPage(MenuPage.Home);
+        }
 
-            var cl = Label("CarLabel", mr, "YOUR CAR", 19, TextAnchor.UpperLeft, FontStyle.Bold);
-            Anchor(cl.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(36, -92), new Vector2(580, 22));
+        // ---- Home
+
+        void BuildHome(RectTransform p)
+        {
+            pageHome = p.gameObject;
+            var title = PlaceLabel("Title", p, "CARWRECK", 50, TextAnchor.UpperLeft, FontStyle.Bold, 36, -8, 580, 56); title.color = Chosen;
+            PlaceLabel("Tagline", p, "DRIVE.  RAM.  WRECK.  WIN.", 22, TextAnchor.UpperLeft, FontStyle.Bold, 38, -62, 580, 26);
+            homeSummary = PlaceLabel("Summary", p, "", 20, TextAnchor.UpperLeft, FontStyle.Bold, 38, -128, 580, 52);
+            var play = MenuButton("Play", p, "PLAY", 56, TextAnchor.MiddleCenter, new Vector2(36, -190), new Vector2(578, 120), () => ShowPage(MenuPage.Play));
+            play.targetGraphic.color = Chosen; Plain(play);
+            MenuButton("Garage", p, "GARAGE", 56, TextAnchor.MiddleCenter, new Vector2(36, -330), new Vector2(578, 120), () => ShowPage(MenuPage.Vehicle));
+            var keys = PlaceLabel("Keys", p, "W / S  gas - brake      A / D  steer      R  right car      ESC  pause", 16, TextAnchor.UpperLeft, FontStyle.Normal, 38, -616, 580, 22);
+            keys.color = new Color(1f, 1f, 1f, 0.55f);
+        }
+
+        // ---- Play (match setup)
+
+        void BuildPlay(RectTransform p)
+        {
+            pagePlay = p.gameObject;
+            var title = PlaceLabel("Title", p, "PLAY", 50, TextAnchor.UpperLeft, FontStyle.Bold, 36, -8, 400, 56); title.color = Chosen;
+            playSummary = PlaceLabel("Summary", p, "", 19, TextAnchor.UpperLeft, FontStyle.Bold, 38, -66, 580, 30);
+
+            PlaceLabel("ModeLabel", p, "GAME MODE", 19, TextAnchor.UpperLeft, FontStyle.Bold, 36, -104, 580, 22);
+            modeButtons = new Button[2];
+            modeButtons[0] = MenuButton("ModePoints", p, "<b>POINTS DERBY</b>\n<size=16>timed - respawn</size>", 21, TextAnchor.MiddleCenter, new Vector2(36, -128), new Vector2(284, 76), () => { game.SelectMode(GameMode.PointsDerby); RefreshMenu(); });
+            modeButtons[1] = MenuButton("ModeLast", p, "<b>LAST CAR STANDING</b>\n<size=16>no respawns - final showdown</size>", 19, TextAnchor.MiddleCenter, new Vector2(330, -128), new Vector2(284, 76), () => { game.SelectMode(GameMode.LastCarStanding); RefreshMenu(); });
+            modeDescription = PlaceLabel("ModeDesc", p, "", 17, TextAnchor.UpperLeft, FontStyle.Normal, 38, -212, 580, 42);
+
+            PlaceLabel("DifficultyLabel", p, "OPPONENTS", 19, TextAnchor.UpperLeft, FontStyle.Bold, 36, -262, 580, 22);
+            difficultyButtons = new Button[3];
+            string[] dn = { "CASUAL", "STANDARD", "COMPETITIVE" };
+            float dw = (578f - 2f * 8f) / 3f;
+            for (int i = 0; i < 3; i++)
+            {
+                var level = (AiDifficulty)i;
+                difficultyButtons[i] = MenuButton("Diff" + i, p, "<b>" + dn[i] + "</b>", 20, TextAnchor.MiddleCenter, new Vector2(36 + i * (dw + 8f), -286), new Vector2(dw, 70), () => { game.SelectDifficulty(level); RefreshMenu(); });
+            }
+            difficultyDescription = PlaceLabel("DifficultyDesc", p, "", 16, TextAnchor.UpperLeft, FontStyle.Normal, 38, -362, 580, 22);
+
+            startButton = MenuButton("Start", p, "START", 48, TextAnchor.MiddleCenter, new Vector2(36, -398), new Vector2(578, 96), () => { if (game.HumanLoadoutResult.IsValid) game.StartMatch(); else ShowPage(MenuPage.Loadout); });
+            startLabel = startButton.GetComponentInChildren<Text>();
+            startButton.targetGraphic.color = Chosen; Plain(startButton);
+            MenuButton("PlayBack", p, "BACK", 30, TextAnchor.MiddleCenter, new Vector2(36, -510), new Vector2(578, 76), () => ShowPage(MenuPage.Home));
+        }
+
+        // ---- Garage (vehicle and loadout tabs)
+
+        void BuildGarage(RectTransform p)
+        {
+            pageGarage = p.gameObject;
+            var title = PlaceLabel("Title", p, "GARAGE", 50, TextAnchor.UpperLeft, FontStyle.Bold, 36, -8, 400, 56); title.color = Chosen;
+            capacityLabel = PlaceLabel("Capacity", p, "", 20, TextAnchor.UpperRight, FontStyle.Bold, 334, -24, 280, 30);
+            tabVehicle = MenuButton("TabVehicle", p, "VEHICLE", 24, TextAnchor.MiddleCenter, new Vector2(36, -66), new Vector2(284, 70), () => ShowPage(MenuPage.Vehicle));
+            tabLoadout = MenuButton("TabLoadout", p, "LOADOUT", 24, TextAnchor.MiddleCenter, new Vector2(330, -66), new Vector2(284, 70), () => ShowPage(MenuPage.Loadout));
+            tabLoadoutLabel = tabLoadout.GetComponentInChildren<Text>();
+
+            // vehicle tab
+            var v = NewPage("TabContentVehicle", p); pageVehicle = v.gameObject;
+            PlaceLabel("CarLabel", v, "YOUR CAR", 19, TextAnchor.UpperLeft, FontStyle.Bold, 36, -150, 580, 22);
             int n = game.vehicles.Length;
             carButtons = new Button[n];
-            string[] shortNames = { "MUSCLE CAR", "HATCHBACK", "PICKUP" };
             float cw = (578f - 10f * (n - 1)) / n;
             for (int i = 0; i < n; i++)
             {
                 int idx = i;
-                string nm = i < shortNames.Length ? shortNames[i] : game.vehicles[i].displayName.ToUpperInvariant();
-                carButtons[i] = MenuButton("Car" + i, mr, $"<b>{nm}</b>\n<size=17>{game.vehicles[i].mass:N0} kg</size>", 21, TextAnchor.MiddleCenter, new Vector2(36 + i * (cw + 10f), -114), new Vector2(cw, 62), () => { game.SelectVehicle(idx); RefreshMenu(); });
+                string nm = i < ShortNames.Length ? ShortNames[i] : game.vehicles[i].displayName.ToUpperInvariant();
+                carButtons[i] = MenuButton("Car" + i, v, $"<b>{nm}</b>\n<size=17>{game.vehicles[i].mass:N0} kg</size>", 21, TextAnchor.MiddleCenter, new Vector2(36 + i * (cw + 10f), -174), new Vector2(cw, 84), () => { game.SelectVehicle(idx); RefreshMenu(); });
             }
-            carDescription = Label("CarDesc", mr, "", 18, TextAnchor.UpperLeft, FontStyle.Normal);
-            Anchor(carDescription.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(38, -180), new Vector2(580, 40));
-
-            var pl = Label("PaintLabel", mr, "PAINT", 19, TextAnchor.UpperLeft, FontStyle.Bold);
-            Anchor(pl.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(36, -218), new Vector2(580, 22));
+            carDescription = PlaceLabel("CarDesc", v, "", 18, TextAnchor.UpperLeft, FontStyle.Normal, 38, -268, 580, 40);
+            PlaceLabel("PaintLabel", v, "PAINT", 19, TextAnchor.UpperLeft, FontStyle.Bold, 36, -322, 580, 22);
             int pc = game.palette != null ? game.palette.Count : 0;
             swatchButtons = new Button[pc]; swatchRing = new Image[pc];
-            float sw = Mathf.Min(52f, (578f - 8f * (pc - 1)) / Mathf.Max(1, pc));
+            float sw = Mathf.Min(56f, (578f - 8f * (pc - 1)) / Mathf.Max(1, pc));
             for (int i = 0; i < pc; i++)
             {
                 int idx = i;
                 float x = 36f + i * (sw + 8f);
-                var ring = Img("Ring" + i, mr, Color.clear);
+                var ring = Img("Ring" + i, v, Color.clear);
                 ring.sprite = round; ring.type = UnityEngine.UI.Image.Type.Sliced;
-                Anchor(ring.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(x - 4f, -242f + 4f), new Vector2(sw + 8f, sw + 8f));
+                Anchor(ring.rectTransform, TopLeft, TopLeft, TopLeft, new Vector2(x - 4f, -346f + 4f), new Vector2(sw + 8f, sw + 8f));
                 swatchRing[i] = ring;
                 var go = new GameObject("Swatch" + i, typeof(RectTransform), typeof(Image), typeof(Button));
-                go.transform.SetParent(mr, false);
-                Anchor((RectTransform)go.transform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(x, -242f), new Vector2(sw, sw));
+                go.transform.SetParent(v, false);
+                Anchor((RectTransform)go.transform, TopLeft, TopLeft, TopLeft, new Vector2(x, -346f), new Vector2(sw, sw));
                 var img = go.GetComponent<Image>(); img.sprite = round; img.type = UnityEngine.UI.Image.Type.Sliced; img.color = game.palette.Get(i).body;
                 var b = go.GetComponent<Button>(); b.targetGraphic = img; b.navigation = new Navigation { mode = Navigation.Mode.None };
                 var colors = b.colors; colors.normalColor = Color.white; colors.highlightedColor = Color.white; colors.pressedColor = new Color(0.75f, 0.75f, 0.75f); colors.selectedColor = Color.white; b.colors = colors;
@@ -571,43 +643,62 @@ namespace CarWreck.Derby
                 swatchButtons[i] = b;
             }
 
-            var ml = Label("ModeLabel", mr, "GAME MODE", 19, TextAnchor.UpperLeft, FontStyle.Bold);
-            Anchor(ml.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(36, -306), new Vector2(580, 22));
-            modeButtons = new Button[2];
-            modeButtons[0] = MenuButton("ModePoints", mr, "<b>POINTS DERBY</b>\n<size=16>timed - respawn</size>", 21, TextAnchor.MiddleCenter, new Vector2(36, -328), new Vector2(284, 60), () => { game.SelectMode(GameMode.PointsDerby); RefreshMenu(); });
-            modeButtons[1] = MenuButton("ModeLast", mr, "<b>LAST CAR STANDING</b>\n<size=16>no respawns - final showdown</size>", 19, TextAnchor.MiddleCenter, new Vector2(330, -328), new Vector2(284, 60), () => { game.SelectMode(GameMode.LastCarStanding); RefreshMenu(); });
-            modeDescription = Label("ModeDesc", mr, "", 17, TextAnchor.UpperLeft, FontStyle.Normal);
-            Anchor(modeDescription.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(38, -392), new Vector2(580, 42));
-
-            var dl = Label("DifficultyLabel", mr, "OPPONENTS", 19, TextAnchor.UpperLeft, FontStyle.Bold);
-            Anchor(dl.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(36, -436), new Vector2(580, 22));
-            difficultyButtons = new Button[3];
-            string[] dn = { "CASUAL", "STANDARD", "COMPETITIVE" };
-            float dw = (578f - 2f * 8f) / 3f;
-            for (int i = 0; i < 3; i++)
+            // loadout tab
+            var l = NewPage("TabContentLoadout", p); pageLoadout = l.gameObject;
+            string[] slotLabels = { "FRONT", "REAR", "LEFT", "RIGHT", "ROOF" };
+            for (int i = 0; i < VehicleAttachmentFit.SlotCount; i++)
             {
-                var level = (AiDifficulty)i;
-                difficultyButtons[i] = MenuButton("Diff" + i, mr, "<b>" + dn[i] + "</b>", 20, TextAnchor.MiddleCenter, new Vector2(36 + i * (dw + 8f), -458), new Vector2(dw, 54), () => { game.SelectDifficulty(level); RefreshMenu(); });
+                int s = i;
+                float y = -150f - i * 78f;
+                PlaceLabel("SlotLabel" + i, l, slotLabels[i], 17, TextAnchor.MiddleLeft, FontStyle.Bold, 38, y, 104, 70);
+                slotPrev[i] = MenuButton("Prev" + i, l, "<", 32, TextAnchor.MiddleCenter, new Vector2(144, y), new Vector2(72, 70), () => CycleSlot(s, -1));
+                var nameBg = MenuButton("Item" + i, l, "", 21, TextAnchor.MiddleLeft, new Vector2(222, y), new Vector2(314, 70), () => CycleSlot(s, +1));
+                slotName[i] = nameBg.GetComponentInChildren<Text>();
+                slotNext[i] = MenuButton("Next" + i, l, ">", 32, TextAnchor.MiddleCenter, new Vector2(542, y), new Vector2(72, 70), () => CycleSlot(s, +1));
             }
-            difficultyDescription = Label("DifficultyDesc", mr, "", 16, TextAnchor.UpperLeft, FontStyle.Normal);
-            Anchor(difficultyDescription.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(38, -514), new Vector2(580, 22));
 
-            loadoutOpenButton = MenuButton("LoadoutOpen", mr, "LOADOUT", 16, TextAnchor.MiddleCenter, new Vector2(444, -88), new Vector2(170, 30), OpenLoadout);
-            loadoutOpenLabel = loadoutOpenButton.GetComponentInChildren<Text>();
-            loadoutOpenButton.gameObject.SetActive(game.AttachmentsAvailable);
-            var start = MenuButton("Start", mr, "START", 44, TextAnchor.MiddleCenter, new Vector2(36, -540), new Vector2(578, 72), () => { if (game.HumanLoadoutResult.IsValid) game.StartMatch(); else OpenLoadout(); });
-            startButton = start; startLabel = start.GetComponentInChildren<Text>();
-            start.targetGraphic.color = Chosen;
-            var colors2 = start.colors; colors2.normalColor = colors2.highlightedColor = Color.white; colors2.pressedColor = new Color(0.8f, 0.8f, 0.8f); colors2.selectedColor = Color.white; start.colors = colors2;
-            var keys = Label("Keys", mr, "W / S  gas - brake      A / D  steer      R  right car      ESC  pause", 16, TextAnchor.UpperLeft, FontStyle.Normal);
-            Anchor(keys.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(38, -616), new Vector2(580, 22));
-            keys.color = new Color(1f, 1f, 1f, 0.55f);
+            // bottom row, shared by both tabs
+            garageBack = MenuButton("GarageBack", p, "BACK", 32, TextAnchor.MiddleCenter, new Vector2(36, -548), new Vector2(578, 76), () => ShowPage(MenuPage.Home));
+            clearProblemsButton = MenuButton("ClearProblems", p, "CLEAR PROBLEMS", 17, TextAnchor.MiddleCenter, new Vector2(424, -548), new Vector2(190, 76), () => { game.ClearInvalidHumanLoadoutSlots(); RefreshMenu(); });
+        }
+
+        // ---- navigation and refresh
+
+        void ShowPage(MenuPage page)
+        {
+            if (!menuBuilt) return;
+            if (page == MenuPage.Loadout && !game.AttachmentsAvailable) page = MenuPage.Vehicle;
+            currentPage = page;
+            bool garage = page == MenuPage.Vehicle || page == MenuPage.Loadout;
+            pageHome.SetActive(page == MenuPage.Home);
+            pagePlay.SetActive(page == MenuPage.Play);
+            pageGarage.SetActive(garage);
+            pageVehicle.SetActive(page == MenuPage.Vehicle);
+            pageLoadout.SetActive(page == MenuPage.Loadout);
             FitMenu();
+            RefreshMenu();
+        }
+
+        string CarSummary()
+        {
+            string car = game.playerVehicle < ShortNames.Length ? ShortNames[game.playerVehicle] : game.vehicles[game.playerVehicle].displayName.ToUpperInvariant();
+            string paint = game.palette != null && game.palette.Count > 0 ? game.palette.Get(game.playerPaint).name : "";
+            string s = paint.Length > 0 ? $"{car}  -  {paint}" : car;
+            if (game.AttachmentsAvailable)
+            {
+                var r = game.HumanLoadoutResult;
+                s += r.IsValid ? $"  -  LOADOUT {r.totalCost}/{r.capacity}" : "  -  <color=#FF6152>FIX LOADOUT</color>";
+            }
+            return s;
         }
 
         void RefreshMenu()
         {
             if (!menuBuilt) return;
+            bool available = game.AttachmentsAvailable;
+            var result = available ? game.HumanLoadoutResult : null;
+            homeSummary.text = CarSummary();
+            playSummary.text = CarSummary();
             for (int i = 0; i < carButtons.Length; i++) carButtons[i].targetGraphic.color = i == game.playerVehicle ? Chosen : Dark;
             for (int i = 0; i < swatchRing.Length; i++) swatchRing[i].color = i == game.playerPaint ? Color.white : Color.clear;
             modeButtons[0].targetGraphic.color = game.rules.mode == GameMode.PointsDerby ? Chosen : Dark;
@@ -619,83 +710,23 @@ namespace CarWreck.Derby
             modeDescription.text = game.rules.mode == GameMode.PointsDerby
                 ? $"{game.participantCount} cars, {DurationText(game.rules.pointsDuration)}. Hard hits score points. Wrecked cars respawn. Highest score wins."
                 : $"{game.participantCount} cars, one life each. The last two are repaired for a {Mathf.RoundToInt(game.rules.showdownDuration)} s duel: wreck your rival or do more damage.";
-            RefreshLoadoutEntry();
+            startLabel.text = result == null || result.IsValid ? "START" : "FIX LOADOUT";
+
+            // garage tabs
+            bool onLoadout = currentPage == MenuPage.Loadout;
+            tabVehicle.targetGraphic.color = currentPage == MenuPage.Vehicle ? Chosen : Dark;
+            tabLoadout.gameObject.SetActive(available);
+            tabLoadout.targetGraphic.color = onLoadout ? Chosen : Dark;
+            tabLoadoutLabel.text = result == null || result.IsValid ? "LOADOUT" : "LOADOUT  <color=#FF6152>!</color>";
+            capacityLabel.gameObject.SetActive(onLoadout && available);
+            if (onLoadout && available) RefreshLoadoutRows(result);
+            else clearProblemsButton.gameObject.SetActive(false);
+            garageBack.GetComponent<RectTransform>().sizeDelta = new Vector2(clearProblemsButton.gameObject.activeSelf ? 380f : 578f, 76f);
         }
 
-        // ------------------------------------------------------------------ loadout panel (attachments)
+        // ---- loadout rows (Garage, LOADOUT tab)
 
-        /// <summary>The LOADOUT button shows the build's cost; while the saved build has problems START turns into FIX LOADOUT and opens the panel instead of starting.</summary>
-        void RefreshLoadoutEntry()
-        {
-            if (loadoutOpenButton == null) return;
-            bool available = game.AttachmentsAvailable;
-            loadoutOpenButton.gameObject.SetActive(available);
-            if (!available) { if (startLabel != null) startLabel.text = "START"; return; }
-            var r = game.HumanLoadoutResult;
-            loadoutOpenLabel.text = r.IsValid ? $"LOADOUT  {r.totalCost}/{r.capacity}" : "LOADOUT  !";
-            loadoutOpenLabel.color = r.IsValid ? Color.white : Bad;
-            startLabel.text = r.IsValid ? "START" : "FIX LOADOUT";
-        }
-
-        void OpenLoadout()
-        {
-            EnsureLoadout();
-            if (menuRoot != null) menuRoot.SetActive(false);
-            loadoutRoot.SetActive(true);
-            FitMenu();
-            RefreshLoadout();
-        }
-
-        void CloseLoadout()
-        {
-            if (loadoutRoot != null) loadoutRoot.SetActive(false);
-            if (menuRoot != null) menuRoot.SetActive(true);
-            RefreshMenu();
-        }
-
-        void EnsureLoadout()
-        {
-            if (loadoutBuilt || game == null) return;
-            loadoutBuilt = true;
-            loadoutRoot = new GameObject("Loadout", typeof(RectTransform), typeof(Image));
-            var bg = (RectTransform)loadoutRoot.transform;
-            bg.SetParent(root, false);
-            Anchor(bg, new Vector2(0, 0), new Vector2(0, 1), new Vector2(0, 0.5f), Vector2.zero, new Vector2(650, 0));
-            loadoutRoot.GetComponent<Image>().color = Panel;
-            var contentGo = new GameObject("Content", typeof(RectTransform));
-            loadoutContent = (RectTransform)contentGo.transform;
-            loadoutContent.SetParent(bg, false);
-            Anchor(loadoutContent, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), Vector2.zero, new Vector2(650, MenuHeight));
-            var lr = loadoutContent;
-
-            var title = Label("Title", lr, "LOADOUT", 50, TextAnchor.UpperLeft, FontStyle.Bold);
-            Anchor(title.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(36, -8), new Vector2(580, 56));
-            title.color = Chosen;
-            loadoutInfo = Label("Info", lr, "", 22, TextAnchor.UpperLeft, FontStyle.Bold);
-            Anchor(loadoutInfo.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(38, -64), new Vector2(580, 30));
-
-            string[] slotLabels = { "FRONT", "REAR", "LEFT SIDE", "RIGHT SIDE", "ROOF" };
-            for (int i = 0; i < VehicleAttachmentFit.SlotCount; i++)
-            {
-                int s = i;
-                float y = -104f - i * 82f;
-                var sl = Label("SlotLabel" + i, lr, slotLabels[i], 17, TextAnchor.UpperLeft, FontStyle.Bold);
-                Anchor(sl.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(38, y), new Vector2(300, 22));
-                slotPrev[i] = MenuButton("Prev" + i, lr, "<", 30, TextAnchor.MiddleCenter, new Vector2(36, y - 22f), new Vector2(64, 52), () => CycleSlot(s, -1));
-                var nameBg = MenuButton("Item" + i, lr, "", 21, TextAnchor.MiddleLeft, new Vector2(108, y - 22f), new Vector2(430, 52), () => CycleSlot(s, +1));
-                slotName[i] = nameBg.GetComponentInChildren<Text>();
-                slotNext[i] = MenuButton("Next" + i, lr, ">", 30, TextAnchor.MiddleCenter, new Vector2(546, y - 22f), new Vector2(68, 52), () => CycleSlot(s, +1));
-            }
-            loadoutNote = Label("Note", lr, "", 16, TextAnchor.UpperLeft, FontStyle.Normal);
-            Anchor(loadoutNote.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(38, -524), new Vector2(580, 40));
-            var back = MenuButton("Back", lr, "DONE", 34, TextAnchor.MiddleCenter, new Vector2(36, -566), new Vector2(380, 60), CloseLoadout);
-            back.targetGraphic.color = Chosen;
-            clearProblemsButton = MenuButton("ClearProblems", lr, "CLEAR PROBLEMS", 17, TextAnchor.MiddleCenter, new Vector2(424, -566), new Vector2(190, 60), () => { game.ClearInvalidHumanLoadoutSlots(); RefreshLoadout(); });
-            FitMenu();
-            loadoutRoot.SetActive(false);
-        }
-
-        /// <summary>The items a slot can take: "none" first, then the catalog's items for that slot in catalog order.</summary>
+        /// <summary>The items a slot can take, in catalog order ("none" is the position before the first).</summary>
         static void SlotOptions(AttachmentCatalog catalog, int slot, List<AttachmentDefinition> into)
         {
             into.Clear();
@@ -715,18 +746,15 @@ namespace CarWreck.Derby
             int count = optionScratch.Count + 1;                      // none + items
             int pos = (index + 1 + dir + count) % count;              // 0 = none
             game.SetHumanLoadoutItem((AttachmentSlot)slot, pos == 0 ? "" : optionScratch[pos - 1].id);
-            RefreshLoadout();
+            RefreshMenu();
         }
 
-        void RefreshLoadout()
+        void RefreshLoadoutRows(LoadoutResult r)
         {
-            if (!loadoutBuilt) return;
             var l = game.HumanLoadout;
-            var r = game.HumanLoadoutResult;
-            string car = game.vehicles[game.playerVehicle].displayName.ToUpperInvariant();
             bool over = r.HasIssue(LoadoutError.OverBudget);
-            loadoutInfo.text = $"{car}     CAPACITY {r.totalCost} / {r.capacity}{(over ? "   OVER BUDGET" : "")}";
-            loadoutInfo.color = over ? Bad : Color.white;
+            capacityLabel.text = $"CAPACITY {r.totalCost} / {r.capacity}{(over ? "  OVER" : "")}";
+            capacityLabel.color = over ? Bad : Color.white;
             bool anySlotProblem = false;
             for (int s = 0; s < VehicleAttachmentFit.SlotCount; s++)
             {
@@ -746,9 +774,6 @@ namespace CarWreck.Derby
                 slotName[s].GetComponentInParent<Button>().interactable = usable;
             }
             clearProblemsButton.gameObject.SetActive(anySlotProblem);
-            loadoutNote.text = r.IsValid ? "Visual only for now: attachments do not change handling or damage."
-                : over ? "Over budget: remove something to start." : "Fix or clear the red slots to start.";
-            loadoutNote.color = r.IsValid ? new Color(1f, 1f, 1f, 0.6f) : Bad;
         }
 
         // ------------------------------------------------------------------ pause and results

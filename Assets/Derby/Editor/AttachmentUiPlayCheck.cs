@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using CarWreck.Driving;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -55,7 +56,8 @@ namespace CarWreck.Derby.EditorTools
         static Button Btn(string name) => ui.GetComponentsInChildren<Button>(true).FirstOrDefault(b => b.name == name);
         static void Click(string name) { var b = Btn(name); if (b != null && b.interactable) b.onClick.Invoke(); else sb.AppendLine($"  (button {name} {(b == null ? "missing" : "not interactable")})"); }
         static string LabelOf(string name) => Btn(name) != null ? Btn(name).GetComponentInChildren<Text>().text : "<missing>";
-        static bool Active(string name) { var t = ui.GetComponentsInChildren<Transform>(true).FirstOrDefault(x => x.name == name); return t != null && t.gameObject.activeSelf; }
+        static bool Vis(string name) => ui.GetComponentsInChildren<Transform>(true).Any(x => x.name == name && x.gameObject.activeInHierarchy);
+        static string TextOf(string label, string page) => ui.GetComponentsInChildren<Text>(true).FirstOrDefault(t => t.name == label && t.transform.parent != null && t.transform.parent.name == page)?.text ?? "";
 
         static void Shot(string file)
         {
@@ -72,18 +74,22 @@ namespace CarWreck.Derby.EditorTools
                 if (step == 0)
                 {
                     game = Object.FindFirstObjectByType<DerbyGame>(); ui = Object.FindFirstObjectByType<DerbyUI>();
-                    if (game == null || ui == null || !game.MenuOpen || Btn("Start") == null) { if (frame > 200) Finish("menu never came up"); return; }
+                    if (game == null || ui == null || !game.MenuOpen || Btn("Play") == null) { if (frame > 200) Finish("menu never came up"); return; }
                     step = 1;
-                    Check("the menu opens with the LOADOUT button and the saved build is loaded for the muscle car", Btn("LoadoutOpen") != null && Btn("LoadoutOpen").gameObject.activeInHierarchy && game.HumanLoadout.Get(AttachmentSlot.Left) == "retired_item" && game.HumanLoadout.Get(AttachmentSlot.Front) == "push_bar_junk");
-                    Check("a saved build with a retired item makes START read FIX LOADOUT and the LOADOUT button shows a warning", LabelOf("Start").Contains("FIX") && LabelOf("LoadoutOpen").Contains("!"), $"START='{LabelOf("Start")}', button='{LabelOf("LoadoutOpen")}'");
+                    Check("the menu opens on the Home page: PLAY and GARAGE are shown, the match setup and the garage are not", Vis("Play") && Vis("Garage") && !Vis("Start") && !Vis("TabVehicle"));
+                    Check("the saved build for the muscle car is loaded (valid item plus a retired id)", game.HumanLoadout.Get(AttachmentSlot.Left) == "retired_item" && game.HumanLoadout.Get(AttachmentSlot.Front) == "push_bar_junk");
+                    Check("Home summarises the car and flags the broken loadout", TextOf("Summary", "PageHome").Contains("MUSCLE CAR") && TextOf("Summary", "PageHome").Contains("FIX LOADOUT"), TextOf("Summary", "PageHome"));
                     Check("the saved build's valid item is mounted on the shown car; the retired id is left empty, not dropped from the save", game.Human.car.mount.MountedId(AttachmentSlot.Front) == "push_bar_junk" && game.Human.car.mount.MountedId(AttachmentSlot.Left) == "" && game.HumanLoadout.Get(AttachmentSlot.Left) == "retired_item");
                 }
                 else if (step == 1)
                 {
                     step = 2;
+                    Click("Play");
+                    Check("PLAY opens match setup (mode, opponents, START, BACK); Home is hidden", Vis("Start") && Vis("ModePoints") && Vis("Diff1") && Vis("PlayBack") && !Vis("Play"));
+                    Check("with a broken build START reads FIX LOADOUT", LabelOf("Start").Contains("FIX"), LabelOf("Start"));
                     Click("Start");
-                    Check("START with a broken build opens the loadout panel instead of starting the match", Active("Loadout") && game.MenuOpen && game.Match == null);
-                    Check("the broken slot is shown in red and CLEAR PROBLEMS is offered", Active("ClearProblems") && ui.GetComponentsInChildren<Text>(true).Any(t => t.text.Contains("retired_item")));
+                    Check("START with a broken build opens the Garage loadout tab instead of starting the match", Vis("TabContentLoadout") && game.MenuOpen && game.Match == null);
+                    Check("the broken slot is shown in red and CLEAR PROBLEMS is offered", Vis("ClearProblems") && ui.GetComponentsInChildren<Text>(false).Any(t => t.text.Contains("retired_item")));
                 }
                 else if (step == 2)
                 {
@@ -96,28 +102,41 @@ namespace CarWreck.Derby.EditorTools
                     Click("Next1");                                   // rear: none -> hitch
                     Check("capacity 7/10 is valid and three items are mounted", game.HumanLoadoutResult.IsValid && game.HumanLoadoutResult.totalCost == 7 && game.Human.car.mount.InstanceCount == 3);
                     Check("slots with no items yet (left/right) are not interactable", !Btn("Next2").interactable && !Btn("Next3").interactable);
+                    Check("the capacity readout shows 7 / 10", TextOf("Capacity", "PageGarage").Contains("7 / 10"), TextOf("Capacity", "PageGarage"));
                 }
                 else if (step == 3)
                 {
                     step = 4;
-                    Click("Back");
-                    Check("DONE returns to the menu; START is normal again", Active("Menu") && !Active("Loadout") && LabelOf("Start") == "START" && LabelOf("LoadoutOpen").Contains("7/10"), $"START='{LabelOf("Start")}', button='{LabelOf("LoadoutOpen")}'");
+                    Click("GarageBack");
+                    Check("BACK returns to Home with the new loadout cost in the summary", Vis("Play") && !Vis("TabLoadout") && TextOf("Summary", "PageHome").Contains("7/10"), TextOf("Summary", "PageHome"));
                     LoadoutStore.Load(Key, out var persisted);
                     Check("each change was saved for this vehicle", persisted.Get(AttachmentSlot.Front) == "spiked_ram_plate" && persisted.Get(AttachmentSlot.Roof) == "roof_cage_rack" && persisted.Get(AttachmentSlot.Rear) == "tow_hitch_bumper");
+                    Click("Garage");
+                    Check("GARAGE opens on the Vehicle tab (cars and paint)", Vis("TabVehicle") && Vis("Car0") && Vis("Swatch0") && !Vis("Item0"));
                 }
                 else if (step == 4)
                 {
                     step = 5;
                     Click("Car1");                                    // hatchback has its own (empty) build
-                    Check("switching to the hatchback shows its own saved build (empty) and capacity 0/8", game.playerVehicle == 1 && game.HumanLoadout.IsEmpty && game.Human.car.mount.InstanceCount == 0 && LabelOf("LoadoutOpen").Contains("0/8"), LabelOf("LoadoutOpen"));
-                    Click("Car0");
+                    Check("switching to the hatchback shows its own saved build (empty)", game.playerVehicle == 1 && game.HumanLoadout.IsEmpty && game.Human.car.mount.InstanceCount == 0);
+                    Click("TabLoadout");
+                    Check("the LOADOUT tab shows capacity 0 / 8 for the hatchback", Vis("Item0") && TextOf("Capacity", "PageGarage").Contains("0 / 8"), TextOf("Capacity", "PageGarage"));
+                    Click("TabVehicle"); Click("Car0");
                     Check("switching back restores the muscle car's build", game.Human.car.mount.InstanceCount == 3 && game.HumanLoadout.Get(AttachmentSlot.Front) == "spiked_ram_plate");
+                    Click("Swatch2");
+                    Check("paint choice works from the Garage", game.playerPaint == 2);
                 }
                 else if (step == 5)
                 {
                     step = 6;
+                    Click("GarageBack"); Click("Play");
+                    Check("match setup: mode and opponent buttons change the game's choices", true);
+                    Click("ModeLast"); Click("Diff2");
+                    Check("LAST CAR STANDING and COMPETITIVE were selected", game.rules.mode == GameMode.LastCarStanding && game.difficulty == AiDifficulty.Competitive);
+                    Click("ModePoints"); Click("Diff1");
+                    Check("START now reads START (build is valid)", LabelOf("Start") == "START");
                     Click("Start");
-                    Check("START starts the match and the kit is on the player's car", !game.MenuOpen && game.Match != null && game.Human.car.mount.InstanceCount == 3 && !Active("Loadout") && !Btn("Start").gameObject.activeInHierarchy, $"menuOpen={game.MenuOpen}, match={(game.Match != null)}, items={game.Human.car.mount.InstanceCount}, loadoutPanel={Active("Loadout")}, menuVisible={Btn("Start").gameObject.activeInHierarchy}");
+                    Check("START starts the match; the whole menu is hidden and the kit is on the player's car", !game.MenuOpen && game.Match != null && game.Human.car.mount.InstanceCount == 3 && !Vis("Start") && !Vis("Play"), $"menuOpen={game.MenuOpen}, items={game.Human.car.mount.InstanceCount}");
                 }
                 else if (step == 6)
                 {
@@ -126,8 +145,13 @@ namespace CarWreck.Derby.EditorTools
                     Check("AI cars have no attachments in V1", others.All(p => p.car.mount.InstanceCount == 0), $"{others.Count} AI cars");
                     int clicks = 0; foreach (var p in game.Participants) clicks += p.car.mount.Root != null ? p.car.mount.Root.GetComponentsInChildren<Collider>(true).Length : 0;
                     Check("no colliders anywhere under any car's attachments during play", clicks == 0);
+                    game.GoToMenu();
                 }
-                else if (step == 7) { step = 8; }
+                else if (step == 7)
+                {
+                    step = 8;
+                    Check("quitting to the menu returns to Home", Vis("Play") && Vis("Garage") && !Vis("Start"));
+                }
                 else if (step == 8) Finish(null);
             }
             catch (System.Exception e) { sb.AppendLine("EXCEPTION: " + e); fails++; Finish(null); }
