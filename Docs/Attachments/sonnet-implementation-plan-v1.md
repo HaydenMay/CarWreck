@@ -154,7 +154,9 @@ M4 (after M3):
 - Lifecycle checks pass: 50 resets, wreck and repair, 5 rematches, paint and vehicle switches, no leaked instances or materials.
 - `AttachmentFitTool.RunMatrix`: 12 of 12 item/body pairs fit (report in `m2-fit-report.md`, screenshots in `Previews/Attachments/`).
 - **Finding for the owner:** the accepted rigid-mount gap of about 160 mm holds for a firm hit (98-145 mm measured). A maximum synthetic crush (strength 1, depth gain 3) leaves 338-361 mm behind a rigid front or roof item. See the open question in the M2 report.
-- Not tested: the loadout panel on a device, mobile WebGL frame time and draw calls, and any visual check with SOL's real art (placeholders are grey boxes).
+- `AttachmentUiPlayCheck` (editor play mode, real DerbyUI, clicks the actual buttons): 16 of 16. It covers a saved build with a retired item (flagged, not dropped), FIX LOADOUT, clear problems, cycling and saving per vehicle, switching bodies, START, and no colliders during play.
+- Existing suites with M2 in place: `DerbyValidation` 80/80, `ShowdownValidation` 45/45, `AiV3Validation` 19/20. The one failure (A3, a duel-statistics sanity check) fails identically on `main`, so it is not caused by M2.
+- Not tested: the loadout panel on a phone or in a WebGL build (touch, layout at phone size), mobile frame time and draw calls, screenshots of the panel (not capturable in batch mode), and any look at SOL's real art (placeholders are grey boxes).
 
 ## 7. Scope exclusions and first assignment
 
