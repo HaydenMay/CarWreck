@@ -4501,6 +4501,7 @@ MonoBehaviour:
     footprintArrow: {fileID: 0}
     hitboxLines: {fileID: 0}
   palette: {fileID: 11400000, guid: 7123232e6a1529440bd4cb697409b464, type: 2}
+  attachmentCatalog: {fileID: 11400000, guid: 4cb4850bbbf3ac243923b1614b1936aa, type: 2}
   aiProfiles:
   - {fileID: 11400000, guid: 3fec445c54632204789e168a1789a144, type: 2}
   - {fileID: 11400000, guid: b54395bdda5ca3d4e80e3cf680e7ae5d, type: 2}

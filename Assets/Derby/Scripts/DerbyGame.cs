@@ -19,6 +19,7 @@ namespace CarWreck.Derby
         public VehicleDefinition def;
         public ArcadeCarController controller;
         public EnemyDriver enemy;                    // AI only
+        public AttachmentMount mount;                // visual attachments; always present, empty when the loadout is empty
         public System.Action<CollisionDamageReceiver.Report> handler;
         public float refitWait, refitAge;            // seconds since the latest / the first damaging hit still waiting for a collider refit
         public int refits, unflips;
@@ -44,6 +45,10 @@ namespace CarWreck.Derby
         public PaintPalette palette;
         [Tooltip("Driver personalities handed out to the AI cars in order (Brawler, Hunter, Cautious, Rookie, then round again).")]
         public DriverProfile[] aiProfiles;
+
+        [Header("Attachments (visual only in Stage 1)")]
+        [Tooltip("Items, per-vehicle fits and the wreck material. Null = the feature is off and cars are built exactly as before.")]
+        public AttachmentCatalog attachmentCatalog;
 
         [Header("Match")]
         public MatchRules rules = new MatchRules();
@@ -163,9 +168,61 @@ namespace CarWreck.Derby
 
         // ------------------------------------------------------------------ building cars
 
+        // ------------------------------------------------------------------ attachments (Stage 1: visual only)
+
+        string VehicleKey(int vehicleIndex) => vehicles[Mathf.Clamp(vehicleIndex, 0, vehicles.Length - 1)].name;
+
+        /// <summary>The player's saved loadout for the chosen vehicle. Read only while playing, so edit-mode validations never depend on a developer's saved preferences.</summary>
+        void LoadHumanLoadout()
+        {
+            string key = VehicleKey(playerVehicle);
+            Loadout l = new Loadout(key);
+            if (attachmentCatalog != null && Application.isPlaying)
+            {
+                var result = LoadoutStore.Load(key, out l);
+                if (result == LoadoutStore.ParseResult.Corrupt || result == LoadoutStore.ParseResult.UnknownVersion)
+                    Debug.LogWarning($"[Attachments] Saved loadout for {key} could not be read ({result}); starting empty.");
+            }
+            Human.loadout = l;
+        }
+
+        /// <summary>The loadout currently selected for the player's vehicle (never null).</summary>
+        public Loadout HumanLoadout { get { if (Human.loadout == null) LoadHumanLoadout(); return Human.loadout; } }
+
+        public VehicleAttachmentFit HumanFit => attachmentCatalog != null ? attachmentCatalog.FitFor(VehicleKey(playerVehicle)) : null;
+
+        /// <summary>What the validator says about the player's selection (the menu disables START while this is not valid).</summary>
+        public LoadoutResult HumanLoadoutResult => LoadoutValidator.Validate(HumanLoadout, HumanFit, attachmentCatalog);
+
+        public bool AttachmentsAvailable => attachmentCatalog != null && HumanFit != null && attachmentCatalog.items != null && attachmentCatalog.items.Length > 0;
+
+        /// <summary>Selects (or, with an empty id, removes) the item in a slot, saves the build for this vehicle and refreshes the shown car.</summary>
+        public void SetHumanLoadoutItem(AttachmentSlot slot, string itemId)
+        {
+            if (attachmentCatalog == null) return;
+            HumanLoadout.Set(slot, itemId);
+            if (Application.isPlaying) LoadoutStore.Save(HumanLoadout);
+            RefreshHumanAttachments();
+        }
+
+        /// <summary>Empties every slot that has a problem of its own (unknown id, wrong slot, missing asset), keeping the sound ones. Overspend is fixed by the player.</summary>
+        public void ClearInvalidHumanLoadoutSlots()
+        {
+            foreach (var issue in HumanLoadoutResult.issues)
+                if (issue.slot >= 0) HumanLoadout.slotItemIds[issue.slot] = "";
+            if (Application.isPlaying) LoadoutStore.Save(HumanLoadout);
+            RefreshHumanAttachments();
+        }
+
+        void RefreshHumanAttachments()
+        {
+            if (Human.car != null && Human.car.mount != null) Human.car.mount.Apply(HumanLoadout);
+        }
+
         void BuildHumanCar()
         {
             Human.vehicleIndex = playerVehicle; Human.paintIndex = playerPaint;
+            LoadHumanLoadout();
             var spot = MenuSpot();
             Human.car = BuildCar(Human, spot);
             RegisterCar(Human.car);
@@ -192,6 +249,11 @@ namespace CarWreck.Derby
             rig.model.Initialize();
             rig.hitbox.Setup();
             var car = new DerbyCar { participant = p, rig = rig, def = def };
+            // Attachments are mounted AFTER Initialize on purpose: Initialize returns early once done and the derby never calls Rebuild, so the damage model never
+            // discovers an attachment mesh as a deformable part. Moving this above Initialize would change deformation. (Visual only: no colliders, no mass.)
+            car.mount = rig.root.AddComponent<AttachmentMount>();
+            car.mount.Configure(attachmentCatalog, def.name);
+            if (attachmentCatalog != null && p.loadout != null) car.mount.Apply(p.loadout);
             Quaternion rot = Quaternion.Euler(0f, spot.yaw, 0f);
             Vector3 pos = spot.position + Vector3.up * rig.geometry.groundLift;
             rig.root.transform.SetPositionAndRotation(pos, rot);
@@ -266,6 +328,7 @@ namespace CarWreck.Derby
 
         void ApplyWreckPaint(DerbyCar car)
         {
+            if (car.mount != null) car.mount.SetWrecked(true);
             if (palette == null) return;
             VehiclePainter.Apply(car.rig.root, palette.wreck, palette);
         }
@@ -367,6 +430,8 @@ namespace CarWreck.Derby
             if (!isSetUp) Setup();
             watch.Restart();
             MatchesStarted++;
+            if (attachmentCatalog != null && !HumanLoadoutResult.IsValid)   // the menu blocks START in this state; this is only the defensive path (e.g. ?-started or scripted matches)
+                Debug.LogWarning("[Attachments] The player's loadout has problems; only its sound slots are mounted: " + string.Join("; ", HumanLoadoutResult.issues));
             Paused = false;
             MenuOpen = false;
             Time.timeScale = 1f;
@@ -632,6 +697,7 @@ namespace CarWreck.Derby
             c.controller.ResetState();
             c.controller.Throttle = 0f; c.controller.SteerInput = 0f;
             if (c.enemy != null) { c.enemy.SetTarget(null); c.enemy.Restart(); c.enemy.enabled = false; }
+            if (c.mount != null) c.mount.ResetVisuals();
             ApplyPaint(c, c.participant.paintIndex);
         }
 

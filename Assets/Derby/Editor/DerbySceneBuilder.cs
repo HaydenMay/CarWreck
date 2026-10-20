@@ -172,6 +172,7 @@ namespace CarWreck.Derby.EditorTools
             game.rigSettings = rigSettings;
             game.palette = palette;
             game.aiProfiles = aiProfiles;
+            game.attachmentCatalog = AssetDatabase.LoadAssetAtPath<AttachmentCatalog>(AttachmentAssetBuilder.CatalogPath);   // null until the placeholder data exists: the feature is then simply off
             game.arenaHalf = ArenaHalf;
             game.spawnPoints = spawns;
             game.menuSpawn = menuSpawn;
