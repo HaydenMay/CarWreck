@@ -158,6 +158,19 @@ M4 (after M3):
 - Existing suites with M2 in place: `DerbyValidation` 80/80, `ShowdownValidation` 45/45, `AiV3Validation` 19/20. The one failure (A3, a duel-statistics sanity check) fails identically on `main`, so it is not caused by M2.
 - Not tested: the loadout panel on a phone or in a WebGL build (touch, layout at phone size), mobile frame time and draw calls, screenshots of the panel (not capturable in batch mode), and any look at SOL's real art (placeholders are grey boxes).
 
+**Owner decisions after M2:** M2 approved to continue; M0 approved; the extreme crush-gap fix is **deferred** (firm hits stay within the accepted 160 mm; the 340-360 mm maximum case is recorded, not fixed); **WebGL/mobile verification is required before M2 is approved for release.** Nothing is published until then.
+
+**M0 (baseline telemetry): done**, branch `feature/attachments-v1-m0` (`BaselineTelemetry`, outputs in `Docs/Attachments/baseline/`). 30 AI-only matches per mode, Standard AI, stock cars, no rules touched. Observations worth the owner's attention (not fixed, not part of this task):
+- Points Derby: the pickup won 0 of 50 car-matches (muscle car 34 %, hatchback 26 %, chance 20 %) and deals the least energy per car (1235 kJ vs 1464 hatchback and 1553 muscle car) while taking about as much as the muscle car (1470 vs 1510 kJ).
+- Last Car Standing: the muscle car reaches the Final Showdown in 60 % of its car-matches (hatchback 20 %, pickup 32 %) and wins 63 % of its Showdowns.
+- 59-94 % of wrecks are finishing blows by a car that did less than half of the victim's damage (hatchback 94 % in Last Car Standing), so the 150-point wreck bonus does go mostly to finishers.
+- The seat-0 bot is a slightly different driver from the AI cars; the per-personality tables in the reports show the size of that effect.
+
+**WebGL check of M2 (local build, not published; what could and could not be verified):**
+- A local WebGL build of `976d5d5` succeeded (22.1 MB, 0 errors). It loads in a desktop browser, shows the LOADOUT button, opens the panel, cycles items, mounts them live on the shown car, saves them (the build came back with 3/10 after a reload), starts a 5-car match with the kit mounted and reports normal telemetry. The only console error was a 404 for `version.json`, which only exists in the published layout.
+- At a phone-landscape viewport (812x375) the menu and panel fit and are readable. **Finding:** the LOADOUT button on the main menu is only about 17 px tall there (the other menu buttons are about 30-40 px), too small for a thumb. Fix options (not done): give it its own row by moving the car description, or open the loadout from the car buttons. Needs a menu relayout, so it was left for the owner's decision.
+- **Not verified:** frame time, draw calls and memory on a real phone. The test browser renders in software (fps 34 in the menu, falling to about 8 during a match and running the game clock at about a third of real time), so its numbers say nothing about a phone and were not used for a with/without comparison. Touch input on a device was not tried. The release gate stays open until the owner has run a phone test.
+
 ## 7. Scope exclusions and first assignment
 
 **Owner approval recorded** (architecture §10): staged hybrid approved; capacities 8/10/12 are placeholders; AI loadouts are empty in V1; crush gap accepted; Stage 2 interface accepted for after M2. Higher-difficulty AI with different vehicles and attachments is a stated future direction. It is out of scope for V1, but keep `Participant.loadout` working for AI cars, so that a later preset asset needs no refactor.

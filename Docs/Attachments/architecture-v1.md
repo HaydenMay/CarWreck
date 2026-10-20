@@ -507,6 +507,9 @@ Unanswered:
 | 4 | Rigid-item crush gap (up to about 160 mm) | **Accepted for V1** |
 | 5 | Opus Stage 2 interface (§7.3) | **Accepted**, to be started after M2 (a separate go-ahead from the owner starts the Opus work) |
 
+| 6 | Crush gap behind rigid items (found in M2) | Firm hits leave 98-145 mm (within the accepted 160 mm); a maximum synthetic crush leaves 338-361 mm. **Fix deferred by the owner**; candidates when revisited: a visible strut or bracket behind the item, or items that follow the panel (`panel_follow`) |
+| 7 | Release gate | **WebGL/mobile verification is required before M2 is approved for release**; nothing is published meanwhile |
+
 ### Future: difficulty-scaled AI loadouts (not V1)
 
 V1 already contains everything this needs, so nothing is built for it now:
