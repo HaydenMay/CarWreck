@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 21323eb74b0625d4696eb91dd3625b9c, type: 3}
+  m_Name: roof_cage_rack
+  m_EditorClassIdentifier: Assembly-CSharp::CarWreck.Derby.AttachmentDefinition
+  id: roof_cage_rack
+  displayName: Roof Cage Rack
+  slot: 4
+  rarity: 0
+  capacityCost: 1
+  prefab: {fileID: 665505640889373354, guid: 29de00f3eba888749b1952e32e3b8a48, type: 3}
+  designMassKg: 25
+  incompatibleWith: []

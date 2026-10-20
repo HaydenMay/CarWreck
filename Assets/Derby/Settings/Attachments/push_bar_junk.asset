@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 21323eb74b0625d4696eb91dd3625b9c, type: 3}
+  m_Name: push_bar_junk
+  m_EditorClassIdentifier: Assembly-CSharp::CarWreck.Derby.AttachmentDefinition
+  id: push_bar_junk
+  displayName: Junk Push Bar
+  slot: 0
+  rarity: 0
+  capacityCost: 2
+  prefab: {fileID: 4326732666602243049, guid: 366b3c544856f0b4abeece5f7b71407c, type: 3}
+  designMassKg: 40
+  incompatibleWith: []

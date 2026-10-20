@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f1bcb20ef86b0d47a2b0512ca9a0f0a, type: 3}
+  m_Name: Fit_CompactPickup
+  m_EditorClassIdentifier: Assembly-CSharp::CarWreck.Derby.VehicleAttachmentFit
+  vehicleKey: CompactPickup
+  capacity: 12
+  sockets:
+  - localPosition: {x: 0, y: 0, z: 0}
+    localEulerAngles: {x: 0, y: 0, z: 0}
+    envelopeSize: {x: 0, y: 0, z: 0}
+  - localPosition: {x: 0, y: 0, z: 0}
+    localEulerAngles: {x: 0, y: 0, z: 0}
+    envelopeSize: {x: 0, y: 0, z: 0}
+  - localPosition: {x: 0, y: 0, z: 0}
+    localEulerAngles: {x: 0, y: 0, z: 0}
+    envelopeSize: {x: 0, y: 0, z: 0}
+  - localPosition: {x: 0, y: 0, z: 0}
+    localEulerAngles: {x: 0, y: 0, z: 0}
+    envelopeSize: {x: 0, y: 0, z: 0}
+  - localPosition: {x: 0, y: 0, z: 0}
+    localEulerAngles: {x: 0, y: 0, z: 0}
+    envelopeSize: {x: 0, y: 0, z: 0}
+  overrides: []
