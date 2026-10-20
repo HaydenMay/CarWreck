@@ -46,6 +46,16 @@ namespace CarWreck.Derby
         Image[] swatchRing;
         Text carDescription, modeDescription, difficultyDescription;
 
+        // loadout panel (attachments, reached from the menu; the menu itself is full)
+        GameObject loadoutRoot;
+        RectTransform loadoutContent;
+        bool loadoutBuilt;
+        Button loadoutOpenButton, startButton, clearProblemsButton;
+        Text loadoutOpenLabel, startLabel, loadoutInfo, loadoutNote;
+        readonly Button[] slotPrev = new Button[VehicleAttachmentFit.SlotCount], slotNext = new Button[VehicleAttachmentFit.SlotCount];
+        readonly Text[] slotName = new Text[VehicleAttachmentFit.SlotCount];
+        static readonly Color Bad = new Color(1f, 0.38f, 0.32f, 1f);
+
         // results
         Text resultTitle, resultSub;
         Text[][] resultCells;
@@ -87,6 +97,7 @@ namespace CarWreck.Derby
         public void ShowMenu(bool on)
         {
             if (on) { EnsureMenu(); RefreshMenu(); }
+            if (loadoutRoot != null) loadoutRoot.SetActive(false);   // the menu always opens on its main page
             if (menuRoot != null) menuRoot.SetActive(on);
             if (on) { if (resultsRoot != null) resultsRoot.SetActive(false); if (pauseRoot != null) pauseRoot.SetActive(false); }
             ApplyVisibility();
@@ -105,6 +116,7 @@ namespace CarWreck.Derby
             feed.Clear(); if (feedText != null) feedText.text = "";
             bannerUntil = pointsUntil = 0f;
             if (menuRoot != null) menuRoot.SetActive(false);
+            if (loadoutRoot != null) loadoutRoot.SetActive(false);
             if (resultsRoot != null) resultsRoot.SetActive(false);
             if (pauseRoot != null) pauseRoot.SetActive(false);
             ApplyVisibility();
@@ -187,7 +199,7 @@ namespace CarWreck.Derby
         void Update()
         {
             if (lookPad != null && lookPad.cam == null && game != null) lookPad.cam = game.chaseCamera;
-            if (menuRoot != null && menuRoot.activeSelf) FitMenu();
+            if (menuRoot != null && menuRoot.activeSelf || loadoutRoot != null && loadoutRoot.activeSelf) FitMenu();
             if (input != null && input.TouchSeen && !touchVisible && !userToggled) SetTouch(true, false);
             if (game == null || game.MenuOpen || game.Match == null) return;
             UpdateNamePlates();
@@ -494,9 +506,10 @@ namespace CarWreck.Derby
         /// <summary>The menu is laid out for a 640-unit-tall canvas; on a shorter canvas (a phone held sideways) the whole content block shrinks to fit so START is never off the screen.</summary>
         void FitMenu()
         {
-            if (menuContent == null || root == null) return;
+            if (root == null) return;
             float s = Mathf.Clamp(root.rect.height / MenuHeight, 0.5f, 1f);
-            if (!Mathf.Approximately(menuContent.localScale.x, s)) menuContent.localScale = new Vector3(s, s, 1f);
+            if (menuContent != null && !Mathf.Approximately(menuContent.localScale.x, s)) menuContent.localScale = new Vector3(s, s, 1f);
+            if (loadoutContent != null && !Mathf.Approximately(loadoutContent.localScale.x, s)) loadoutContent.localScale = new Vector3(s, s, 1f);
         }
 
         void EnsureMenu()
@@ -579,7 +592,11 @@ namespace CarWreck.Derby
             difficultyDescription = Label("DifficultyDesc", mr, "", 16, TextAnchor.UpperLeft, FontStyle.Normal);
             Anchor(difficultyDescription.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(38, -514), new Vector2(580, 22));
 
-            var start = MenuButton("Start", mr, "START", 44, TextAnchor.MiddleCenter, new Vector2(36, -540), new Vector2(578, 72), () => game.StartMatch());
+            loadoutOpenButton = MenuButton("LoadoutOpen", mr, "LOADOUT", 16, TextAnchor.MiddleCenter, new Vector2(444, -88), new Vector2(170, 30), OpenLoadout);
+            loadoutOpenLabel = loadoutOpenButton.GetComponentInChildren<Text>();
+            loadoutOpenButton.gameObject.SetActive(game.AttachmentsAvailable);
+            var start = MenuButton("Start", mr, "START", 44, TextAnchor.MiddleCenter, new Vector2(36, -540), new Vector2(578, 72), () => { if (game.HumanLoadoutResult.IsValid) game.StartMatch(); else OpenLoadout(); });
+            startButton = start; startLabel = start.GetComponentInChildren<Text>();
             start.targetGraphic.color = Chosen;
             var colors2 = start.colors; colors2.normalColor = colors2.highlightedColor = Color.white; colors2.pressedColor = new Color(0.8f, 0.8f, 0.8f); colors2.selectedColor = Color.white; start.colors = colors2;
             var keys = Label("Keys", mr, "W / S  gas - brake      A / D  steer      R  right car      ESC  pause", 16, TextAnchor.UpperLeft, FontStyle.Normal);
@@ -602,6 +619,136 @@ namespace CarWreck.Derby
             modeDescription.text = game.rules.mode == GameMode.PointsDerby
                 ? $"{game.participantCount} cars, {DurationText(game.rules.pointsDuration)}. Hard hits score points. Wrecked cars respawn. Highest score wins."
                 : $"{game.participantCount} cars, one life each. The last two are repaired for a {Mathf.RoundToInt(game.rules.showdownDuration)} s duel: wreck your rival or do more damage.";
+            RefreshLoadoutEntry();
+        }
+
+        // ------------------------------------------------------------------ loadout panel (attachments)
+
+        /// <summary>The LOADOUT button shows the build's cost; while the saved build has problems START turns into FIX LOADOUT and opens the panel instead of starting.</summary>
+        void RefreshLoadoutEntry()
+        {
+            if (loadoutOpenButton == null) return;
+            bool available = game.AttachmentsAvailable;
+            loadoutOpenButton.gameObject.SetActive(available);
+            if (!available) { if (startLabel != null) startLabel.text = "START"; return; }
+            var r = game.HumanLoadoutResult;
+            loadoutOpenLabel.text = r.IsValid ? $"LOADOUT  {r.totalCost}/{r.capacity}" : "LOADOUT  !";
+            loadoutOpenLabel.color = r.IsValid ? Color.white : Bad;
+            startLabel.text = r.IsValid ? "START" : "FIX LOADOUT";
+        }
+
+        void OpenLoadout()
+        {
+            EnsureLoadout();
+            if (menuRoot != null) menuRoot.SetActive(false);
+            loadoutRoot.SetActive(true);
+            FitMenu();
+            RefreshLoadout();
+        }
+
+        void CloseLoadout()
+        {
+            if (loadoutRoot != null) loadoutRoot.SetActive(false);
+            if (menuRoot != null) menuRoot.SetActive(true);
+            RefreshMenu();
+        }
+
+        void EnsureLoadout()
+        {
+            if (loadoutBuilt || game == null) return;
+            loadoutBuilt = true;
+            loadoutRoot = new GameObject("Loadout", typeof(RectTransform), typeof(Image));
+            var bg = (RectTransform)loadoutRoot.transform;
+            bg.SetParent(root, false);
+            Anchor(bg, new Vector2(0, 0), new Vector2(0, 1), new Vector2(0, 0.5f), Vector2.zero, new Vector2(650, 0));
+            loadoutRoot.GetComponent<Image>().color = Panel;
+            var contentGo = new GameObject("Content", typeof(RectTransform));
+            loadoutContent = (RectTransform)contentGo.transform;
+            loadoutContent.SetParent(bg, false);
+            Anchor(loadoutContent, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), Vector2.zero, new Vector2(650, MenuHeight));
+            var lr = loadoutContent;
+
+            var title = Label("Title", lr, "LOADOUT", 50, TextAnchor.UpperLeft, FontStyle.Bold);
+            Anchor(title.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(36, -8), new Vector2(580, 56));
+            title.color = Chosen;
+            loadoutInfo = Label("Info", lr, "", 22, TextAnchor.UpperLeft, FontStyle.Bold);
+            Anchor(loadoutInfo.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(38, -64), new Vector2(580, 30));
+
+            string[] slotLabels = { "FRONT", "REAR", "LEFT SIDE", "RIGHT SIDE", "ROOF" };
+            for (int i = 0; i < VehicleAttachmentFit.SlotCount; i++)
+            {
+                int s = i;
+                float y = -104f - i * 82f;
+                var sl = Label("SlotLabel" + i, lr, slotLabels[i], 17, TextAnchor.UpperLeft, FontStyle.Bold);
+                Anchor(sl.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(38, y), new Vector2(300, 22));
+                slotPrev[i] = MenuButton("Prev" + i, lr, "<", 30, TextAnchor.MiddleCenter, new Vector2(36, y - 22f), new Vector2(64, 52), () => CycleSlot(s, -1));
+                var nameBg = MenuButton("Item" + i, lr, "", 21, TextAnchor.MiddleLeft, new Vector2(108, y - 22f), new Vector2(430, 52), () => CycleSlot(s, +1));
+                slotName[i] = nameBg.GetComponentInChildren<Text>();
+                slotNext[i] = MenuButton("Next" + i, lr, ">", 30, TextAnchor.MiddleCenter, new Vector2(546, y - 22f), new Vector2(68, 52), () => CycleSlot(s, +1));
+            }
+            loadoutNote = Label("Note", lr, "", 16, TextAnchor.UpperLeft, FontStyle.Normal);
+            Anchor(loadoutNote.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(38, -524), new Vector2(580, 40));
+            var back = MenuButton("Back", lr, "DONE", 34, TextAnchor.MiddleCenter, new Vector2(36, -566), new Vector2(380, 60), CloseLoadout);
+            back.targetGraphic.color = Chosen;
+            clearProblemsButton = MenuButton("ClearProblems", lr, "CLEAR PROBLEMS", 17, TextAnchor.MiddleCenter, new Vector2(424, -566), new Vector2(190, 60), () => { game.ClearInvalidHumanLoadoutSlots(); RefreshLoadout(); });
+            FitMenu();
+            loadoutRoot.SetActive(false);
+        }
+
+        /// <summary>The items a slot can take: "none" first, then the catalog's items for that slot in catalog order.</summary>
+        static void SlotOptions(AttachmentCatalog catalog, int slot, List<AttachmentDefinition> into)
+        {
+            into.Clear();
+            if (catalog == null || catalog.items == null) return;
+            foreach (var it in catalog.items) if (it != null && (int)it.slot == slot) into.Add(it);
+        }
+
+        readonly List<AttachmentDefinition> optionScratch = new List<AttachmentDefinition>();
+
+        void CycleSlot(int slot, int dir)
+        {
+            SlotOptions(game.attachmentCatalog, slot, optionScratch);
+            if (optionScratch.Count == 0) return;
+            string current = game.HumanLoadout.slotItemIds[slot];
+            int index = -1;                                           // -1 = none (or an id the catalog does not know: cycling leaves it)
+            for (int i = 0; i < optionScratch.Count; i++) if (optionScratch[i].id == current) index = i;
+            int count = optionScratch.Count + 1;                      // none + items
+            int pos = (index + 1 + dir + count) % count;              // 0 = none
+            game.SetHumanLoadoutItem((AttachmentSlot)slot, pos == 0 ? "" : optionScratch[pos - 1].id);
+            RefreshLoadout();
+        }
+
+        void RefreshLoadout()
+        {
+            if (!loadoutBuilt) return;
+            var l = game.HumanLoadout;
+            var r = game.HumanLoadoutResult;
+            string car = game.vehicles[game.playerVehicle].displayName.ToUpperInvariant();
+            bool over = r.HasIssue(LoadoutError.OverBudget);
+            loadoutInfo.text = $"{car}     CAPACITY {r.totalCost} / {r.capacity}{(over ? "   OVER BUDGET" : "")}";
+            loadoutInfo.color = over ? Bad : Color.white;
+            bool anySlotProblem = false;
+            for (int s = 0; s < VehicleAttachmentFit.SlotCount; s++)
+            {
+                SlotOptions(game.attachmentCatalog, s, optionScratch);
+                string id = l.slotItemIds[s];
+                string problem = null;
+                foreach (var issue in r.issues) if (issue.slot == s) { problem = issue.error == LoadoutError.UnknownItem ? $"unknown item '{id}'" : issue.error == LoadoutError.WrongSlot ? $"'{id}' does not fit here" : issue.error == LoadoutError.MissingAsset ? $"'{id}' is missing" : "conflicts with another item"; anySlotProblem = true; }
+                var def = string.IsNullOrEmpty(id) ? null : game.attachmentCatalog.Find(id);
+                string text;
+                if (problem != null) text = $"<color=#FF6152>! {problem}</color>";
+                else if (optionScratch.Count == 0) text = "<color=#9AA0A6>none available yet</color>";
+                else if (def == null) text = "<color=#9AA0A6>NONE</color>";
+                else text = $"{def.displayName}   <color=#FFB35C>{def.capacityCost}</color>";
+                slotName[s].text = text;
+                bool usable = optionScratch.Count > 0;
+                slotPrev[s].interactable = slotNext[s].interactable = usable;
+                slotName[s].GetComponentInParent<Button>().interactable = usable;
+            }
+            clearProblemsButton.gameObject.SetActive(anySlotProblem);
+            loadoutNote.text = r.IsValid ? "Visual only for now: attachments do not change handling or damage."
+                : over ? "Over budget: remove something to start." : "Fix or clear the red slots to start.";
+            loadoutNote.color = r.IsValid ? new Color(1f, 1f, 1f, 0.6f) : Bad;
         }
 
         // ------------------------------------------------------------------ pause and results

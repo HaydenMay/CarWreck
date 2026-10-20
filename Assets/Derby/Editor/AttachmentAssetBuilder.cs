@@ -25,7 +25,7 @@ namespace CarWreck.Derby.EditorTools
         {
             new ItemSpec("push_bar_junk", "Junk Push Bar", AttachmentSlot.Front, 2, 40f, new Vector3(1.6f, 0.35f, 0.25f)),
             new ItemSpec("spiked_ram_plate", "Spiked Ram Plate", AttachmentSlot.Front, 4, 70f, new Vector3(1.2f, 0.6f, 0.4f)),
-            new ItemSpec("roof_cage_rack", "Roof Cage Rack", AttachmentSlot.Roof, 1, 25f, new Vector3(1.2f, 0.25f, 1.4f)),
+            new ItemSpec("roof_cage_rack", "Roof Cage Rack", AttachmentSlot.Roof, 1, 25f, new Vector3(1.2f, 1.4f, 0.25f)),
             new ItemSpec("tow_hitch_bumper", "Tow Hitch Bumper", AttachmentSlot.Rear, 2, 35f, new Vector3(1.5f, 0.3f, 0.3f)),
         };
 
@@ -39,6 +39,9 @@ namespace CarWreck.Derby.EditorTools
             var mat = LoadOrCreate<Material>(ArtFolder + "/Attach_GreyBox.mat", () => new Material(Shader.Find("Universal Render Pipeline/Lit")));
             mat.color = new Color(0.45f, 0.45f, 0.47f);
             EditorUtility.SetDirty(mat);
+            var wreck = LoadOrCreate<Material>(ArtFolder + "/Attach_Wreck.mat", () => new Material(Shader.Find("Universal Render Pipeline/Lit")));
+            wreck.color = new Color(0.1f, 0.095f, 0.09f);
+            EditorUtility.SetDirty(wreck);
 
             var defs = new AttachmentDefinition[Items.Length];
             for (int i = 0; i < Items.Length; i++)
@@ -59,13 +62,19 @@ namespace CarWreck.Derby.EditorTools
                 var fit = LoadOrCreate<VehicleAttachmentFit>($"{DataFolder}/Fit_{Fits[i].key}.asset", () => ScriptableObject.CreateInstance<VehicleAttachmentFit>());
                 fit.vehicleKey = Fits[i].key; fit.capacity = Fits[i].capacity;
                 if (fit.sockets == null || fit.sockets.Length != VehicleAttachmentFit.SlotCount) fit.sockets = new AttachmentSocket[VehicleAttachmentFit.SlotCount];
-                if (fit.overrides == null) fit.overrides = new BracketOverride[0];
+                fit.overrides = new BracketOverride[0];
+                if (Fits[i].key == "CompactPickup")
+                {
+                    // The pickup's cab roof is only 1.25 m long, so the roof rack gets a shorter authored variant (same item, same cost): no stretching or squashing.
+                    var shortRack = BuildPrefab(new ItemSpec("roof_cage_rack__bracket_CompactPickup", "", AttachmentSlot.Roof, 0, 0f, new Vector3(1.2f, 1.1f, 0.25f)), mat);
+                    fit.overrides = new[] { new BracketOverride { itemId = "roof_cage_rack", bracketPrefab = shortRack, offset = Vector3.zero, uniformScale = 1f } };
+                }
                 EditorUtility.SetDirty(fit);
                 fits[i] = fit;
             }
 
             var catalog = LoadOrCreate<AttachmentCatalog>(CatalogPath, () => ScriptableObject.CreateInstance<AttachmentCatalog>());
-            catalog.items = defs; catalog.fits = fits;
+            catalog.items = defs; catalog.fits = fits; catalog.wreckMaterial = wreck;
             EditorUtility.SetDirty(catalog);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -82,7 +91,7 @@ namespace CarWreck.Derby.EditorTools
             Object.DestroyImmediate(cube.GetComponent<Collider>());   // visual only: Stage 1 items never carry colliders
             cube.transform.SetParent(root.transform, false);
             cube.transform.localScale = spec.size;
-            cube.transform.localPosition = new Vector3(0f, 0f, spec.size.z * 0.5f);   // mount plane at the pivot, item extends along +Z (outward)
+            cube.transform.localPosition = new Vector3(0f, 0f, spec.size.z * 0.5f);   // mount plane at the pivot, item extends along +Z (outward); size = (width, height, depth outward)
             cube.GetComponent<MeshRenderer>().sharedMaterial = mat;
             string path = $"{ArtFolder}/Attach_{spec.id}.prefab";
             var saved = PrefabUtility.SaveAsPrefabAsset(root, path);

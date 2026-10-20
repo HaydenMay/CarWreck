@@ -15,19 +15,23 @@ MonoBehaviour:
   vehicleKey: CompactPickup
   capacity: 12
   sockets:
-  - localPosition: {x: 0, y: 0, z: 0}
+  - localPosition: {x: 0, y: 0.798, z: 2.35}
     localEulerAngles: {x: 0, y: 0, z: 0}
-    envelopeSize: {x: 0, y: 0, z: 0}
-  - localPosition: {x: 0, y: 0, z: 0}
-    localEulerAngles: {x: 0, y: 0, z: 0}
-    envelopeSize: {x: 0, y: 0, z: 0}
-  - localPosition: {x: 0, y: 0, z: 0}
-    localEulerAngles: {x: 0, y: 0, z: 0}
-    envelopeSize: {x: 0, y: 0, z: 0}
-  - localPosition: {x: 0, y: 0, z: 0}
-    localEulerAngles: {x: 0, y: 0, z: 0}
-    envelopeSize: {x: 0, y: 0, z: 0}
-  - localPosition: {x: 0, y: 0, z: 0}
-    localEulerAngles: {x: 0, y: 0, z: 0}
-    envelopeSize: {x: 0, y: 0, z: 0}
-  overrides: []
+    envelopeSize: {x: 1.8905, y: 0.7, z: 0.6}
+  - localPosition: {x: 0, y: 0.798, z: -2.35}
+    localEulerAngles: {x: 0, y: 180, z: 0}
+    envelopeSize: {x: 1.8905, y: 0.7, z: 0.6}
+  - localPosition: {x: -0.97, y: 0.923, z: 0}
+    localEulerAngles: {x: 0, y: -90, z: 0}
+    envelopeSize: {x: 2.35, y: 0.7, z: 0.3}
+  - localPosition: {x: 0.97, y: 0.923, z: 0}
+    localEulerAngles: {x: 0, y: 90, z: 0}
+    envelopeSize: {x: 2.35, y: 0.7, z: 0.3}
+  - localPosition: {x: 0, y: 1.82, z: 0.355}
+    localEulerAngles: {x: -90, y: 180, z: 0}
+    envelopeSize: {x: 1.719, y: 1.125, z: 0.4}
+  overrides:
+  - itemId: roof_cage_rack
+    bracketPrefab: {fileID: 6411161093462698867, guid: 30296ea198f47384e8272e0cc696ae77, type: 3}
+    offset: {x: 0, y: 0, z: 0}
+    uniformScale: 1

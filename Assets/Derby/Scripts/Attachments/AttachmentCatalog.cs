@@ -9,6 +9,7 @@ namespace CarWreck.Derby
     {
         public AttachmentDefinition[] items = new AttachmentDefinition[0];
         public VehicleAttachmentFit[] fits = new VehicleAttachmentFit[0];
+        [Tooltip("Burnt-out look applied to every item on a wrecked car.")] public Material wreckMaterial;
 
         public AttachmentDefinition Find(string id)
         {

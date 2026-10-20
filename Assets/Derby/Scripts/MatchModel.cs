@@ -46,6 +46,8 @@ namespace CarWreck.Derby
         /// <summary>For future team modes (-1 = no team). Not read by any V1 rule.</summary>
         public int team = -1;
         public int vehicleIndex, paintIndex;
+        /// <summary>Attachment loadout (visual only in Stage 1; no rule reads it). Null / empty = no attachments. AI cars use the same field; V1 leaves it empty.</summary>
+        public Loadout loadout;
         public DriverProfile profile;
         public ParticipantStatus status = ParticipantStatus.Waiting;
         public float durability, maxDurability;

@@ -145,6 +145,17 @@ M4 (after M3):
 - **For the M0 review**, Opus confirms which metrics are trustworthy, and states whether the `ManualStep` batch runner is representative of live play.
 - **Future (not V1)**: an additive-mass API, an absorption or adjust field, `panel_follow`.
 
+## 6b. Milestone status
+
+**M1 (data layer): done**, branch `feature/attachments-v1-m1`, `AttachmentValidation` 37/37.
+
+**M2 (visual mount, lifecycle, loadout panel): implemented**, branch `feature/attachments-v1-m2`. Checks, all run in the editor and none on a device:
+- `AttachmentParityValidation` (real PhysX, 12 scripted crashes x 4 runs): the kit changes nothing beyond the run-to-run spread of identical runs, and every static check passes (14 boxes, mass, part and vertex count, no colliders or rigidbodies under attachments).
+- Lifecycle checks pass: 50 resets, wreck and repair, 5 rematches, paint and vehicle switches, no leaked instances or materials.
+- `AttachmentFitTool.RunMatrix`: 12 of 12 item/body pairs fit (report in `m2-fit-report.md`, screenshots in `Previews/Attachments/`).
+- **Finding for the owner:** the accepted rigid-mount gap of about 160 mm holds for a firm hit (98-145 mm measured). A maximum synthetic crush (strength 1, depth gain 3) leaves 338-361 mm behind a rigid front or roof item. See the open question in the M2 report.
+- Not tested: the loadout panel on a device, mobile WebGL frame time and draw calls, and any visual check with SOL's real art (placeholders are grey boxes).
+
 ## 7. Scope exclusions and first assignment
 
 **Owner approval recorded** (architecture §10): staged hybrid approved; capacities 8/10/12 are placeholders; AI loadouts are empty in V1; crush gap accepted; Stage 2 interface accepted for after M2. Higher-difficulty AI with different vehicles and attachments is a stated future direction. It is out of scope for V1, but keep `Participant.loadout` working for AI cars, so that a later preset asset needs no refactor.

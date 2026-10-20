@@ -21,3 +21,4 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 77f8faf42f28cde42a5dd344f5054fcf, type: 2}
   - {fileID: 11400000, guid: 1daab024267c2224fa1dff524d1f6a4c, type: 2}
   - {fileID: 11400000, guid: c13d386ba934edf4192f384881eb6272, type: 2}
+  wreckMaterial: {fileID: 2100000, guid: b21f3948e63ef9d43b5aed78ba12f554, type: 2}
