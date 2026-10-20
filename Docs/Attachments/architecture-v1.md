@@ -510,6 +510,15 @@ Unanswered:
 | 6 | Crush gap behind rigid items (found in M2) | Firm hits leave 98-145 mm (within the accepted 160 mm); a maximum synthetic crush leaves 338-361 mm. **Fix deferred by the owner**; candidates when revisited: a visible strut or bracket behind the item, or items that follow the panel (`panel_follow`) |
 | 7 | Release gate | **WebGL/mobile verification is required before M2 is approved for release**; nothing is published meanwhile |
 
+### Future: Home screen with Play and Garage (owner direction, not V1)
+
+Long term, a production build should open on a home screen where the player chooses between **Play** (match setup: mode, opponents, START) and **Garage** (vehicle, paint, loadout), the way Rocket League and similar games separate them. How this relates to what exists:
+- The M2 loadout panel is a stopgap reached from the match menu, and its small LOADOUT button is the weak point found in the phone-landscape check. The Garage replaces both: the main menu would lose the car, paint and loadout rows and gain a Garage entry, which also frees the space the current menu lacks.
+- The data and mounting layers do not depend on any of this: `Loadout`, `LoadoutValidator`, `LoadoutStore` and `AttachmentMount` take choices from any screen. A Garage is a new view over the same calls (`SetHumanLoadoutItem`, `HumanLoadoutResult`).
+- Garage needs that V1 does not cover: a live 3D preview with orbit, an item list or grid per slot showing cost, rarity and a short description, a capacity bar, a clear reason when an item cannot be equipped, and large touch targets (at least about 44 px on a phone). Saved builds per vehicle already exist; named presets would be new.
+- Natural order when it is built: home screen shell and navigation first, then move car and paint into the Garage, then the loadout, then polish (previews, rarity styling). The shell also gives later features (stats, settings, unlocks) a place to live without crowding match setup.
+- Not started; it is a menu-wide change, so it needs its own plan and the owner's go-ahead.
+
 ### Future: difficulty-scaled AI loadouts (not V1)
 
 V1 already contains everything this needs, so nothing is built for it now:
