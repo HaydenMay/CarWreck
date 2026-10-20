@@ -50,6 +50,10 @@ namespace CarWreck.Derby
         [Tooltip("Cars in the match, the player's included. Default 5. A core setting, not a limit: the page accepts ?cars=N for scaling checks.")]
         public int participantCount = 5;
         public int playerVehicle = 0, playerPaint = 0;
+        [Tooltip("AI quality for the next match (Casual / Standard / Competitive). Kept across rematches and visits to the menu.")]
+        public AiDifficulty difficulty = AiDifficulty.Standard;
+        [Tooltip("AI V3 (combat intelligence, difficulty, score awareness). Off = the previous AI, for before/after comparisons.")]
+        public bool aiV3 = true;
         [Tooltip("Speed the AI tries to hold (km/h), as in the arena's enemy.")]
         public float aiSpeedKmh = 70f;
         [Tooltip("Flipped AI cars are put back on their wheels after this long (s). The player does it with the RESET / R button.")]
@@ -134,7 +138,7 @@ namespace CarWreck.Derby
             if (Application.isPlaying) OpenMenu();
         }
 
-        /// <summary>Page parameters (development / smoke tests, none needed to play): ?cars=N, ?mode=last|points, ?time=seconds (Points Derby length), ?showdown=seconds, ?hp=multiplier (durability), ?scene=drive (the diagnostic driving arena).</summary>
+        /// <summary>Page parameters (development / smoke tests, none needed to play): ?cars=N, ?mode=last|points, ?ai=casual|standard|competitive, ?time=seconds (Points Derby length), ?showdown=seconds, ?hp=multiplier (durability), ?scene=drive (the diagnostic driving arena).</summary>
         bool HandleUrl()
         {
             string url = Application.absoluteURL;
@@ -148,6 +152,7 @@ namespace CarWreck.Derby
                 if (k == "scene" && v == "drive") { SceneManager.LoadScene("DriveArena"); isSetUp = false; return true; }
                 if (k == "cars" && int.TryParse(v, out int n)) participantCount = Mathf.Clamp(n, 2, 16);
                 if (k == "mode") rules.mode = v.StartsWith("last") ? GameMode.LastCarStanding : GameMode.PointsDerby;
+                if (k == "ai") difficulty = v.StartsWith("cas") ? AiDifficulty.Casual : v.StartsWith("comp") ? AiDifficulty.Competitive : AiDifficulty.Standard;
                 var ci = CultureInfo.InvariantCulture;
                 if (k == "time" && float.TryParse(v, NumberStyles.Float, ci, out float secs)) rules.pointsDuration = Mathf.Clamp(secs, 5f, 900f);
                 if (k == "showdown" && float.TryParse(v, NumberStyles.Float, ci, out float sd)) rules.showdownDuration = Mathf.Clamp(sd, 3f, 300f);
@@ -287,6 +292,20 @@ namespace CarWreck.Derby
 
         public void SelectMode(GameMode mode) => rules.mode = mode;
 
+        public void SelectDifficulty(AiDifficulty d) { difficulty = d; ConfigureDrivers(); }
+
+        /// <summary>Hands the current difficulty to every AI driver (they keep their personalities; a profile is re-applied so the derived numbers follow).</summary>
+        void ConfigureDrivers()
+        {
+            foreach (var p in aiParticipants)
+            {
+                var e = p.car != null ? p.car.enemy : null;
+                if (e == null) continue;
+                WireDriver(e);
+                e.SetProfile(e.profile);
+            }
+        }
+
         // ------------------------------------------------------------------ roster
 
         /// <summary>The AI participants for the current setting: profiles in order, vehicles rotating from the player's, colours rotating from the player's.</summary>
@@ -359,6 +378,7 @@ namespace CarWreck.Derby
             Participants.Add(Human);
             Participants.AddRange(aiParticipants);
             AssignAiPaints();
+            ConfigureDrivers();
             candidates = SpawnPlanner.Candidates(spawnPoints, arenaHalf, Participants.Count, StaticBlocked);
             var layout = SpawnPlanner.InitialLayout(candidates, Participants.Count, MatchesStarted * 7919);
             // shuffle who gets which spot (seeded, so a match is reproducible but the player's neighbours change from match to match)
@@ -379,6 +399,7 @@ namespace CarWreck.Derby
             Match.Scored += OnScored;
             Match.RespawnDue += OnRespawnDue;
             Match.ShowdownStarted += OnShowdownStarted;
+            Match.ShowdownPrepare += OnShowdownPrepare;
             Match.SetPreparing();
             Match.Begin();
             spectated = null;
@@ -393,7 +414,7 @@ namespace CarWreck.Derby
         /// <summary>Back to the vehicle selection: the match is dropped, the AI cars go, the player's car is repaired and shown.</summary>
         public void GoToMenu()
         {
-            if (Match != null) { Match.StateChanged -= OnStateChanged; Match.Wrecked -= OnWrecked; Match.Scored -= OnScored; Match.RespawnDue -= OnRespawnDue; Match.ShowdownStarted -= OnShowdownStarted; Match.Abort(); }
+            if (Match != null) { Match.StateChanged -= OnStateChanged; Match.Wrecked -= OnWrecked; Match.Scored -= OnScored; Match.RespawnDue -= OnRespawnDue; Match.ShowdownStarted -= OnShowdownStarted; Match.ShowdownPrepare -= OnShowdownPrepare; Match.Abort(); }
             Match = null;
             Paused = false;
             DespawnAi();
@@ -439,6 +460,27 @@ namespace CarWreck.Derby
                     Targeting.Update(Match, Match.Clock);
                     break;
                 }
+                case MatchState.ShowdownTransition:
+                case MatchState.ShowdownCountdown:
+                    // nobody drives and no AI decision can start a movement until GO
+                    foreach (var p in Participants) Idle(p.car);
+                    break;
+                case MatchState.FinalShowdown:
+                {
+                    // the duel: only the two finalists are driven again (everybody else is out of the match), each AI finalist starts with a clean driver
+                    Targeting.Reset();
+                    int k = 0;
+                    foreach (var f in Match.Finalists)
+                    {
+                        var c = f != null ? f.car : null;
+                        if (c == null || c.enemy == null) continue;
+                        c.enemy.enabled = true;
+                        c.enemy.startDelay = 0.3f + 0.12f * k++;
+                        c.enemy.Restart();
+                    }
+                    Targeting.Update(Match, Match.Clock);
+                    break;
+                }
                 case MatchState.Results:
                     foreach (var p in Participants) Idle(p.car);
                     if (ui != null) ui.ShowResults();
@@ -454,7 +496,70 @@ namespace CarWreck.Derby
             c.controller.Throttle = 0f; c.controller.SteerInput = 0f;
         }
 
-        void OnShowdownStarted() { if (ui != null) ui.Banner("FINAL SHOWDOWN", 2.5f); AddFeed("FINAL SHOWDOWN - last two cars"); }
+        void OnShowdownStarted()
+        {
+            if (ui != null) ui.Banner("GO!", 1f);
+            AddFeed("FINAL SHOWDOWN - GO");
+        }
+
+        /// <summary>
+        /// The final two are known. Both cars get the same treatment the respawn path gives a wrecked car - full deformation reset, damage-aware colliders refitted, motion, handling and
+        /// AI state cleared (<see cref="ResetCar"/>) - and are put on opposite sides of the arena on clear ground, facing each other. The match model has already ignored damage events
+        /// since the transition began; nobody can drive until the countdown is over (see <see cref="OnStateChanged"/>).
+        /// </summary>
+        void OnShowdownPrepare(Participant a, Participant b)
+        {
+            foreach (var p in Participants) Idle(p.car);
+            Rigidbody ba = a.car.Body, bb = b.car.Body;
+            scratchPositions.Clear();
+            foreach (var o in Participants) if (o != a && o != b && o.car != null) scratchPositions.Add(o.car.Body.position);
+            bool found = SpawnPlanner.PickShowdown(arenaHalf, s => BlockedIgnoring(s, ba, bb), s => Clearance(s, scratchPositions), s => RunwayBlocked(s, ba, bb), MatchesStarted, out var sa, out var sb);
+            ResetCar(a.car, sa);
+            ResetCar(b.car, sb);
+            ShowdownPlacedClear = found;
+            spectated = null;
+            if (chaseCamera != null) { UpdateCamera(); chaseCamera.Snap(); }
+            AddFeed($"FINAL SHOWDOWN  {a.name} vs {b.name}");
+            if (ui != null) ui.OnShowdownPrepared(a, b);
+        }
+
+        /// <summary>False when no pair of clear spots was found for the duel (the best of the rest was used): reported by the tests.</summary>
+        public bool ShowdownPlacedClear { get; private set; } = true;
+
+        bool BlockedIgnoring(SpawnPlanner.Spot s, Rigidbody ignoreA, Rigidbody ignoreB)
+        {
+            int n = Physics.OverlapBoxNonAlloc(s.position + Vector3.up * 1.3f, new Vector3(2.0f, 0.9f, 3.6f), overlapBuffer, Quaternion.Euler(0f, s.yaw, 0f), ~0, QueryTriggerInteraction.Ignore);
+            for (int i = 0; i < n; i++)
+            {
+                var rb = overlapBuffer[i].attachedRigidbody;
+                if (rb != null && (rb == ignoreA || rb == ignoreB)) continue;
+                return true;
+            }
+            return false;
+        }
+
+        static float Clearance(SpawnPlanner.Spot s, List<Vector3> cars)
+        {
+            float d = 40f;
+            for (int i = 0; i < cars.Count; i++) { Vector3 v = cars[i] - s.position; v.y = 0f; d = Mathf.Min(d, v.magnitude); }
+            return d;
+        }
+
+        static readonly RaycastHit[] castBuffer = new RaycastHit[16];
+
+        /// <summary>Something solid (a wall, a block, a hulk) within the first 22 m ahead of the spot: not enough room to accelerate.</summary>
+        bool RunwayBlocked(SpawnPlanner.Spot s, Rigidbody ignoreA, Rigidbody ignoreB)
+        {
+            Vector3 dir = Quaternion.Euler(0f, s.yaw, 0f) * Vector3.forward;
+            int n = Physics.SphereCastNonAlloc(s.position + Vector3.up * 1.3f, 1.1f, dir, castBuffer, 22f, ~0, QueryTriggerInteraction.Ignore);
+            for (int i = 0; i < n; i++)
+            {
+                var rb = castBuffer[i].collider.attachedRigidbody;
+                if (rb != null && (rb == ignoreA || rb == ignoreB)) continue;
+                return true;
+            }
+            return false;
+        }
 
         void OnWrecked(Participant victim, Participant credit)
         {
@@ -538,7 +643,11 @@ namespace CarWreck.Derby
             e.nearbyCars = NearbyCars;
             e.breakawayAllowed = BreakawayAllowed;
             e.destinationTaken = DestinationTaken;
+            e.v3Enabled = aiV3; e.difficulty = difficulty;
+            e.targetHealth = BodyHealth;
         }
+
+        float BodyHealth(Rigidbody rb) => byBody.TryGetValue(rb, out var c) ? c.participant.DurabilityFraction : 1f;
 
         int NearbyCars(Rigidbody self, Vector3[] buffer, float radius)
         {
@@ -683,11 +792,11 @@ namespace CarWreck.Derby
 
         /// <summary>
         /// Edit-mode validation only (no Update / FixedUpdate runs there): one fixed step of everything - match clock, inputs, AI drivers, car controllers,
-        /// physics, damage receivers and collider refits - in the order the player loop runs them.
+        /// physics, damage receivers and collider refits - in the order the player loop runs them. <paramref name="readInput"/> also feeds the player's keyboard / touch input to the car, exactly as Update does.
         /// </summary>
-        public void ManualStep(float dt)
+        public void ManualStep(float dt, bool readInput = false)
         {
-            if (Match != null) Frame(dt, false);
+            if (Match != null) Frame(dt, readInput);
             foreach (var p in Participants)
                 if (p.car != null && p.car.enemy != null && p.car.enemy.enabled) p.car.enemy.Drive(dt);
             AfterPhysicsStep(dt);
@@ -733,6 +842,7 @@ namespace CarWreck.Derby
               .Append(",\"paused\":").Append(Paused ? "true" : "false")
               .Append(",\"state\":\"").Append(Match != null ? Match.State.ToString() : "Menu").Append('"')
               .Append(",\"mode\":\"").Append(rules.mode).Append('"')
+              .Append(",\"difficulty\":\"").Append(difficulty).Append("\",\"showdownDamage\":[").Append(Match != null && Match.ShowdownTriggered && Match.Finalists[0] != null ? (Match.Finalists[0].showdownDamage * 100f).ToString("0.0", ci) + "," + (Match.Finalists[1].showdownDamage * 100f).ToString("0.0", ci) : "").Append(']')
               .Append(",\"cars\":").Append(Participants.Count)
               .Append(",\"clock\":").Append(Match != null ? Match.Clock.ToString("0.0", ci) : "0")
               .Append(",\"remaining\":").Append(Match != null ? Match.TimeRemaining.ToString("0.0", ci) : "0")

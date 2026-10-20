@@ -48,6 +48,38 @@ namespace CarWreck.Derby
 
         public void Reset() { records.Clear(); attackers.Clear(); Switches = 0; Evaluations = 0; }
 
+        /// <summary>
+        /// Score awareness: 0..1, how much the state of the match asks this driver to take risks right now. Points Derby: how far it is behind the current best score, against
+        /// what the remaining time can plausibly earn (about 9 points a second), weighted towards the last 100 s. A driver that is leading, or has all the time in the world, gets 0 and
+        /// simply keeps its normal behaviour (a leader is never made passive). It reads scores that every player can see, it does not look at who the leader is, and it only
+        /// changes how patient the driver is with its own attacks: it never picks the target. The driver's difficulty scales it (Casual 0).
+        /// </summary>
+        public static float Urgency(DerbyMatch match, Participant self)
+        {
+            if (match.State == MatchState.FinalShowdown)
+            {
+                // the duel: behind or level in showdown damage as the clock runs down asks for risk; ahead (or early) changes nothing, so a leading driver keeps fighting normally
+                if (!self.finalist || match.Finalists[0] == null) return 0f;
+                var other = match.Finalists[0] == self ? match.Finalists[1] : match.Finalists[0];
+                float deficit = other.showdownDamage - self.showdownDamage;
+                if (deficit < -0.001f) return 0f;                       // ahead on showdown damage: no extra urgency (and no hiding either - the driver keeps fighting as normal)
+                float lateDuel = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(40f, 10f, match.ShowdownRemaining));
+                return Mathf.Clamp01(0.3f + Mathf.Max(0f, deficit) / 0.3f) * lateDuel;
+            }
+            if (match.rules.mode == GameMode.PointsDerby)
+            {
+                if (match.State != MatchState.Active) return 0f;
+                float rem = match.TimeRemaining;
+                int lead = 0;
+                for (int i = 0; i < match.participants.Count; i++) lead = Mathf.Max(lead, match.participants[i].score);
+                float behind = Mathf.Max(0, lead - self.score);
+                float late = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(100f, 20f, rem));
+                float need = Mathf.Clamp01(behind / (9f * Mathf.Max(rem, 5f) + 100f));
+                return need * late;
+            }
+            return 0f;
+        }
+
         /// <summary>A target is gone (wrecked): everyone who was after it chooses again at once.</summary>
         public void TargetLost(int id)
         {
@@ -81,6 +113,7 @@ namespace CarWreck.Derby
                 if (!invalid && now < rec.nextEval) continue;
                 rec.nextEval = now + evalInterval * (0.8f + 0.4f * Hash01(self.id, 17, (int)(now * 3f)));
                 Evaluations++;
+                car.enemy.SetUrgency(Urgency(match, self));
                 Choose(match, self, rec, now, invalid);
             }
         }
@@ -100,14 +133,14 @@ namespace CarWreck.Derby
 
         void Choose(DerbyMatch match, Participant self, Record rec, float now, bool mustChange)
         {
-            var p = Tuning.For(self.profile);
+            var p = Tuning.For(self.profile, self.car.enemy);
             Participant best = null; float bestScore = float.NegativeInfinity, currentScore = float.NegativeInfinity;
             for (int i = 0; i < match.participants.Count; i++)
             {
                 var c = match.participants[i];
                 if (c == self || !c.IsActive || c.car == null || !rule.IsOpponent(self, c)) continue;
                 if (rec.blockedUntil.TryGetValue(c.id, out float until) && now < until) continue;
-                float s = Score(self, c, p, now, attackers);
+                float s = Score(self, c, p, now, attackers, match.participants);
                 bool isCurrent = c.id == rec.targetId;
                 if (isCurrent) s += p.commitBonus;
                 if (s > bestScore) { bestScore = s; best = c; }
@@ -137,14 +170,20 @@ namespace CarWreck.Derby
             }
         }
 
-        /// <summary>The weights a driver's profile turns into (read-only numbers, tuned here).</summary>
+        /// <summary>
+        /// The weights a driver's profile turns into (read-only numbers, tuned here). With AI V3 the driver's combat intelligence (profile plus difficulty) adds three
+        /// attack-opportunity terms - expected impact speed, reachability and a wreck chance - and takes weight off the raw "lowest health" term, so a badly hurt car that is
+        /// far away or boxed in does not automatically beat a healthy one that is close and exposed. Casual drivers also get a noisier choice.
+        /// </summary>
         public struct Tuning
         {
             public float near, weak, ahead, headOn, crowd, revenge, noise, commitBonus, holdTime;
-            public static Tuning For(DriverProfile profile)
+            public bool v3;
+            public float impact, wreck, reach, side, edge;
+            public static Tuning For(DriverProfile profile, EnemyDriver enemy = null)
             {
                 float a = profile != null ? Mathf.Clamp01(profile.aggression) : 0.5f, s = profile != null ? Mathf.Clamp01(profile.skill) : 0.5f;
-                return new Tuning
+                var t = new Tuning
                 {
                     near = Mathf.Lerp(0.6f, 1.5f, a),                       // brawlers: whoever is close
                     weak = 0.1f + 0.8f * s + 0.25f * (1f - a),              // hunters (then cautious drivers): the wounded
@@ -156,11 +195,26 @@ namespace CarWreck.Derby
                     commitBonus = Mathf.Lerp(0.30f, 0.12f, a) + 0.15f * s, // hunters and cautious drivers stick to a target, brawlers drop it for a better one
                     holdTime = Mathf.Lerp(5f, 2.5f, a),
                 };
+                if (enemy != null && enemy.v3Enabled && (enemy.v3Mask & EnemyDriver.FTarget) != 0)
+                {
+                    float i = enemy.intelligence, ins = DifficultySettings.For(enemy.difficulty).insight;
+                    t.v3 = true;
+                    t.impact = ins * (0.15f + 0.85f * i) * 0.9f;
+                    t.wreck = ins * i * 1.1f;
+                    t.reach = ins * (0.2f + 0.8f * i) * 0.8f;
+                    t.side = ins * i * 0.15f;
+                    t.edge = (enemy.v3Mask & EnemyDriver.FAngle) != 0 ? ins * (0.2f + 0.8f * i) * 0.9f : 0f;
+                    t.weak *= 1f - 0.5f * ins * i;                          // the raw health term gives way to the gated wreck term
+                    t.noise = 0.15f + 0.3f * (1f - i) * enemy.mistakeRate;   // poor judgement: a noisier choice
+                    t.commitBonus += 0.25f * ins;                              // the new terms follow positions and speeds, which change fast: a driver sticks to its target a little harder
+                    t.holdTime += 1.5f * ins;
+                }
+                return t;
             }
         }
 
         /// <summary>The score of <paramref name="c"/> as a target for <paramref name="self"/> (higher = better). Public for the validation.</summary>
-        public static float Score(Participant self, Participant c, Tuning t, float now, Dictionary<int, int> attackerCounts = null)
+        public static float Score(Participant self, Participant c, Tuning t, float now, Dictionary<int, int> attackerCounts = null, IList<Participant> all = null)
         {
             Rigidbody sb = self.car.Body, cb = c.car.Body;
             Vector3 to = cb.position - sb.position; to.y = 0f;
@@ -178,7 +232,53 @@ namespace CarWreck.Derby
             float age = now - self.lastAttackedAt;
             float revenge = self.lastAttackerId == c.id && age >= 0f && age < 6f ? 1f - age / 6f : 0f;
             float noise = Hash01(self.id, c.id, (int)(now / 4f));
-            return t.near * prox + t.weak * exposed + t.ahead * (facing * 0.6f + closing * 0.4f) - t.headOn * headOn - t.crowd * Mathf.Min(2, Mathf.Max(0, others)) + t.revenge * revenge + t.noise * noise;
+            float score = t.near * prox + t.weak * exposed + t.ahead * (facing * 0.6f + closing * 0.4f) - t.headOn * headOn - t.crowd * Mathf.Min(2, Mathf.Max(0, others)) + t.revenge * revenge + t.noise * noise;
+            if (t.v3 && self.car.enemy != null) score += OpportunityTerms(self, c, t, sb, cb, dir, d, fc, facing, prox, all);
+            return score;
+        }
+
+        /// <summary>
+        /// AI V3's attack-opportunity terms for one candidate (all normalised estimates, nothing is simulated):
+        ///   impact  the closing speed a charge from here could reach: own speed along the line plus what the run-up adds (capped at the driver's charge speed) minus the target's speed away
+        ///   reach   a clear line to the target (obstacles), and how many other cars stand in the way
+        ///   wreck   a badly hurt target is only a good choice in proportion to how reachable and near it is
+        ///   side    a target whose flank is turned to us is an easier, cleaner hit than one driving straight at or away from us
+        /// </summary>
+        static float OpportunityTerms(Participant self, Participant c, Tuning t, Rigidbody sb, Rigidbody cb, Vector3 dir, float d, Vector3 fc, float facing, float prox, IList<Participant> all)
+        {
+            var en = self.car.enemy;
+            float vSelf = Mathf.Max(0f, Vector3.Dot(sb.linearVelocity, dir)), vTarget = Vector3.Dot(cb.linearVelocity, dir);
+            float vImp = Mathf.Min(en.ChargeSpeedCap(), Mathf.Sqrt(vSelf * vSelf + 2f * 13f * Mathf.Max(0f, d - 4.8f))) - vTarget;
+            float potential = Mathf.Clamp01(vImp / 22f) * (0.45f + 0.55f * facing);
+            float reach = en.LineClearTo(cb.position) ? 1f : 0.35f;
+            if (all != null)
+            {
+                int blockers = 0;
+                Vector3 a = sb.position, ab = cb.position - a; ab.y = 0f; float len2 = Mathf.Max(0.01f, ab.sqrMagnitude);
+                for (int i = 0; i < all.Count && blockers < 2; i++)
+                {
+                    var o = all[i];
+                    if (o == self || o == c || !o.IsActive || o.car == null) continue;
+                    Vector3 ao = o.car.Body.position - a; ao.y = 0f;
+                    float u = Vector3.Dot(ao, ab) / len2;
+                    if (u < 0.1f || u > 0.95f) continue;
+                    if ((ao - ab * u).magnitude < 3.5f) blockers++;
+                }
+                reach *= 1f - 0.35f * blockers;
+            }
+            float wreckOpp = Mathf.Clamp01((0.5f - c.DurabilityFraction) / 0.4f);
+            float edge = 0f;
+            if (t.edge > 0f)
+            {
+                float tInto = Mathf.Max(0f, Vector3.Dot(cb.linearVelocity, -dir));
+                float sInto = Mathf.Min(en.ChargeSpeedCap(), Mathf.Sqrt(vSelf * vSelf + 2f * 13f * Mathf.Max(0f, d - 4.8f)));
+                edge = EnemyDriver.ShareEdge(sb.mass, sInto, cb.mass, tInto, 0.35f);
+            }
+            float sideways = Mathf.Abs(fc.x * dir.z - fc.z * dir.x);
+            // the raw "lowest health" term (already thinned for intelligent drivers) only counts in proportion to how reachable the car is: far away and boxed in, a hurt car is a poor choice
+            float gate = reach * (0.3f + 0.7f * Mathf.Clamp01(prox * 2.5f));
+            float hurtDiscount = t.weak * (1f - c.DurabilityFraction) * (t.wreck / 1.1f) * (1f - gate);
+            return t.impact * potential + t.wreck * wreckOpp * reach * (0.5f + 0.5f * prox) + t.reach * (reach - 0.65f) + t.side * sideways + t.edge * edge - hurtDiscount;
         }
 
         static bool TargetIs(Participant self, Participant c) => self.car != null && self.car.enemy != null && self.car.enemy.Target == c.car.Body;

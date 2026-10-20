@@ -92,6 +92,36 @@ namespace CarWreck.Derby
             return result.ToArray();
         }
 
+        /// <summary>
+        /// Two spots for the final duel: on opposite sides of the arena (point-mirrored through the middle, so both cars have exactly the same geometry), each turned to face the other
+        /// with the same small toe-out so a straight charge does not mean a certain head-on, at 40-62 % of the half size from the centre - far enough apart to build real speed. Candidates
+        /// every 15 degrees on three rings; the pair must be unblocked at both ends and have a clear run ahead at both ends, then the one furthest from wreckage wins, with a little
+        /// per-match variety so the duel does not always start in the same place. If every pair is blocked the best of them is returned (and false).
+        /// </summary>
+        public static bool PickShowdown(float half, Func<Spot, bool> blocked, Func<Spot, float> clearance, Func<Spot, bool> runwayBlocked, int variant, out Spot a, out Spot b)
+        {
+            a = new Spot(); b = new Spot();
+            float bestScore = float.NegativeInfinity; bool bestValid = false;
+            float[] rings = { 0.62f, 0.5f, 0.4f };
+            const float toe = 10f;
+            for (int ri = 0; ri < rings.Length; ri++)
+                for (int k = 0; k < 24; k++)
+                {
+                    float ang = (k * 15f + (variant * 7 % 15)) * Mathf.Deg2Rad;
+                    Vector3 pa = new Vector3(Mathf.Sin(ang), 0f, Mathf.Cos(ang)) * (half * rings[ri]);
+                    Vector3 pb = -pa;
+                    float bearing = Mathf.Atan2(pb.x - pa.x, pb.z - pa.z) * Mathf.Rad2Deg;
+                    var sa = new Spot { position = pa, yaw = bearing + toe };
+                    var sb = new Spot { position = pb, yaw = bearing + 180f + toe };
+                    bool valid = !blocked(sa) && !blocked(sb) && !runwayBlocked(sa) && !runwayBlocked(sb);
+                    float score = (valid ? 1000f : 0f) + Mathf.Min(clearance(sa), clearance(sb)) + rings[ri] * 12f + 3f * Hash((variant + 1) * 131 + ri * 29 + k);
+                    if (score > bestScore) { bestScore = score; bestValid = valid; a = sa; b = sb; }
+                }
+            return bestValid;
+        }
+
+        static float Hash(int x) { unchecked { uint h = (uint)x * 2654435761u; h ^= h >> 15; return (h & 0xFFFF) / 65535f; } }
+
         /// <summary>Best respawn spot: not blocked, then furthest from every car in <paramref name="others"/>; random tie-break among the near-best.</summary>
         public static Spot PickRespawn(List<Spot> pool, IList<Vector3> others, Func<Spot, bool> blocked, System.Random rng, out bool wasClear)
         {

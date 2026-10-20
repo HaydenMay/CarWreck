@@ -16,3 +16,4 @@ MonoBehaviour:
   description: Waits for a good angle and keeps its distance, but still comes in regularly.
   aggression: 0.25
   skill: 0.5
+  combatIntelligence: 0.7

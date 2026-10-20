@@ -94,6 +94,28 @@ namespace CarWreck.Driving
         /// <summary>How unproductive the recent fighting was (back-offs, recoveries and weak hits add, strong hits and time take away). A breakaway needs it above the profile's threshold.</summary>
         public float Pressure => pressure;
         public Vector3 BreakawayDestination => breakawayDest;
+        // ------------------------------------------------------------------ AI V3: combat intelligence, difficulty, score awareness
+        [Header("AI V3 (combat intelligence; the derby switches it on, the driving arena keeps the previous AI)")]
+        public bool v3Enabled;
+        /// <summary>Which V3 parts are active (all by default): targeting terms, charge/approach speed, pickiness, run-up after a hit, score awareness, sloppiness. For before/after studies only.</summary>
+        public int v3Mask = FAll;
+        public const int FTarget = 1, FSpeed = 2, FPick = 4, FRoll = 8, FUrgency = 16, FSloppy = 32, FAngle = 64, FMomentum = 128, FAll = 255;
+        bool On(int feature) => v3Enabled && (v3Mask & feature) != 0;
+        public AiDifficulty difficulty = AiDifficulty.Standard;
+        [Tooltip("Durability 0..1 of an opponent's body (null = unknown, treated as healthy). Supplied by the game; the AI only reads it.")]
+        public System.Func<Rigidbody, float> targetHealth;
+        // derived (ApplyProfile): effective combat intelligence (profile + difficulty), difficulty knobs
+        public float intelligence = 0.5f, awareness, chargeBoost, setupDiscipline, mistakeRate = 1f, momentumKeep, keepSpeed, chargeScale = 1f;
+        /// <summary>0..1: how much the clock and the scoreboard push this driver to take risks right now (set by the game; already scaled by the difficulty's awareness).</summary>
+        public float Urgency => urgency;
+        /// <summary>The urgency the driver is easing towards (diagnostics / tests).</summary>
+        public float UrgencyGoal => urgencyGoal;
+        float urgency, urgencyGoal;
+        /// <summary>Diagnostics: weak taps given up for a run-up, charges started that were stronger / weaker than the previous AI would have started, charges against a weakened target.</summary>
+        public int TapsRejected { get; private set; }
+        public int RashCharges { get; private set; }
+        public int FinishingCharges { get; private set; }
+        public int SetupRuns { get; private set; }
         public State Current { get; private set; } = State.Waiting;
         /// <summary>Hits that damaged the enemy while it was hitting (or being hit by) the player.</summary>
         public int HitsLanded { get; private set; }
@@ -194,11 +216,22 @@ namespace CarWreck.Driving
         /// </summary>
         public void ApplyProfile()
         {
+            var dv = DifficultySettings.For(difficulty);
             aggression = profile != null ? Mathf.Clamp01(profile.aggression) : 0.5f;
-            skill = profile != null ? Mathf.Clamp01(profile.skill) : 0.5f;
+            skill = Mathf.Clamp01((profile != null ? profile.skill : 0.5f) + (v3Enabled ? dv.skillShift : 0f));
+            if (v3Enabled)
+            {
+                intelligence = Mathf.Clamp01((profile != null ? profile.combatIntelligence : 0.5f) + dv.intelligenceShift);
+                awareness = dv.awareness; mistakeRate = dv.mistakes; chargeScale = dv.chargeScale;
+                chargeBoost = Mathf.Clamp01(dv.chargeBoost * (0.3f + 0.7f * intelligence));          // share of the gap between the previous charge speed and 93 % of the car's top speed
+                setupDiscipline = dv.setup * intelligence;
+                momentumKeep = On(FMomentum) ? dv.momentum * intelligence : 0f;                // how much speed the driver refuses to give up while it turns and lines up
+            }
+            else { intelligence = 0.5f; awareness = chargeBoost = setupDiscipline = momentumKeep = 0f; mistakeRate = 1f; chargeScale = 1f; }
+            keepSpeed = 5.5f + 6.5f * momentumKeep;
             float a = aggression, s = skill;
             // execution (skill)
-            reactionTime = Mathf.Lerp(0.6f, 0.25f, s);
+            reactionTime = Mathf.Lerp(0.6f, 0.25f, s) + (v3Enabled ? dv.reactionDelay : 0f);
             predictionQuality = Mathf.Lerp(0.4f, 1f, s);       // fraction of the ideal lead actually applied
             leadMax = 1.6f;                                      // s, before predictionQuality: about the time a charge takes to arrive
             fullLockAngle = Mathf.Lerp(45f, 28f, s);             // degrees of heading error for full lock: lower = sharper, more precise steering
@@ -211,9 +244,10 @@ namespace CarWreck.Driving
             minChargeSpeed = Mathf.Lerp(7f, 4f, a);              // m/s own speed needed to start a charge
             minRunway = Mathf.Lerp(13f, 6f, a) + 3f * s;                  // shortest run-up (m) accepted without backing off
             minImpactSpeed = Mathf.Lerp(10f, 6f, a) + 3f * s;              // m/s expected closing speed below which an attack is not worth it (unless impatient)
-            chargeRange = Mathf.Lerp(20f, 26f, a);               // charges start at most this far from the player
+            chargeRange = Mathf.Lerp(20f, 26f, a) + (On(FSpeed) ? 6f * chargeBoost : 0f);   // charges start at most this far from the player (V3: a faster charge needs a longer run)
             lineUpRange = chargeRange + 20f;
             repositionChance = Mathf.Lerp(0.95f, 0.3f, a);       // chance to back off when too close for a strong hit
+            if (On(FPick)) repositionChance = Mathf.Lerp(repositionChance, 1f, 0.15f * setupDiscipline);   // V3: a driver that judges attacks gives up a weak tap more readily
             repositionCooldown = Mathf.Lerp(2f, 5.5f, a);        // s before it will back off again
             engageTimeout = Mathf.Lerp(6f, 3f, a);            // s without an attack after which it stops being picky
             chargeSpeedFactor = Mathf.Lerp(1.0f, 1.2f, a);       // charge speed relative to the speed setting
@@ -246,6 +280,7 @@ namespace CarWreck.Driving
             HitsLanded = ObstacleHits = RecoveriesTriggered = AttacksCommitted = Repositions = DetoursPlanned = 0;
             Breakaways = BreakawaysCompleted = BreakawaysAborted = failedBreakaways = RejectedCrowd = RejectedChance = RejectedCap = RejectedNoDestination = 0; histCount = histHead = 0; histTimer = 0f; Milling = false; pressure = 0f; breakawayBlockedUntil = 0f; breakawayEvalUntil = 0f;
             LastChargeSpeed = LastHitClosingSpeed = 0f;
+            urgency = urgencyGoal = 0f; TapsRejected = RashCharges = FinishingCharges = SetupRuns = EdgeDeferrals = 0;
             ClearDetour();
             clearToTarget = true; forwardBlocked = false; forwardHitDistance = float.PositiveInfinity; avoidSteer = 0f;
             controller.ResetState();
@@ -264,7 +299,24 @@ namespace CarWreck.Driving
             if (Current == State.Commit || Current == State.Pursue || Current == State.LineUp) Enter(State.Overshoot);
         }
 
-        void Enter(State s) { if (s != Current) StateChanges++; Current = s; stateTime = 0f; }
+        void Enter(State s) { if (s != Current) StateChanges++; Current = s; stateTime = 0f; setupCounted = false; }
+        bool tapRejected, setupCounted, edgeWaiting;
+        /// <summary>Diagnostics: charges put off because the exchange would be an even head-on one (edge below the driver's limit).</summary>
+        public int EdgeDeferrals { get; private set; }
+
+        /// <summary>The speed (m/s) a charge builds up to: the previous AI's (speed setting x aggression), and with V3 a share of the way up to 93 % of the car's own top speed (the car is not changed: this is how much of it the driver dares to use).</summary>
+        public float ChargeSpeedCap()
+        {
+            float v2 = desiredSpeed * chargeSpeedFactor * (v3Enabled ? chargeScale : 1f);
+            if (!On(FSpeed) || chargeBoost <= 0f || controller == null) return v2;
+            return Mathf.Lerp(v2, Mathf.Max(v2, 0.93f * controller.maxSpeed), chargeBoost);
+        }
+
+        /// <summary>Score awareness: how urgently this driver should take risks (0..1, from the clock and the scoreboard), scaled by the difficulty. Takes effect gradually.</summary>
+        public void SetUrgency(float raw) { urgencyGoal = On(FUrgency) ? Mathf.Clamp01(raw) * awareness : 0f; }
+
+        /// <summary>True when nothing solid is between this car and the point (used by target choice to judge reachability).</summary>
+        public bool LineClearTo(Vector3 p) { if (controller == null) Awake(); return !obstacleAwareness || Clear(body.position, p, 1.0f); }
 
         /// <summary>Time the decisions (page report only): the slowest Drive call since the last Restart, in ms.</summary>
         public bool measureCost;
@@ -426,6 +478,7 @@ namespace CarWreck.Driving
             if (dt <= 0f) return;
             if (player == null) { controller.Throttle = 0f; controller.SteerInput = 0f; return; }   // nothing to attack: coast
             clock += dt;
+            urgency = Mathf.MoveTowards(urgency, urgencyGoal, 0.4f * dt);
             pressure = Mathf.Max(0f, pressure - 0.1f * dt);
             TrackMilling(body.position, dt);
             stateTime += dt;
@@ -447,6 +500,7 @@ namespace CarWreck.Driving
             // Where the player will be shortly: capped linear lead scaled by prediction quality (low skill under-leads), never perfect.
             float lead = Mathf.Min(leadMax, dist / Mathf.Max(8f, Mathf.Abs(fwdSpeed))) * predictionQuality;
             Vector3 aimPoint = Flat(player.position + seenVelocity * lead);
+            if (On(FAngle)) aimPoint = ApproachAngle(pos, aimPoint, dirToPlayer, dist);
             Vector3 aimDir = Flat(aimPoint - pos);
 
             decisionTimer -= dt;
@@ -481,7 +535,8 @@ namespace CarWreck.Driving
                     float absAngle = Mathf.Abs(angle);
                     steer = Mathf.Clamp(angle / fullLockAngle, -1f, 1f);
                     // LineUp slows down to a controllable approach speed, except when the player is pulling away (then it must keep its speed up to catch it)
-                    float speedGoal = breakaway ? 0.85f * desiredSpeed : lineUp && dist < chargeRange - 2f && closing > 0.25f * desiredSpeed ? Mathf.Max(minChargeSpeed * 1.3f, 0.65f * desiredSpeed) : desiredSpeed;
+                    float cruise = On(FSpeed) && clearToTarget ? Mathf.Lerp(desiredSpeed, ChargeSpeedCap(), 0.6f) : desiredSpeed;      // V3: a driver that wants a hard hit approaches fast, then the braking rule below trims it
+                    float speedGoal = breakaway ? 0.85f * desiredSpeed : lineUp && dist < chargeRange - 2f && closing > 0.25f * desiredSpeed ? Mathf.Max(minChargeSpeed * 1.3f, 0.65f * desiredSpeed) : cruise;
                     // Braking decision (skill): the bearing must be nearly nulled before the car reaches its charge range, so the speed is limited to what the car can turn through in the
                     // distance that is left (v <= turn rate x room / error). A skilled driver judges the car's turn rate correctly and slows in time; a poor one thinks it turns tighter than it
                     // does, carries too much speed and arrives off the line. Once inside charge range it crawls until lined up, then accelerates into the charge.
@@ -491,7 +546,7 @@ namespace CarWreck.Driving
                         float err = Mathf.Max(1f, absAngle - tolRange) * Mathf.Deg2Rad;
                         float room = dist - chargeRange;
                         float vTurn = room > 0f ? believedTurnRate * room / err : 0f;
-                        speedGoal = Mathf.Min(speedGoal, Mathf.Max(Mathf.Max(5.5f, minChargeSpeed), vTurn));
+                        speedGoal = Mathf.Min(speedGoal, Mathf.Max(Mathf.Max(Mathf.Max(5.5f, minChargeSpeed), keepSpeed), vTurn));
                     }
                     float diff = speedGoal - fwdSpeed;
                     throttle = diff >= 0f ? Mathf.Clamp01(diff) : Mathf.Max(-0.8f, diff / 4f) * Mathf.Lerp(0.5f, 1f, skill);   // brakes when over the goal (a poor driver brakes less)
@@ -554,7 +609,7 @@ namespace CarWreck.Driving
                     // nobody can follow a late swerve at 70 km/h, so the charge can be dodged. No state change is considered before minCommitTime except an emergency.
                     float angle = Vector3.SignedAngle(fwd, aimDir, Vector3.up);
                     steer = Mathf.Clamp(angle / (fullLockAngle * 0.5f), -chargeSteerLimit, chargeSteerLimit);
-                    throttle = Mathf.Clamp01(desiredSpeed * chargeSpeedFactor - fwdSpeed);
+                    throttle = Mathf.Clamp01(ChargeSpeedCap() - fwdSpeed);
                     bool passed = Vector3.Dot(fwd, toPlayer) < 0f && dist > 3f;
                     bool lost = Mathf.Abs(Vector3.SignedAngle(fwd, aimDir, Vector3.up)) > 75f && dist > 6f;
                     // emergency: a solid obstacle before the player and too close to stop
@@ -569,14 +624,21 @@ namespace CarWreck.Driving
                     // Missed or just hit: keep rolling roughly straight for a moment (no instant U-turn), steering clear of walls and obstacles, then turn round and pursue.
                     bool wall = WallAhead(pos, fwd, fwdSpeed, out Vector3 toCentre);
                     steer = wall ? Mathf.Clamp(Vector3.SignedAngle(fwd, toCentre, Vector3.up) / fullLockAngle, -1f, 1f) : 0f;
-                    throttle = wall ? (fwdSpeed > 8f ? -0.7f * Mathf.Lerp(0.5f, 1f, skill) : 0f) : Mathf.Clamp01(0.5f * desiredSpeed - fwdSpeed);   // a wall ahead: brake (a poor driver brakes less)
+                    throttle = wall ? (fwdSpeed > 8f ? -0.7f * Mathf.Lerp(0.5f, 1f, skill) : 0f) : Mathf.Clamp01((0.5f + 0.35f * momentumKeep) * desiredSpeed - fwdSpeed);   // a wall ahead: brake (a poor driver brakes less)
                     if (obstacleAwareness && forwardBlocked && forwardHitDistance < StopDistance(fwdSpeed) + 5f)
                     {
                         steer = avoidSteer;
                         throttle = forwardHitDistance < StopDistance(fwdSpeed) ? -0.6f : 0.2f;
                         avoidBraking = true;
                     }
-                    if (stateTime >= overshootTime) Enter(State.Pursue);
+                    // V3: a driver that prepares its attacks keeps rolling away for a moment longer when it is still close, so the turn-in starts with a run-up instead of a tap
+                    float rollOn = 0f;
+                    if (On(FRoll) && dist < minRunway * 1.5f) rollOn = Mathf.Lerp(0f, 1.3f, setupDiscipline) * (1f - 0.7f * urgency);
+                    if (stateTime >= overshootTime)
+                    {
+                        if (rollOn > 0f && !setupCounted) { setupCounted = true; SetupRuns++; }
+                        if (stateTime >= overshootTime + rollOn) Enter(State.Pursue);
+                    }
                     break;
                 }
 
@@ -639,13 +701,35 @@ namespace CarWreck.Driving
             float sinceAttack = clock - lastAttackClock;
             // Patience runs out gradually: after engageTimeout without an attack the driver accepts worse angles, weaker hits and shorter run-ups (so even a cautious driver comes in regularly)
             float patience = Mathf.Clamp01((sinceAttack - engageTimeout) / 5f);
+            // V3: what the attack is worth. A weakened target can be finished by a weaker hit (finishing); time pressure and the scoreboard make a driver less picky (urgency);
+            // a driver with poor judgement (sloppy) misreads alignment and run-up more often. All of it is a normalised gameplay estimate: the AI never computes collision damage.
+            float finishing = 0f, sloppy = 0f;
+            if (v3Enabled)
+            {
+                float healthT = targetHealth != null ? Mathf.Clamp01(targetHealth(player)) : 1f;
+                finishing = intelligence * Mathf.Clamp01((0.5f - healthT) / 0.4f);
+                sloppy = (1f - intelligence) * mistakeRate;
+                patience = Mathf.Clamp01(patience + 0.6f * urgency + 0.5f * finishing);
+            }
             // How hard could this hit be? Own speed along the line after accelerating over the remaining run-up (the controller's acceleration, capped at the charge speed),
             // minus the speed the player is moving away at. A tailgater at the player's speed with 2 m to spare gets almost nothing; a car 15 m back gets plenty.
             Vector3 dir = Flat(player.position - pos).normalized;
             float vSelf = Mathf.Max(0f, Vector3.Dot(body.linearVelocity, dir)), vPlayer = Vector3.Dot(player.linearVelocity, dir);
-            float cap = desiredSpeed * chargeSpeedFactor;
+            float cap = ChargeSpeedCap();
             float vImpact = Mathf.Min(cap, Mathf.Sqrt(vSelf * vSelf + 2f * 13f * Mathf.Max(0f, dist - ContactDistance))) - vPlayer;
-            float minImpact = minImpactSpeed * (1f - 0.4f * patience);
+            // V3: who would end up with the damage? A hit the target is not driving into (its flank, its tail, a slow or recovering car) is worth far more than an equal head-on exchange.
+            float edge = 0f, edgeMin = -1f;
+            if (On(FAngle))
+            {
+                float tInto = Mathf.Max(0f, Vector3.Dot(Flat(seenVelocity), -dir));
+                float sInto = Mathf.Min(cap, Mathf.Sqrt(vSelf * vSelf + 2f * 13f * Mathf.Max(0f, dist - ContactDistance)));
+                edge = ShareEdge(body.mass, sInto, player.mass, tInto, receiver != null ? receiver.momentumShareRange : 0.35f);
+                edgeMin = Mathf.Lerp(Mathf.Lerp(-0.7f, -0.15f, setupDiscipline), -0.7f, patience);      // patience (time without an attack, urgency, a finishing chance) gives the limit up
+            }
+            float minImpactV2 = minImpactSpeed * (1f - 0.4f * patience);
+            float minImpact = minImpactV2;
+            // V3: a driver that judges attacks asks for a better hit before it commits (and gives that up as patience / urgency / a finishing chance grow); a sloppy one asks for less
+            if (On(FPick)) minImpact = minImpactV2 * Mathf.Lerp(1f, 1.06f, setupDiscipline);
 
             // opportunity quality 0..1: alignment, own speed, expected impact
             float alignScore = 1f - Mathf.Clamp01(absAngle / 45f);
@@ -660,10 +744,21 @@ namespace CarWreck.Driving
 
             bool inRange = dist <= chargeRange;
             bool enoughRunway = vImpact >= minImpact;
-            if (inRange && enoughRunway && absAngle <= tol && fwdSpeed >= needSpeed && opportunity >= threshold)
+            bool ready = inRange && absAngle <= tol && fwdSpeed >= needSpeed && opportunity >= threshold;
+            if (ready && On(FAngle) && edge < edgeMin) { ready = false; if (!edgeWaiting) { edgeWaiting = true; EdgeDeferrals++; } }
+            else edgeWaiting = false;
+            if (ready && enoughRunway)
             {
+                tapRejected = false;
+                if (finishing > 0.3f) FinishingCharges++;
                 BeginCharge(aimDir, fwdSpeed, dist);
                 return;
+            }
+            if (On(FSloppy) && ready)
+            {
+                // the previous AI would have gone in here: count a weak tap given up for a better run (once per approach), or a rash charge that a sloppy driver starts anyway
+                if (vImpact >= minImpactV2 && !tapRejected) { tapRejected = true; TapsRejected++; }
+                if (sloppy > 0.3f && rng.NextDouble() < 0.02 * Mathf.Min(1.5f, sloppy)) { RashCharges++; BeginCharge(aimDir, fwdSpeed, dist); return; }
             }
 
             // too close for a strong hit and not already rolling at the player: back off and make a run-up (chance and cooldown depend on aggression)
@@ -733,6 +828,52 @@ namespace CarWreck.Driving
             return true;
         }
 
+        // ------------------------------------------------------------------ AI V3: approach angle (who ends up with the damage)
+
+        /// <summary>
+        /// How lopsided a collision between this driver's car and the target is likely to be, from -0.7 to +0.7 (the target's share of the collision energy minus ours). The collision
+        /// engine splits a car-versus-car hit by how much momentum each car was driving INTO the other, from 15 % for the car that does all the attacking to 85 % for one that is
+        /// standing still, moving away or passing sideways; equal head-on momentum is 50/50. The AI only estimates that gameplay rule (it reads the same range from the receiver); it
+        /// never applies or computes damage. A flank or rear hit, or a hit on a slow car, has a large edge; a head-on charge at an equal car has none.
+        /// </summary>
+        public static float ShareEdge(float massSelf, float speedSelfInto, float massTarget, float speedTargetInto, float shareRange)
+        {
+            float pMe = massSelf * Mathf.Max(0f, speedSelfInto), pThem = massTarget * Mathf.Max(0f, speedTargetInto);
+            float total = pMe + pThem;
+            float attack = total > 1e-3f ? pMe / total : 0.5f;
+            float myShare = Mathf.Clamp(0.5f + shareRange * (1f - 2f * attack), 0.5f - shareRange, 0.5f + shareRange);
+            return 1f - 2f * myShare;
+        }
+
+        float lastSideChange; float approachSide = 1f;
+
+        /// <summary>
+        /// A driver that judges its approach does not drive straight at a car that is driving straight at it (equal momentum into each other: a 50/50 exchange). It aims for a point
+        /// beside the target - the further the target's velocity points at us, the faster it comes, and the more intelligent the driver, the further beside - so the pass is flank to
+        /// flank and the counter-attack finds the target's side or rear. The offset fades out inside 9 m, where the final aim is on the target. The side is kept for a while (no dithering).
+        /// </summary>
+        Vector3 ApproachAngle(Vector3 pos, Vector3 aimPoint, Vector3 dirToPlayer, float dist)
+        {
+            if (dist < 9f || dist > 45f || Current == State.Recover || Current == State.Reposition || Current == State.Breakaway || Current == State.Waiting) return aimPoint;
+            Vector3 tv = Flat(seenVelocity); float tSpeed = tv.magnitude;
+            if (tSpeed < 5f) return aimPoint;
+            float into = Mathf.Clamp01(Vector3.Dot(tv / tSpeed, -dirToPlayer));        // 1 = the target is driving straight at us
+            float k = into * Mathf.Clamp01((tSpeed - 5f) / 8f) * intelligence * setupDiscipline * 1.6f;
+            if (k < 0.08f) return aimPoint;
+            if (clock - lastSideChange > 3f)                                            // pick the side with room (away from the nearer wall), then keep it
+            {
+                Vector3 perpR = new Vector3(dirToPlayer.z, 0f, -dirToPlayer.x);
+                Vector3 right = Flat(player.position) + perpR * 8f, left = Flat(player.position) - perpR * 8f;
+                float lim = arenaHalf - 8f;
+                bool rightOk = Mathf.Abs(right.x) < lim && Mathf.Abs(right.z) < lim, leftOk = Mathf.Abs(left.x) < lim && Mathf.Abs(left.z) < lim;
+                approachSide = rightOk && !leftOk ? 1f : leftOk && !rightOk ? -1f : (rng.NextDouble() < 0.5 ? 1f : -1f);
+                lastSideChange = clock;
+            }
+            Vector3 perp = new Vector3(dirToPlayer.z, 0f, -dirToPlayer.x) * approachSide;
+            float fade = Mathf.Clamp01((dist - 9f) / 12f);
+            return aimPoint + perp * (7f * Mathf.Min(1f, k) * fade);
+        }
+
         // ------------------------------------------------------------------ milling: staying in the same few metres with the target close for several seconds
 
         readonly Vector3[] posHistory = new Vector3[12];
@@ -767,7 +908,7 @@ namespace CarWreck.Driving
         void MaybeBreakaway(Vector3 pos, Vector3 fwd)
         {
             if (Current != State.Pursue && Current != State.LineUp && Current != State.Overshoot) return;
-            if (pressure < breakawayThreshold || clock < breakawayBlockedUntil || player == null) return;
+            if (pressure < breakawayThreshold * (1f + urgency) || clock < breakawayBlockedUntil || player == null) return;
             breakawayBlockedUntil = clock + 1f;                       // not re-evaluated every tick
             int n = nearbyCars(body, near, 45f);
             int close = 0;

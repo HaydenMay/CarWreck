@@ -47,6 +47,8 @@ namespace CarWreck.Derby.EditorTools
                 EditorSceneManager.OpenScene(DerbySceneBuilder.ScenePath, OpenSceneMode.Single);
                 game = UnityEngine.Object.FindFirstObjectByType<DerbyGame>();
                 game.Setup(); game.ui = null;
+                game.aiV3 = Environment.GetEnvironmentVariable("TUNING_V3") == "1";   // these are the tuning V1 checks: they run with the previous AI settings unless TUNING_V3=1 (AI V3 has its own validation)
+                game.difficulty = AiDifficulty.Standard;
                 if (only == "" || only == "pickup") PickupChecks();
                 if (only == "" || only == "ai") AiChecks();
                 if (only == "" || only == "ffa") FfaChecks();
@@ -54,7 +56,7 @@ namespace CarWreck.Derby.EditorTools
                 if (only == "" || only == "perf") PerfChecks();
             }
             catch (Exception e) { sb.AppendLine("EXCEPTION: " + e); fails++; }
-            finally { Physics.simulationMode = prev; Time.timeScale = 1f; VehiclePainter.ClearCache(); }
+            finally { Physics.simulationMode = prev; Time.timeScale = 1f; VehiclePainter.ClearCache(); if (game != null) game.aiV3 = true; }
             sb.AppendLine($"[Tuning] {passes} PASS, {fails} FAIL");
             return sb.ToString();
         }
@@ -438,6 +440,7 @@ namespace CarWreck.Derby.EditorTools
             PlaceCar(x, new Vector3(-30f, 0f, -30f), 0f, 0f);
             PlaceCar(hatch, new Vector3(20f, 0f, -30f), 0f, 10f);
             bot.Restart(); bot.SetTarget(hatch.car.Body); bot.startDelay = 0.3f;
+            { var rec = game.Targeting.RecordOf(x.id); rec.targetId = hatch.id; rec.nextEval = 1e9f; rec.holdUntil = 1e9f; }       // the driver keeps the target it is given (V3 would otherwise prefer a parked car)
             var path = new[] { new Vector3(30f, 0f, -30f), new Vector3(30f, 0f, 30f), new Vector3(-30f, 0f, 30f), new Vector3(-30f, 0f, -30f) };
             int k = 0; int hits = 0, strong = 0; float closingSum = 0f; int seenCharges = 0; float windowEnd = -1f, minD = 999f; var misses = new List<float>();
             Action<CollisionDamageReceiver.Report> h = r => { if (r.applied && r.other == hatch.car.rig.root.name) { hits++; closingSum += r.closingSpeed; if (r.closingSpeed >= 8f) strong++; } };

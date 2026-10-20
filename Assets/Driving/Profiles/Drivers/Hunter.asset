@@ -16,3 +16,4 @@ MonoBehaviour:
   description: Reads where you are going, lines up properly and hits hard. Backs off to build speed when it is too close.
   aggression: 0.65
   skill: 0.9
+  combatIntelligence: 0.85

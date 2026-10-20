@@ -28,7 +28,7 @@ namespace CarWreck.Derby
         bool touchVisible, userToggled, menuBuilt, resultsBuilt, pauseBuilt;
 
         // HUD
-        Text scoreText, subText, timerText, modeText, bannerText, bannerSub, pointsText, feedText, flipText;
+        Text scoreText, subText, timerText, modeText, bannerText, bannerSub, pointsText, feedText, flipText, duelText, duelDamageText;
         Image durFill, durBack;
         Text durLabel;
         Text[] boardName, boardScore; Image[] boardSwatch;
@@ -42,9 +42,9 @@ namespace CarWreck.Derby
         readonly List<Plate> plates = new List<Plate>();
 
         // menu
-        Button[] carButtons, modeButtons, swatchButtons;
+        Button[] carButtons, modeButtons, swatchButtons, difficultyButtons;
         Image[] swatchRing;
-        Text carDescription, modeDescription;
+        Text carDescription, modeDescription, difficultyDescription;
 
         // results
         Text resultTitle, resultSub;
@@ -110,7 +110,10 @@ namespace CarWreck.Derby
             ApplyVisibility();
         }
 
-        public void OnStateChanged(MatchState old, MatchState now) { ApplyVisibility(); }
+        public void OnStateChanged(MatchState old, MatchState now) { ApplyVisibility(); hudTimer = 0f; }
+
+        /// <summary>The final two were repaired and placed: the HUD refreshes at once (names, armour, the FINAL SHOWDOWN card).</summary>
+        public void OnShowdownPrepared(Participant a, Participant b) { hudTimer = 0f; bannerUntil = 0f; }
 
         public void Banner(string text, float seconds) { bannerCurrent = text; bannerUntil = Time.unscaledTime + seconds; }
 
@@ -137,6 +140,12 @@ namespace CarWreck.Derby
             resultTitle.color = humanWon ? new Color(1f, 0.82f, 0.25f) : m.IsDraw ? Color.white : new Color(1f, 0.55f, 0.45f);
             string reason = m.ResultText.Contains("  -  ") ? m.ResultText.Substring(m.ResultText.IndexOf("  -  ") + 5) : "";
             resultSub.text = $"{(m.rules.mode == GameMode.PointsDerby ? "POINTS DERBY" : "LAST CAR STANDING")}   -   YOUR PLACE  {game.Human.placement} / {m.participants.Count}" + (reason.Length > 0 ? $"\n<size=20>{reason}</size>" : "");
+            if (m.ShowdownTriggered && (m.Kind == ResultKind.WinByWreck || m.Kind == ResultKind.WinByShowdownDamage || m.Kind == ResultKind.Draw))
+            {
+                var fa = m.Finalists[0]; var fb = m.Finalists[1];
+                if (fb == game.Human) { var t = fa; fa = fb; fb = t; }
+                resultSub.text += $"\n<size=18>SHOWDOWN DAMAGE   {Who(fa, game.Human)} {Mathf.RoundToInt(m.ShowdownScore(fa) * 100f)}%   ·   {Who(fb, game.Human)} {Mathf.RoundToInt(m.ShowdownScore(fb) * 100f)}%</size>";
+            }
             // up to ResultRows rows in rank order; the player's row always shows
             var rows = new List<Participant>(m.Ranking);
             if (rows.Count > ResultRows) { int hi = rows.IndexOf(game.Human); rows.RemoveRange(ResultRows, rows.Count - ResultRows); if (hi >= ResultRows) rows[ResultRows - 1] = game.Human; }
@@ -178,6 +187,7 @@ namespace CarWreck.Derby
         void Update()
         {
             if (lookPad != null && lookPad.cam == null && game != null) lookPad.cam = game.chaseCamera;
+            if (menuRoot != null && menuRoot.activeSelf) FitMenu();
             if (input != null && input.TouchSeen && !touchVisible && !userToggled) SetTouch(true, false);
             if (game == null || game.MenuOpen || game.Match == null) return;
             UpdateNamePlates();
@@ -199,6 +209,8 @@ namespace CarWreck.Derby
             switch (m.State)
             {
                 case MatchState.Countdown: t = points ? FormatTime(m.rules.pointsDuration) : "GET READY"; break;
+                case MatchState.ShowdownTransition: t = "FINAL SHOWDOWN"; tc = new Color(1f, 0.4f, 0.3f); break;
+                case MatchState.ShowdownCountdown: t = "GET READY"; tc = new Color(1f, 0.4f, 0.3f); break;
                 case MatchState.FinalShowdown: t = "SHOWDOWN  " + FormatTime(m.ShowdownRemaining); tc = new Color(1f, 0.4f, 0.3f); break;
                 case MatchState.Results: t = "FINISHED"; break;
                 default:
@@ -207,7 +219,8 @@ namespace CarWreck.Derby
                     break;
             }
             timerText.text = t; timerText.color = tc;
-            modeText.text = points ? "POINTS DERBY" : (m.State == MatchState.FinalShowdown ? "WINNER: HIGHEST SCORE IF TIME RUNS OUT" : "NO RESPAWNS");
+            modeText.text = points ? "POINTS DERBY" : (m.InShowdown ? "WRECK THE OTHER CAR  -  OR DEAL MORE DAMAGE" : "NO RESPAWNS");
+            RefreshDuel(m, h);
             // durability
             float d = h.DurabilityFraction;
             durFill.rectTransform.anchorMax = new Vector2(Mathf.Max(0.001f, d), 1f);
@@ -231,6 +244,8 @@ namespace CarWreck.Derby
             // banner: countdown number, WRECK!, player wreck/respawn text, custom banners
             string banner = ""; string sub = "";
             if (m.State == MatchState.Countdown) banner = Mathf.CeilToInt(m.CountdownRemaining).ToString();
+            else if (m.State == MatchState.ShowdownTransition) { banner = "FINAL SHOWDOWN"; sub = VersusLine(m, h); }
+            else if (m.State == MatchState.ShowdownCountdown) { banner = Mathf.CeilToInt(m.CountdownRemaining).ToString(); sub = "FINAL SHOWDOWN   -   " + VersusLine(m, h); }
             else if (m.State == MatchState.Active && m.Clock < 0.9f) banner = "WRECK!";
             else if (Time.unscaledTime < bannerUntil) banner = bannerCurrent;
             if (!h.IsActive && m.InPlay)
@@ -248,6 +263,36 @@ namespace CarWreck.Derby
             var sbd = new System.Text.StringBuilder();
             foreach (var f in feed) sbd.AppendLine(f.text);
             feedText.text = sbd.ToString();
+        }
+
+        static string Who(Participant p, Participant human) => p == human ? "YOU" : p.name;
+
+        static string VersusLine(DerbyMatch m, Participant human)
+        {
+            var a = m.Finalists[0]; var b = m.Finalists[1];
+            if (a == null || b == null) return "";
+            if (b == human) { var t = a; a = b; b = t; }
+            return $"{Who(a, human)}  vs  {Who(b, human)}";
+        }
+
+        static string Armour(Participant p)
+        {
+            float f = p.DurabilityFraction;
+            string c = f > 0.6f ? "#59d959" : f > 0.3f ? "#fad133" : "#f24d40";
+            return $"<color={c}>{Mathf.CeilToInt(f * 100f)}%</color>";
+        }
+
+        /// <summary>Final showdown only: both duelists' names and armour, and the showdown damage each has dealt (what decides a timeout).</summary>
+        void RefreshDuel(DerbyMatch m, Participant h)
+        {
+            bool duel = m.rules.mode == GameMode.LastCarStanding && m.ShowdownTriggered && m.Finalists[0] != null && m.Finalists[1] != null && m.State != MatchState.Results;
+            if (duelText != null) duelText.gameObject.SetActive(duel);
+            if (duelDamageText != null) duelDamageText.gameObject.SetActive(duel);
+            if (!duel) return;
+            var a = m.Finalists[0]; var b = m.Finalists[1];
+            if (b == h) { var t = a; a = b; b = t; }
+            duelText.text = $"{Who(a, h)}  {Armour(a)}        vs        {Who(b, h)}  {Armour(b)}";
+            duelDamageText.text = $"DAMAGE DEALT   {Who(a, h)} {Mathf.RoundToInt(a.showdownDamage * 100f)}%   ·   {Who(b, h)} {Mathf.RoundToInt(b.showdownDamage * 100f)}%";
         }
 
         static int CompareByScore(Participant a, Participant b)
@@ -415,6 +460,12 @@ namespace CarWreck.Derby
             modeText = Label("Mode", hr, "", 20, TextAnchor.UpperCenter, FontStyle.Bold);
             Anchor(modeText.rectTransform, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(100, -68), new Vector2(620, 26));
             modeText.color = new Color(1f, 1f, 1f, 0.7f);
+            duelText = Label("Duel", hr, "", 26, TextAnchor.UpperCenter, FontStyle.Bold);
+            Anchor(duelText.rectTransform, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(100, -98), new Vector2(760, 32));
+            duelDamageText = Label("DuelDamage", hr, "", 20, TextAnchor.UpperCenter, FontStyle.Bold);
+            Anchor(duelDamageText.rectTransform, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(100, -130), new Vector2(760, 26));
+            duelDamageText.color = new Color(1f, 1f, 1f, 0.8f);
+            duelText.gameObject.SetActive(false); duelDamageText.gameObject.SetActive(false);
             // centre: banner (countdown, WRECK!, wrecked ...) and its sub line, points popup
             bannerText = Label("Banner", hr, "", 120, TextAnchor.MiddleCenter, FontStyle.Bold);
             Anchor(bannerText.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 90), new Vector2(1100, 150));
@@ -437,24 +488,40 @@ namespace CarWreck.Derby
 
         // ------------------------------------------------------------------ start menu
 
+        RectTransform menuContent;
+        const float MenuHeight = 640f;
+
+        /// <summary>The menu is laid out for a 640-unit-tall canvas; on a shorter canvas (a phone held sideways) the whole content block shrinks to fit so START is never off the screen.</summary>
+        void FitMenu()
+        {
+            if (menuContent == null || root == null) return;
+            float s = Mathf.Clamp(root.rect.height / MenuHeight, 0.5f, 1f);
+            if (!Mathf.Approximately(menuContent.localScale.x, s)) menuContent.localScale = new Vector3(s, s, 1f);
+        }
+
         void EnsureMenu()
         {
             if (menuBuilt || game == null) return;
             menuBuilt = true;
             menuRoot = new GameObject("Menu", typeof(RectTransform), typeof(Image));
-            var mr = (RectTransform)menuRoot.transform;
-            mr.SetParent(root, false);
-            Anchor(mr, new Vector2(0, 0), new Vector2(0, 1), new Vector2(0, 0.5f), Vector2.zero, new Vector2(650, 0));
+            var bg = (RectTransform)menuRoot.transform;
+            bg.SetParent(root, false);
+            Anchor(bg, new Vector2(0, 0), new Vector2(0, 1), new Vector2(0, 0.5f), Vector2.zero, new Vector2(650, 0));
             menuRoot.GetComponent<Image>().color = Panel;
+            var contentGo = new GameObject("Content", typeof(RectTransform));
+            menuContent = (RectTransform)contentGo.transform;
+            menuContent.SetParent(bg, false);
+            Anchor(menuContent, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), Vector2.zero, new Vector2(650, MenuHeight));
+            var mr = menuContent;
 
-            var title = Label("Title", mr, "CARWRECK", 52, TextAnchor.UpperLeft, FontStyle.Bold);
-            Anchor(title.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(36, -12), new Vector2(580, 60));
+            var title = Label("Title", mr, "CARWRECK", 50, TextAnchor.UpperLeft, FontStyle.Bold);
+            Anchor(title.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(36, -8), new Vector2(580, 56));
             title.color = Chosen;
             var tag = Label("Tagline", mr, "DRIVE.  RAM.  WRECK.  WIN.", 22, TextAnchor.UpperLeft, FontStyle.Bold);
-            Anchor(tag.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(38, -70), new Vector2(580, 28));
+            Anchor(tag.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(38, -62), new Vector2(580, 26));
 
-            var cl = Label("CarLabel", mr, "YOUR CAR", 20, TextAnchor.UpperLeft, FontStyle.Bold);
-            Anchor(cl.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(36, -106), new Vector2(580, 24));
+            var cl = Label("CarLabel", mr, "YOUR CAR", 19, TextAnchor.UpperLeft, FontStyle.Bold);
+            Anchor(cl.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(36, -92), new Vector2(580, 22));
             int n = game.vehicles.Length;
             carButtons = new Button[n];
             string[] shortNames = { "MUSCLE CAR", "HATCHBACK", "PICKUP" };
@@ -463,27 +530,27 @@ namespace CarWreck.Derby
             {
                 int idx = i;
                 string nm = i < shortNames.Length ? shortNames[i] : game.vehicles[i].displayName.ToUpperInvariant();
-                carButtons[i] = MenuButton("Car" + i, mr, $"<b>{nm}</b>\n<size=18>{game.vehicles[i].mass:N0} kg</size>", 22, TextAnchor.MiddleCenter, new Vector2(36 + i * (cw + 10f), -132), new Vector2(cw, 76), () => { game.SelectVehicle(idx); RefreshMenu(); });
+                carButtons[i] = MenuButton("Car" + i, mr, $"<b>{nm}</b>\n<size=17>{game.vehicles[i].mass:N0} kg</size>", 21, TextAnchor.MiddleCenter, new Vector2(36 + i * (cw + 10f), -114), new Vector2(cw, 62), () => { game.SelectVehicle(idx); RefreshMenu(); });
             }
-            carDescription = Label("CarDesc", mr, "", 19, TextAnchor.UpperLeft, FontStyle.Normal);
-            Anchor(carDescription.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(38, -214), new Vector2(580, 44));
+            carDescription = Label("CarDesc", mr, "", 18, TextAnchor.UpperLeft, FontStyle.Normal);
+            Anchor(carDescription.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(38, -180), new Vector2(580, 40));
 
-            var pl = Label("PaintLabel", mr, "PAINT", 20, TextAnchor.UpperLeft, FontStyle.Bold);
-            Anchor(pl.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(36, -262), new Vector2(580, 24));
+            var pl = Label("PaintLabel", mr, "PAINT", 19, TextAnchor.UpperLeft, FontStyle.Bold);
+            Anchor(pl.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(36, -218), new Vector2(580, 22));
             int pc = game.palette != null ? game.palette.Count : 0;
             swatchButtons = new Button[pc]; swatchRing = new Image[pc];
-            float sw = Mathf.Min(70f, (578f - 8f * (pc - 1)) / Mathf.Max(1, pc));
+            float sw = Mathf.Min(52f, (578f - 8f * (pc - 1)) / Mathf.Max(1, pc));
             for (int i = 0; i < pc; i++)
             {
                 int idx = i;
                 float x = 36f + i * (sw + 8f);
                 var ring = Img("Ring" + i, mr, Color.clear);
                 ring.sprite = round; ring.type = UnityEngine.UI.Image.Type.Sliced;
-                Anchor(ring.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(x - 4f, -288f + 4f), new Vector2(sw + 8f, sw + 8f));
+                Anchor(ring.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(x - 4f, -242f + 4f), new Vector2(sw + 8f, sw + 8f));
                 swatchRing[i] = ring;
                 var go = new GameObject("Swatch" + i, typeof(RectTransform), typeof(Image), typeof(Button));
                 go.transform.SetParent(mr, false);
-                Anchor((RectTransform)go.transform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(x, -288f), new Vector2(sw, sw));
+                Anchor((RectTransform)go.transform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(x, -242f), new Vector2(sw, sw));
                 var img = go.GetComponent<Image>(); img.sprite = round; img.type = UnityEngine.UI.Image.Type.Sliced; img.color = game.palette.Get(i).body;
                 var b = go.GetComponent<Button>(); b.targetGraphic = img; b.navigation = new Navigation { mode = Navigation.Mode.None };
                 var colors = b.colors; colors.normalColor = Color.white; colors.highlightedColor = Color.white; colors.pressedColor = new Color(0.75f, 0.75f, 0.75f); colors.selectedColor = Color.white; b.colors = colors;
@@ -491,20 +558,34 @@ namespace CarWreck.Derby
                 swatchButtons[i] = b;
             }
 
-            var ml = Label("ModeLabel", mr, "GAME MODE", 20, TextAnchor.UpperLeft, FontStyle.Bold);
-            Anchor(ml.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(36, -376), new Vector2(580, 24));
+            var ml = Label("ModeLabel", mr, "GAME MODE", 19, TextAnchor.UpperLeft, FontStyle.Bold);
+            Anchor(ml.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(36, -306), new Vector2(580, 22));
             modeButtons = new Button[2];
-            modeButtons[0] = MenuButton("ModePoints", mr, "<b>POINTS DERBY</b>\n<size=17>timed - respawn</size>", 22, TextAnchor.MiddleCenter, new Vector2(36, -402), new Vector2(284, 76), () => { game.SelectMode(GameMode.PointsDerby); RefreshMenu(); });
-            modeButtons[1] = MenuButton("ModeLast", mr, "<b>LAST CAR STANDING</b>\n<size=17>no respawns - final showdown</size>", 20, TextAnchor.MiddleCenter, new Vector2(330, -402), new Vector2(284, 76), () => { game.SelectMode(GameMode.LastCarStanding); RefreshMenu(); });
-            modeDescription = Label("ModeDesc", mr, "", 19, TextAnchor.UpperLeft, FontStyle.Normal);
-            Anchor(modeDescription.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(38, -484), new Vector2(580, 50));
+            modeButtons[0] = MenuButton("ModePoints", mr, "<b>POINTS DERBY</b>\n<size=16>timed - respawn</size>", 21, TextAnchor.MiddleCenter, new Vector2(36, -328), new Vector2(284, 60), () => { game.SelectMode(GameMode.PointsDerby); RefreshMenu(); });
+            modeButtons[1] = MenuButton("ModeLast", mr, "<b>LAST CAR STANDING</b>\n<size=16>no respawns - final showdown</size>", 19, TextAnchor.MiddleCenter, new Vector2(330, -328), new Vector2(284, 60), () => { game.SelectMode(GameMode.LastCarStanding); RefreshMenu(); });
+            modeDescription = Label("ModeDesc", mr, "", 17, TextAnchor.UpperLeft, FontStyle.Normal);
+            Anchor(modeDescription.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(38, -392), new Vector2(580, 42));
 
-            var start = MenuButton("Start", mr, "START", 46, TextAnchor.MiddleCenter, new Vector2(36, -548), new Vector2(578, 92), () => game.StartMatch());
+            var dl = Label("DifficultyLabel", mr, "OPPONENTS", 19, TextAnchor.UpperLeft, FontStyle.Bold);
+            Anchor(dl.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(36, -436), new Vector2(580, 22));
+            difficultyButtons = new Button[3];
+            string[] dn = { "CASUAL", "STANDARD", "COMPETITIVE" };
+            float dw = (578f - 2f * 8f) / 3f;
+            for (int i = 0; i < 3; i++)
+            {
+                var level = (AiDifficulty)i;
+                difficultyButtons[i] = MenuButton("Diff" + i, mr, "<b>" + dn[i] + "</b>", 20, TextAnchor.MiddleCenter, new Vector2(36 + i * (dw + 8f), -458), new Vector2(dw, 54), () => { game.SelectDifficulty(level); RefreshMenu(); });
+            }
+            difficultyDescription = Label("DifficultyDesc", mr, "", 16, TextAnchor.UpperLeft, FontStyle.Normal);
+            Anchor(difficultyDescription.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(38, -514), new Vector2(580, 22));
+
+            var start = MenuButton("Start", mr, "START", 44, TextAnchor.MiddleCenter, new Vector2(36, -540), new Vector2(578, 72), () => game.StartMatch());
             start.targetGraphic.color = Chosen;
             var colors2 = start.colors; colors2.normalColor = colors2.highlightedColor = Color.white; colors2.pressedColor = new Color(0.8f, 0.8f, 0.8f); colors2.selectedColor = Color.white; start.colors = colors2;
-            var keys = Label("Keys", mr, "W / S  gas - brake      A / D  steer      R  right car      ESC  pause", 17, TextAnchor.UpperLeft, FontStyle.Normal);
-            Anchor(keys.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(38, -652), new Vector2(580, 26));
+            var keys = Label("Keys", mr, "W / S  gas - brake      A / D  steer      R  right car      ESC  pause", 16, TextAnchor.UpperLeft, FontStyle.Normal);
+            Anchor(keys.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(38, -616), new Vector2(580, 22));
             keys.color = new Color(1f, 1f, 1f, 0.55f);
+            FitMenu();
         }
 
         void RefreshMenu()
@@ -514,10 +595,13 @@ namespace CarWreck.Derby
             for (int i = 0; i < swatchRing.Length; i++) swatchRing[i].color = i == game.playerPaint ? Color.white : Color.clear;
             modeButtons[0].targetGraphic.color = game.rules.mode == GameMode.PointsDerby ? Chosen : Dark;
             modeButtons[1].targetGraphic.color = game.rules.mode == GameMode.LastCarStanding ? Chosen : Dark;
+            for (int i = 0; i < difficultyButtons.Length; i++) difficultyButtons[i].targetGraphic.color = i == (int)game.difficulty ? Chosen : Dark;
+            difficultyDescription.text = game.difficulty == AiDifficulty.Casual ? "Relaxed AI: makes more mistakes, rarely sets up big hits."
+                : game.difficulty == AiDifficulty.Competitive ? "Sharp AI: builds speed, hunts weak cars, adapts late on." : "Balanced AI: picks sensible targets, sometimes charges up.";
             carDescription.text = game.driveProfiles != null && game.playerVehicle < game.driveProfiles.Length ? game.driveProfiles[game.playerVehicle].description : "";
             modeDescription.text = game.rules.mode == GameMode.PointsDerby
                 ? $"{game.participantCount} cars, {DurationText(game.rules.pointsDuration)}. Hard hits score points. Wrecked cars respawn. Highest score wins."
-                : $"{game.participantCount} cars, one life each. Last car running wins. With two left, a {Mathf.RoundToInt(game.rules.showdownDuration)} s final showdown: highest score wins if time runs out.";
+                : $"{game.participantCount} cars, one life each. The last two are repaired for a {Mathf.RoundToInt(game.rules.showdownDuration)} s duel: wreck your rival or do more damage.";
         }
 
         // ------------------------------------------------------------------ pause and results

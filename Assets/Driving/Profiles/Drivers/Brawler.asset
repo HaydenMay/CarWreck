@@ -16,3 +16,4 @@ MonoBehaviour:
   description: Seeks collisions constantly and takes imperfect chances. Rarely backs off.
   aggression: 0.85
   skill: 0.5
+  combatIntelligence: 0.3
