@@ -482,6 +482,7 @@ namespace DamageLab.Vehicle
             foreach (var mf in GetComponentsInChildren<MeshFilter>(true))
             {
                 if (mf.sharedMesh == null) continue;
+                if (mf.GetComponentInParent<AttachmentRoot>(true) != null) continue;     // a mounted attachment, not a body part
                 var rule = FindRule(mf.name, true);
                 if (rule != null && rule.mode == PartMode.Ignore) continue;
                 TotalTriangles += (int)(mf.sharedMesh.GetIndexCount(0) / 3);

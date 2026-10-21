@@ -99,6 +99,12 @@ namespace DamageLab.CollisionTest
             public string carCollider;        // which car collider was struck (e.g. "FrontLeftBox")
             public string impactorColliders;  // the other body's box colliders that touched in this event ("FrontLeftBox + FrontCentreBox")
             public int impactorBoxes;         // how many of them shaped the footprint (1 = the first box only)
+            // Attachment proxies (AttachmentProxy). Default (false / 0 / null) when no proxy was involved, so reports are unchanged for every vehicle without attachments.
+            public bool ownProxy;             // the deepest contact was on one of THIS car's attachment proxies (carCollider then names the nearest shell region, never the proxy)
+            public int ownSlot;               // that proxy's slot (valid when ownProxy)
+            public bool otherProxy;           // the other body touched with one of ITS attachment proxies in this event
+            public int otherSlot;             // that proxy's slot (valid when otherProxy)
+            public string otherItem;          // that proxy's item id (valid when otherProxy)
         }
 
         /// <summary>Diagnostics: every collision callback from a rigidbody, and whether it joined an event (false = ignored by the cooldown).</summary>
@@ -123,7 +129,10 @@ namespace DamageLab.CollisionTest
             public Vector3 velocityBefore; // this car's velocity before the step that produced the first contact (momentum split)
             public readonly List<BoxCollider> boxes = new List<BoxCollider>(4);
             public string impactors;
-            public string carCollider; // the car collider of the deepest contact
+            public string carCollider; // the car SHELL collider of the deepest contact (the nearest shell region when that contact was on an attachment proxy)
+            public bool ownProxy; public int ownSlot;                     // the deepest contact was on this car's attachment proxy
+            public bool otherProxy; public int otherSlot; public string otherItem;   // the other body touched with an attachment proxy
+            public bool proxyLed;     // the footprint is the other body's proxy box alone (no shell boxes are merged or filled in)
         }
 
         readonly Dictionary<Rigidbody, Pending> pending = new Dictionary<Rigidbody, Pending>();
@@ -195,11 +204,25 @@ namespace DamageLab.CollisionTest
                 p.pointSum += model.transform.InverseTransformPoint(pt);       // vehicle space: an event may span steps
                 p.normalSum += model.transform.InverseTransformDirection(n);
                 p.contacts++;
-                if (cp.separation <= p.minSeparation || p.carCollider == null) p.carCollider = cp.thisCollider != null ? cp.thisCollider.name : null;
+                if (cp.separation <= p.minSeparation || p.carCollider == null)
+                {
+                    if (AttachmentProxy.TryGet(cp.thisCollider, out var ownProxy))
+                    {
+                        p.carCollider = NearestShellName(cp.point);      // a proxy is not shell: name the shell region next to it, so existing consumers of carCollider are unchanged
+                        p.ownProxy = true; p.ownSlot = ownProxy.slot;
+                    }
+                    else
+                    {
+                        p.carCollider = cp.thisCollider != null ? cp.thisCollider.name : null;
+                        p.ownProxy = false; p.ownSlot = 0;
+                    }
+                }
                 p.minSeparation = Mathf.Min(p.minSeparation, cp.separation);
             }
             if (first) p.impulse += c.impulse.magnitude;
             if (first && c.relativeVelocity.sqrMagnitude > p.relativeVelocity.sqrMagnitude) p.relativeVelocity = c.relativeVelocity;
+            bool proxyBox = AttachmentProxy.TryGet(c.collider, out var otherProxy);
+            if (proxyBox && !p.otherProxy) { p.otherProxy = true; p.otherSlot = otherProxy.slot; p.otherItem = otherProxy.itemId; }
             if (c.collider is BoxCollider bc && geometryAwareFootprint && !p.boxes.Contains(bc))
             {
                 // The impactor's real shape: its box collider, kept in the other body's own frame (where its shell boxes are
@@ -209,16 +232,19 @@ namespace DamageLab.CollisionTest
                 Vector3 center = ot.InverseTransformPoint(bt.TransformPoint(bc.center)), half = Vector3.Scale(bc.size, bt.lossyScale) * 0.5f;
                 half = new Vector3(Mathf.Abs(half.x), Mathf.Abs(half.y), Mathf.Abs(half.z));
                 Quaternion rotation = Quaternion.Inverse(ot.rotation) * bt.rotation;
-                if (!p.box.valid)
+                // An attachment proxy is an impactor shape of its own: it leads the footprint (replacing a shell box that was reported first in the same event) and nothing is merged into it.
+                if (!p.box.valid || (proxyBox && !p.proxyLed))
                 {
                     p.box = new BoxImpactor { valid = true, center = center, rotation = rotation, halfExtents = half };
                     p.boxMin = -half; p.boxMax = half;
+                    p.boxes.Clear();
+                    p.proxyLed = proxyBox;
                     p.boxes.Add(bc); p.impactors = bc.name;
                     var root = model.transform;
                     p.otherPosition = root.InverseTransformPoint(ot.position);
                     p.otherRotation = Quaternion.Inverse(root.rotation) * ot.rotation;
                 }
-                else if (combineImpactorBoxes && Quaternion.Angle(rotation, p.box.rotation) < 0.5f)
+                else if (combineImpactorBoxes && !p.proxyLed && !proxyBox && Quaternion.Angle(rotation, p.box.rotation) < 0.5f)
                 {
                     // Another segment of the same body's shell touched in this event (a vehicle's physics shell is tiled into
                     // boxes): grow the footprint box to cover it. Only touching boxes join, so an offset hit stays local.
@@ -256,7 +282,7 @@ namespace DamageLab.CollisionTest
             other.GetComponentsInChildren(faceBoxes);
             foreach (var bc in faceBoxes)
             {
-                if (bc.isTrigger || !bc.enabled || bc.attachedRigidbody != other || p.boxes.Contains(bc)) continue;
+                if (bc.isTrigger || !bc.enabled || bc.attachedRigidbody != other || p.boxes.Contains(bc) || AttachmentProxy.IsProxy(bc)) continue;   // attachment proxies are not shell: never filled in
                 var bt = bc.transform;
                 Quaternion rotation = Quaternion.Inverse(ot.rotation) * bt.rotation;
                 if (Quaternion.Angle(rotation, p.box.rotation) >= 0.5f) continue;
@@ -295,7 +321,7 @@ namespace DamageLab.CollisionTest
             var b = new Bounds();
             foreach (var bc in ownBoxes)
             {
-                if (bc.isTrigger || !bc.enabled || bc.attachedRigidbody != body) continue;
+                if (bc.isTrigger || !bc.enabled || bc.attachedRigidbody != body || AttachmentProxy.IsProxy(bc)) continue;   // the shell only: proxies must not widen the face-fill test
                 for (int i = 0; i < 8; i++)
                 {
                     Vector3 corner = bc.center + Vector3.Scale(bc.size * 0.5f, new Vector3((i & 1) == 0 ? -1 : 1, (i & 2) == 0 ? -1 : 1, (i & 4) == 0 ? -1 : 1));
@@ -304,6 +330,20 @@ namespace DamageLab.CollisionTest
                 }
             }
             return b;
+        }
+
+        /// <summary>Name of this car's shell box nearest to a world point (used when the deepest contact was on an attachment proxy).</summary>
+        string NearestShellName(Vector3 world)
+        {
+            body.GetComponentsInChildren(ownBoxes);
+            float best = float.MaxValue; string name = null;
+            foreach (var bc in ownBoxes)
+            {
+                if (bc.isTrigger || !bc.enabled || bc.attachedRigidbody != body || AttachmentProxy.IsProxy(bc)) continue;
+                float d = (bc.ClosestPoint(world) - world).sqrMagnitude;
+                if (d < best) { best = d; name = bc.name; }
+            }
+            return name;
         }
 
         /// <summary>The event box (other body's frame) placed in vehicle space at the first contact's pose.</summary>
@@ -362,7 +402,7 @@ namespace DamageLab.CollisionTest
             // A fast block can be reported only after it has moved part of a step into the collider. Back the impactor
             // pose out along the normal by that penetration (contact points were corrected per contact above).
             float penetration = Mathf.Max(0f, -p.minSeparation);
-            if (p.box.valid && p.vehicle && vehicleFaceReach > 0f) FillFace(other, p, root.InverseTransformDirection(n));
+            if (p.box.valid && p.vehicle && vehicleFaceReach > 0f && !p.proxyLed) FillFace(other, p, root.InverseTransformDirection(n));
             if (p.box.valid) p.box = InVehicleSpace(EventBox(p), p);
             if (p.box.valid) p.box.center -= root.InverseTransformDirection(n) * penetration;
             // Collision.relativeVelocity is the other body's velocity relative to this one (verified by the
@@ -417,6 +457,8 @@ namespace DamageLab.CollisionTest
                 impactorColliders = p.impactors,
                 impactorBoxes = p.boxes.Count,
                 region = Region(localPoint),
+                ownProxy = p.ownProxy, ownSlot = p.ownSlot,
+                otherProxy = p.otherProxy, otherSlot = p.otherSlot, otherItem = p.otherItem,
             };
             report.suppressed = strength > 0f && oneImpactPerLaunch && spent.Contains(other);
             if (strength > 0f && !report.suppressed)

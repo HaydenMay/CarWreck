@@ -371,7 +371,7 @@ namespace CarWreck.Derby.EditorTools
             {
                 game.SelectVehicle(v);
                 var c = game.HumanCar;
-                int boxes = c.rig.root.GetComponentsInChildren<BoxCollider>().Length;
+                int boxes = 0; foreach (var bc in c.rig.root.GetComponentsInChildren<BoxCollider>()) if (!AttachmentProxy.IsProxy(bc)) boxes++;   // the shell only: attachment proxies are not part of it
                 bool ok = c != null && c.Model.IsInitialized && boxes == 14 && c.controller != null && c.Body.mass > 500f && game.vehicles[v].model != null;
                 all &= ok; found.Add($"{game.vehicles[v].displayName} ({c.Body.mass:0} kg, {boxes} shell boxes)");
             }

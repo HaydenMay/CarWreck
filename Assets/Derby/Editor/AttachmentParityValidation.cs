@@ -329,15 +329,21 @@ namespace CarWreck.Derby.EditorTools
             game.ClearInvalidHumanLoadoutSlots();
             Check("'clear problems' empties only the bad slot and keeps the rest", game.HumanLoadoutResult.IsValid && game.HumanLoadout.Get(AttachmentSlot.Front) == "spiked_ram_plate");
 
-            // The discovery hazard the architecture warns about: mounting BEFORE Initialize (or a Rebuild) would make the damage model treat attachment meshes as parts.
+
+            // Discovery: an item under the AttachmentRoot node is never a body part, even if the damage model is rebuilt with items mounted (M3 marker).
+            // Control: an UNMARKED mesh under the car root still becomes a part, so the part count really detects a stray mesh.
             int partsClean = h.car.Model.PartCount;
             h.car.Model.Rebuild();
-            int partsAfterRebuild = h.car.Model.PartCount;
-            bool hazardReal = partsAfterRebuild > partsClean;
-            h.car.mount.Clear();
+            Check("a Rebuild with items mounted adds no parts: the AttachmentRoot marker keeps items out of the damage model whatever the mounting order", h.car.Model.PartCount == partsClean && h.car.mount.Root.GetComponent<DamageLab.Vehicle.AttachmentRoot>() != null, $"parts {partsClean} -> {h.car.Model.PartCount}");
+            var stray = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            UnityEngine.Object.DestroyImmediate(stray.GetComponent<Collider>());
+            stray.name = "StrayMesh";
+            stray.transform.SetParent(h.car.rig.root.transform, false);
             h.car.Model.Rebuild();
-            Check("hazard control: a Rebuild with items mounted WOULD add parts (so the part-count checks above really detect a mis-ordered mount); it is not called in the derby",
-                hazardReal && h.car.Model.PartCount == partsClean, $"parts {partsClean} -> {partsAfterRebuild} with items, back to {h.car.Model.PartCount} without");
+            bool strayCounted = h.car.Model.PartCount == partsClean + 1;
+            UnityEngine.Object.DestroyImmediate(stray);
+            h.car.Model.Rebuild();
+            Check("control: an unmarked mesh under the car root DOES become a part (so the check above can fail)", strayCounted && h.car.Model.PartCount == partsClean, $"parts {partsClean} -> {(strayCounted ? partsClean + 1 : -1)} with a stray mesh, back to {h.car.Model.PartCount}");
             game.GoToMenu();
         }
     }

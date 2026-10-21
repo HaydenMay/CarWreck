@@ -64,6 +64,7 @@ namespace CarWreck.Derby
         {
             if (attachRoot != null) return;
             var go = new GameObject(RootName);
+            go.AddComponent<DamageLab.Vehicle.AttachmentRoot>();   // the damage model never treats anything below this node as a body part, in any mounting order
             attachRoot = go.transform;
             attachRoot.SetParent(transform, false);
         }
