@@ -9,7 +9,7 @@ Companion: [`sonnet-implementation-plan-v1.md`](sonnet-implementation-plan-v1.md
 - **V1 is a staged hybrid.** **Stage 1** is visual-only attachments. They have no colliders, no Rigidbody and no mass change. They are mounted on per-vehicle sockets and kept out of the damage model. A capacity budget, a loadout and a pre-match UI go with them. Sonnet can build all of Stage 1 now with existing APIs. Collision and scoring stay identical, and a regression test enforces that.
 - **Stage 2 is attachment contact proxies.** These are BoxColliders on the car's *own* Rigidbody, so attribution is preserved. Each proxy has a stable slot identity in the impact report. They need a **small, opt-in Opus interface** first. Without it, existing code would silently fold the proxies into shell bounds, the face fill, impactor footprints and collider names (§7).
 - **No damage boosts, armor or mass in V1.** The only auditable effect channel is geometry: the existing energy and footprint path, applied to a real contact shape. Mass stays off until a baseline audit exists, because it feeds energy, durability and AI in five places.
-- **Deferred:** deformable attachments, `panel_follow` mounts, detachment, separate Rigidbodies, powered items and AI loadout choice.
+- **Deferred:** deformable (bend and collapse) attachments, `panel_follow` mounts, separate Rigidbodies, powered items and AI loadout choice.
 - **Mounting:** each vehicle gets a per-vehicle fit asset holding five socket frames and a capacity value. Each item has a single prefab plus optional per-vehicle *bracket* variants. Nonuniform scaling of functional shapes is never allowed.
 
 ## 1. Executive decision and proposed V1 scope
@@ -145,7 +145,7 @@ A visual-only first iteration is the safe choice under this collision engine. It
 6. Rarity is metadata only. It never scales energy, points or durability.
 7. Resets do not grow allocations: no duplicate instances, components or materials after N resets.
 
-**Deferred:** economy, unlocks, divisions, item instances, stacking, detachment, deformable attachments, powered or moving items, AI loadout choice, networking and body rarity.
+**Deferred:** economy, unlocks, divisions, item instances, stacking, deformable (bend and collapse) attachments, powered or moving items, AI loadout choice, networking and body rarity.
 
 ## 4. Alternatives and decision table
 
@@ -509,6 +509,17 @@ Unanswered:
 
 | 6 | Crush gap behind rigid items (found in M2) | Firm hits leave 98-145 mm (within the accepted 160 mm); a maximum synthetic crush leaves 338-361 mm. **Fix deferred by the owner**; candidates when revisited: a visible strut or bracket behind the item, or items that follow the panel (`panel_follow`) |
 | 7 | Release gate | **WebGL/mobile verification is required before M2 is approved for release**; nothing is published meanwhile |
+
+
+### Future: attachments that bend and collapse (owner direction, not V1)
+
+Long term the owner wants attachments to show damage like the cars do, so they never look invulnerable. **Attachments do not break off.** They stay attached and bend, crumple and collapse using the same deformation as the car bodies. That removes the detached-prop problem entirely (no loose objects, no extra physics bodies, no attribution risk, §7.2) and keeps one rule: what is bolted on stays on, and shows what it has been through. V1 was built so this stays open; what it would take, in the order it should be tried:
+1. **Contact first.** Opus's proxy interface (§7.3) gives each item a real contact shape on the car's body and slot-tagged reports. You cannot deform what cannot be hit.
+2. **Item damage state.** A per-item damage level that fills from hits reported on that item's proxy (energy and slot are already in the report), separate from the car's durability so scoring and the match rules stay as they are. The loadout (configuration) and the damage (runtime condition) stay in different places, as today. A reset or respawn restores the item exactly as `ResetCar` restores the car.
+3. **Visible damage.** The cars' deformation engine applied to item meshes: an item mesh becomes a `DeformablePart`, which needs readable meshes, enough vertices to bend, a part rule per item and an opt-in discovery marker. Today items are deliberately hidden from discovery by mounting after `Initialize`; bendable items would reverse that on purpose. A heavily damaged item ends in a collapsed shape (folded and flattened against the car), not in a missing item. Cost is deformable vertices per item on mobile WebGL, so each item needs a vertex budget and a measured cost before more than a few are allowed. Art needs: meshes with enough subdivision to crumple, and a collapsed look that reads clearly.
+4. **Follow the panel.** The item rides the deforming panel it is bolted to, which also removes the crush gap behind rigid items (the deferred `panel_follow` mount). Needs an Opus API for reading displaced vertices. Because items bend and collapse instead of staying rigid, this matters more than in V1.
+
+Open design questions for the owner when this starts: does a collapsed item change handling or protection (it would, if items ever protect), do AI cars show item damage too, and is item damage shown in the HUD. None of this should be built before the first real item effect exists and its scoring path is audited.
 
 ### Future: Home screen with Play and Garage (owner direction, not V1)
 
