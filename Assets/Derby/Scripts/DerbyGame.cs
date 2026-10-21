@@ -214,6 +214,30 @@ namespace CarWreck.Derby
             RefreshHumanAttachments();
         }
 
+        // ---- saved builds (presets): three per vehicle
+
+        public bool HumanPresetExists(int index) => LoadoutPresets.Exists(VehicleKey(playerVehicle), index);
+
+        /// <summary>The saved build in a preset slot for the player's vehicle, or null when the slot is empty or unreadable.</summary>
+        public Loadout HumanPreset(int index) => LoadoutPresets.Load(VehicleKey(playerVehicle), index, out var p) == LoadoutStore.ParseResult.Ok ? p : null;
+
+        public void SaveHumanPreset(int index)
+        {
+            if (attachmentCatalog == null) return;
+            LoadoutPresets.Save(VehicleKey(playerVehicle), index, HumanLoadout);
+        }
+
+        /// <summary>Replaces the current selection with a saved build (unknown ids in it are kept and flagged, as for any loadout). Returns false when the slot is empty.</summary>
+        public bool LoadHumanPreset(int index)
+        {
+            var p = HumanPreset(index);
+            if (attachmentCatalog == null || p == null) return false;
+            Human.loadout = p;
+            if (Application.isPlaying) LoadoutStore.Save(Human.loadout);
+            RefreshHumanAttachments();
+            return true;
+        }
+
         void RefreshHumanAttachments()
         {
             if (Human.car != null && Human.car.mount != null) Human.car.mount.Apply(HumanLoadout);

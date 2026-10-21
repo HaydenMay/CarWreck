@@ -50,7 +50,7 @@ namespace CarWreck.Derby.EditorTools
                 var prefab = BuildPrefab(spec, mat);
                 var def = LoadOrCreate<AttachmentDefinition>($"{DataFolder}/{spec.id}.asset", () => ScriptableObject.CreateInstance<AttachmentDefinition>());
                 def.id = spec.id; def.displayName = spec.name; def.slot = spec.slot; def.rarity = AttachmentRarity.Common;
-                def.capacityCost = spec.cost; def.designMassKg = spec.mass; def.prefab = prefab;
+                def.capacityCost = spec.cost; def.designMassKg = spec.mass; def.prefab = prefab; def.description = Describe(spec.id);
                 if (def.incompatibleWith == null) def.incompatibleWith = new string[0];
                 EditorUtility.SetDirty(def);
                 defs[i] = def;
@@ -81,6 +81,19 @@ namespace CarWreck.Derby.EditorTools
             var problems = catalog.Audit();
             Debug.Log($"[Attachments] Placeholder data built: {defs.Length} items, {fits.Length} fits, {problems.Count} catalog problems.");
             foreach (var p in problems) Debug.LogWarning("[Attachments] " + p);
+        }
+
+        /// <summary>Short player-facing text for the Garage card. Placeholder wording; items are visual only until the collision interface exists.</summary>
+        static string Describe(string id)
+        {
+            switch (id)
+            {
+                case "push_bar_junk": return "A welded pipe frame across the nose. Cheap, and it says you came to ram.";
+                case "spiked_ram_plate": return "A heavy plate with home-made spikes. Costs half your capacity; the meanest look in the yard.";
+                case "roof_cage_rack": return "A scrap cage bolted over the cabin. Barely any weight, barely any cost.";
+                case "tow_hitch_bumper": return "A chunky rear bumper with a tow hitch. Rear-end swagger.";
+                default: return "";
+            }
         }
 
         static GameObject BuildPrefab(ItemSpec spec, Material mat)

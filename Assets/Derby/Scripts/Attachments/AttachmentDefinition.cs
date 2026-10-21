@@ -19,6 +19,7 @@ namespace CarWreck.Derby
         public string id;
         public string displayName;
         public AttachmentSlot slot;
+        [TextArea, Tooltip("Short text for the Garage card (a sentence or two). Describes the look; do not promise effects that do not exist.")] public string description;
         [Tooltip("Display only.")] public AttachmentRarity rarity;
         [Tooltip("Capacity points this item uses (>= 0). Independent of rarity and mass.")] public int capacityCost = 1;
         [Tooltip("Visual prefab, authored once facing +Z outward from the slot (see architecture-v1.md section 6).")] public GameObject prefab;

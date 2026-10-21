@@ -38,6 +38,7 @@ namespace CarWreck.Derby.EditorTools
             var saved = new Loadout(Key);
             saved.Set(AttachmentSlot.Front, "push_bar_junk"); saved.Set(AttachmentSlot.Left, "retired_item");
             LoadoutStore.Save(saved);
+            for (int i = 0; i < LoadoutPresets.Count; i++) LoadoutPresets.Delete(Key, i);
             Directory.CreateDirectory(AttachmentFitTool.PreviewFolder);
             EditorApplication.playModeStateChanged += OnState;
             EditorApplication.isPlaying = true;
@@ -110,6 +111,13 @@ namespace CarWreck.Derby.EditorTools
                     Check("editing the roof slot raises and tightens the view", Mathf.Approximately(cam.MenuPitch, 40f) && Mathf.Approximately(cam.MenuZoom, 0.85f) && Mathf.Abs(Mathf.DeltaAngle(cam.MenuAngle, carYaw + 150f)) < 0.5f);
                     Click("Next4");                                   // rack -> none -> rack again: leaves the build as it was (7/10)
                     Check("the roof rack is back and the build is still 7/10", game.Human.car.mount.MountedId(AttachmentSlot.Roof) == "roof_cage_rack" && game.HumanLoadoutResult.totalCost == 7);
+                    Check("the item card shows the slot being edited: name, cost, rarity and a description", TextOf("CardTitle", "ItemCard") == "ROOF CAGE RACK" && TextOf("CardMeta", "ItemCard").Contains("COST 1") && TextOf("CardBody", "ItemCard").Length > 20 && Vis("ItemCard"), $"{TextOf("CardTitle", "ItemCard")} | {TextOf("CardMeta", "ItemCard")}");
+                    var barFill = GameObject.Find("CapacityFill");
+                    Check("the capacity bar fills 7/10 of its width", barFill != null && Mathf.Abs(barFill.GetComponent<RectTransform>().sizeDelta.x - 196f) < 0.5f, barFill != null ? barFill.GetComponent<RectTransform>().sizeDelta.x.ToString("0.0") : "missing");
+                    Check("an equipped slot looks different from an empty one", Btn("Item0").targetGraphic.color != Btn("Item2").targetGraphic.color);
+                    Click("Next0");                                   // front: ram -> none (the list wraps: none, push bar, ram plate)
+                    Check("the card says EMPTY for an empty slot", TextOf("CardMeta", "ItemCard") == "EMPTY" && TextOf("CardTitle", "ItemCard") == "FRONT");
+                    Click("Next0"); Click("Next0");                   // none -> push bar -> ram plate again
                     Check("the capacity readout shows 7 / 10", TextOf("Capacity", "PageGarage").Contains("7 / 10"), TextOf("Capacity", "PageGarage"));
                 }
                 else if (step == 3)
@@ -148,6 +156,20 @@ namespace CarWreck.Derby.EditorTools
                     Check("switching back restores the muscle car's build", game.Human.car.mount.InstanceCount == 3 && game.HumanLoadout.Get(AttachmentSlot.Front) == "spiked_ram_plate");
                     Click("Swatch2");
                     Check("paint choice works from the Garage", game.playerPaint == 2);
+                    Click("TabBuilds");
+                    Check("the BUILDS tab shows three empty slots; LOAD is disabled until something is saved", Vis("PresetLoad0") && Vis("PresetLoad2") && !Btn("PresetLoad0").interactable && !Vis("ItemCard"));
+                    Click("PresetSave0");
+                    Check("SAVE stores the current loadout; the slot now shows its items and cost and offers REPLACE", game.HumanPresetExists(0) && Btn("PresetLoad0").interactable && TextOf("PresetSummary0", "TabContentBuilds").Contains("7/10") && LabelOf("PresetSave0").Contains("REPLACE"), TextOf("PresetSummary0", "TabContentBuilds"));
+                    Click("TabLoadout"); Click("Next4");              // roof rack off: build is now 6/10
+                    Check("the build was changed after saving (6/10)", game.HumanLoadoutResult.totalCost == 6);
+                    Click("TabBuilds"); Click("PresetLoad0");
+                    Check("LOAD restores the saved build (rack back, 7/10, items mounted on the car) and saves it as the current loadout", game.HumanLoadoutResult.totalCost == 7 && game.Human.car.mount.InstanceCount == 3 && game.Human.car.mount.MountedId(AttachmentSlot.Roof) == "roof_cage_rack");
+                    LoadoutStore.Load(Key, out var afterLoad);
+                    Check("the loaded build is what is saved for the vehicle", afterLoad.Get(AttachmentSlot.Roof) == "roof_cage_rack");
+                    Click("Car1"); Click("TabBuilds");
+                    Check("saved builds belong to a vehicle: the hatchback's slots are empty", !game.HumanPresetExists(0) && !Btn("PresetLoad0").interactable);
+                    Click("Car0");
+                    Click("TabVehicle");
                 }
                 else if (step == 5)
                 {
@@ -185,6 +207,7 @@ namespace CarWreck.Derby.EditorTools
             if (problem != null) { sb.AppendLine("  FAIL  " + problem); fails++; }
             EditorApplication.update -= Tick;
             LoadoutStore.Delete(Key);
+            for (int i = 0; i < LoadoutPresets.Count; i++) LoadoutPresets.Delete(Key, i);
             sb.AppendLine($"[Attachments] {passes} PASS, {fails} FAIL");
             Debug.Log(sb.ToString());
             EditorApplication.playModeStateChanged -= OnState;

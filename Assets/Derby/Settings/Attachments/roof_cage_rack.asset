@@ -15,6 +15,7 @@ MonoBehaviour:
   id: roof_cage_rack
   displayName: Roof Cage Rack
   slot: 4
+  description: A scrap cage bolted over the cabin. Barely any weight, barely any cost.
   rarity: 0
   capacityCost: 1
   prefab: {fileID: 665505640889373354, guid: 29de00f3eba888749b1952e32e3b8a48, type: 3}
