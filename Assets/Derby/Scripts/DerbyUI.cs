@@ -44,7 +44,16 @@ namespace CarWreck.Derby
         // menu: Home (Play / Garage), Play (match setup) and Garage (Vehicle and Loadout tabs)
         enum MenuPage { Home, Play, Vehicle, Loadout }
         MenuPage currentPage = MenuPage.Home;
-        GameObject pageHome, pagePlay, pageGarage, pageVehicle, pageLoadout;
+        GameObject pageHome, pagePlay, pageGarage, pageVehicle, pageLoadout, orbitPad;
+        /// <summary>Camera views for the loadout rows: (degrees round from behind the car, height in degrees, zoom). 0 = behind, 180 = front, 90 = left, 270 = right.</summary>
+        static readonly (float angle, float pitch, float zoom)[] SlotViews =
+        {
+            (150f, 16f, 0.8f),   // front
+            (25f, 16f, 0.8f),    // rear
+            (105f, 14f, 0.8f),   // left
+            (255f, 14f, 0.8f),   // right
+            (150f, 40f, 0.85f),  // roof
+        };
         Button[] carButtons, modeButtons, swatchButtons, difficultyButtons;
         Image[] swatchRing;
         Text carDescription, modeDescription, difficultyDescription, homeSummary, playSummary;
@@ -95,6 +104,7 @@ namespace CarWreck.Derby
         public void ShowMenu(bool on)
         {
             if (on) { EnsureMenu(); ShowPage(MenuPage.Home); }   // the menu always opens on Home
+            if (orbitPad != null) orbitPad.SetActive(on);
             if (menuRoot != null) menuRoot.SetActive(on);
             if (on) { if (resultsRoot != null) resultsRoot.SetActive(false); if (pauseRoot != null) pauseRoot.SetActive(false); }
             ApplyVisibility();
@@ -113,6 +123,7 @@ namespace CarWreck.Derby
             feed.Clear(); if (feedText != null) feedText.text = "";
             bannerUntil = pointsUntil = 0f;
             if (menuRoot != null) menuRoot.SetActive(false);
+            if (orbitPad != null) orbitPad.SetActive(false);
             if (resultsRoot != null) resultsRoot.SetActive(false);
             if (pauseRoot != null) pauseRoot.SetActive(false);
             ApplyVisibility();
@@ -534,6 +545,12 @@ namespace CarWreck.Derby
         {
             if (menuBuilt || game == null) return;
             menuBuilt = true;
+            // the orbit layer is created first so the menu panel (created next) sits in front of it
+            orbitPad = new GameObject("OrbitPad", typeof(RectTransform), typeof(Image));
+            Stretch((RectTransform)orbitPad.transform, root);
+            orbitPad.GetComponent<Image>().color = Color.clear;
+            var pad = orbitPad.AddComponent<MenuOrbitPad>();
+            pad.cam = game.chaseCamera;
             menuRoot = new GameObject("Menu", typeof(RectTransform), typeof(Image));
             var bg = (RectTransform)menuRoot.transform;
             bg.SetParent(root, false);
@@ -668,7 +685,15 @@ namespace CarWreck.Derby
         {
             if (!menuBuilt) return;
             if (page == MenuPage.Loadout && !game.AttachmentsAvailable) page = MenuPage.Vehicle;
+            var previous = currentPage;
             currentPage = page;
+            var cam = game.chaseCamera;
+            if (cam != null)
+            {
+                cam.menuAutoSpin = page == MenuPage.Home || page == MenuPage.Play;      // the Garage holds the view still so the car can be inspected
+                if (page == MenuPage.Vehicle && previous != MenuPage.Vehicle) cam.FocusMenuView(ChaseCamera.DefaultMenuRelativeAngle, ChaseCamera.DefaultMenuPitch, 1f);
+                if (page == MenuPage.Loadout && previous != MenuPage.Loadout) FocusSlotView(0);
+            }
             bool garage = page == MenuPage.Vehicle || page == MenuPage.Loadout;
             pageHome.SetActive(page == MenuPage.Home);
             pagePlay.SetActive(page == MenuPage.Play);
@@ -746,7 +771,17 @@ namespace CarWreck.Derby
             int count = optionScratch.Count + 1;                      // none + items
             int pos = (index + 1 + dir + count) % count;              // 0 = none
             game.SetHumanLoadoutItem((AttachmentSlot)slot, pos == 0 ? "" : optionScratch[pos - 1].id);
+            FocusSlotView(slot);
             RefreshMenu();
+        }
+
+        /// <summary>Swings the preview car to show the slot being edited.</summary>
+        void FocusSlotView(int slot)
+        {
+            var cam = game.chaseCamera;
+            if (cam == null || slot < 0 || slot >= SlotViews.Length) return;
+            var v = SlotViews[slot];
+            cam.FocusMenuView(v.angle, v.pitch, v.zoom);
         }
 
         void RefreshLoadoutRows(LoadoutResult r)

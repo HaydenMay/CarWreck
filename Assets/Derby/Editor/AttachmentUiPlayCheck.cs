@@ -6,6 +6,7 @@ using CarWreck.Driving;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using Debug = UnityEngine.Debug;
 
@@ -77,6 +78,7 @@ namespace CarWreck.Derby.EditorTools
                     if (game == null || ui == null || !game.MenuOpen || Btn("Play") == null) { if (frame > 200) Finish("menu never came up"); return; }
                     step = 1;
                     Check("the menu opens on the Home page: PLAY and GARAGE are shown, the match setup and the garage are not", Vis("Play") && Vis("Garage") && !Vis("Start") && !Vis("TabVehicle"));
+                    Check("Home keeps the slow showcase spin and has the orbit layer behind the panel", game.chaseCamera.HasMenuFocus && game.chaseCamera.menuAutoSpin && Vis("OrbitPad"));
                     Check("the saved build for the muscle car is loaded (valid item plus a retired id)", game.HumanLoadout.Get(AttachmentSlot.Left) == "retired_item" && game.HumanLoadout.Get(AttachmentSlot.Front) == "push_bar_junk");
                     Check("Home summarises the car and flags the broken loadout", TextOf("Summary", "PageHome").Contains("MUSCLE CAR") && TextOf("Summary", "PageHome").Contains("FIX LOADOUT"), TextOf("Summary", "PageHome"));
                     Check("the saved build's valid item is mounted on the shown car; the retired id is left empty, not dropped from the save", game.Human.car.mount.MountedId(AttachmentSlot.Front) == "push_bar_junk" && game.Human.car.mount.MountedId(AttachmentSlot.Left) == "" && game.HumanLoadout.Get(AttachmentSlot.Left) == "retired_item");
@@ -102,6 +104,12 @@ namespace CarWreck.Derby.EditorTools
                     Click("Next1");                                   // rear: none -> hitch
                     Check("capacity 7/10 is valid and three items are mounted", game.HumanLoadoutResult.IsValid && game.HumanLoadoutResult.totalCost == 7 && game.Human.car.mount.InstanceCount == 3);
                     Check("slots with no items yet (left/right) are not interactable", !Btn("Next2").interactable && !Btn("Next3").interactable);
+                    var cam = game.chaseCamera; float carYaw = game.Human.car.rig.root.transform.eulerAngles.y;
+                    Check("after editing the rear slot the preview swings to the rear three-quarter view", Mathf.Abs(Mathf.DeltaAngle(cam.MenuAngle, carYaw + 25f)) < 0.5f && Mathf.Approximately(cam.MenuPitch, 16f) && Mathf.Approximately(cam.MenuZoom, 0.8f), $"angle {cam.MenuAngle:0.0} vs car {carYaw:0.0}, pitch {cam.MenuPitch}, zoom {cam.MenuZoom}");
+                    Click("Next4");
+                    Check("editing the roof slot raises and tightens the view", Mathf.Approximately(cam.MenuPitch, 40f) && Mathf.Approximately(cam.MenuZoom, 0.85f) && Mathf.Abs(Mathf.DeltaAngle(cam.MenuAngle, carYaw + 150f)) < 0.5f);
+                    Click("Next4");                                   // rack -> none -> rack again: leaves the build as it was (7/10)
+                    Check("the roof rack is back and the build is still 7/10", game.Human.car.mount.MountedId(AttachmentSlot.Roof) == "roof_cage_rack" && game.HumanLoadoutResult.totalCost == 7);
                     Check("the capacity readout shows 7 / 10", TextOf("Capacity", "PageGarage").Contains("7 / 10"), TextOf("Capacity", "PageGarage"));
                 }
                 else if (step == 3)
@@ -113,6 +121,21 @@ namespace CarWreck.Derby.EditorTools
                     Check("each change was saved for this vehicle", persisted.Get(AttachmentSlot.Front) == "spiked_ram_plate" && persisted.Get(AttachmentSlot.Roof) == "roof_cage_rack" && persisted.Get(AttachmentSlot.Rear) == "tow_hitch_bumper");
                     Click("Garage");
                     Check("GARAGE opens on the Vehicle tab (cars and paint)", Vis("TabVehicle") && Vis("Car0") && Vis("Swatch0") && !Vis("Item0"));
+                    var cam = game.chaseCamera; var pad = ui.GetComponentInChildren<MenuOrbitPad>(true);
+                    Check("the Garage holds the view still (no auto-spin) at the default angle, height and distance", !cam.menuAutoSpin && Mathf.Approximately(cam.MenuPitch, ChaseCamera.DefaultMenuPitch) && Mathf.Approximately(cam.MenuZoom, 1f) && pad != null && pad.gameObject.activeInHierarchy);
+                    float a0 = cam.MenuAngle, p0 = cam.MenuPitch, z0 = cam.MenuZoom;
+                    var drag = new PointerEventData(EventSystem.current) { delta = new Vector2(100f, -50f) };
+                    pad.OnDrag(drag);
+                    Check("dragging right swings the camera round by +35 deg (the near side of the car follows the finger) and dragging down raises the view (+11 deg)", Mathf.Abs((cam.MenuAngle - a0) - 35f) < 0.01f && Mathf.Abs((cam.MenuPitch - p0) - 11f) < 0.01f, $"angle {cam.MenuAngle - a0:0.0}, pitch {cam.MenuPitch - p0:0.0}");
+                    for (int i = 0; i < 40; i++) pad.OnDrag(new PointerEventData(EventSystem.current) { delta = new Vector2(0f, -100f) });
+                    Check("the height is clamped (never below the ground or straight overhead)", cam.MenuPitch <= cam.menuMaxPitch + 0.001f && cam.MenuPitch >= cam.menuMinPitch);
+                    for (int i = 0; i < 40; i++) pad.OnDrag(new PointerEventData(EventSystem.current) { delta = new Vector2(0f, 100f) });
+                    Check("dragging up lowers the view only to the minimum", Mathf.Approximately(cam.MenuPitch, cam.menuMinPitch));
+                    pad.OnScroll(new PointerEventData(EventSystem.current) { scrollDelta = new Vector2(0f, 1f) });
+                    Check("the mouse wheel zooms in (distance x0.9)", Mathf.Abs(cam.MenuZoom - 0.9f) < 0.001f, $"zoom {cam.MenuZoom}");
+                    for (int i = 0; i < 20; i++) pad.OnScroll(new PointerEventData(EventSystem.current) { scrollDelta = new Vector2(0f, -1f) });
+                    Check("zoom is clamped to the allowed range", Mathf.Approximately(cam.MenuZoom, cam.menuMaxZoom));
+                    cam.FocusMenuView(ChaseCamera.DefaultMenuRelativeAngle, ChaseCamera.DefaultMenuPitch, 1f);
                 }
                 else if (step == 4)
                 {
@@ -136,7 +159,7 @@ namespace CarWreck.Derby.EditorTools
                     Click("ModePoints"); Click("Diff1");
                     Check("START now reads START (build is valid)", LabelOf("Start") == "START");
                     Click("Start");
-                    Check("START starts the match; the whole menu is hidden and the kit is on the player's car", !game.MenuOpen && game.Match != null && game.Human.car.mount.InstanceCount == 3 && !Vis("Start") && !Vis("Play"), $"menuOpen={game.MenuOpen}, items={game.Human.car.mount.InstanceCount}");
+                    Check("START starts the match; the whole menu is hidden and the kit is on the player's car", !game.MenuOpen && game.Match != null && game.Human.car.mount.InstanceCount == 3 && !Vis("Start") && !Vis("Play") && !Vis("OrbitPad"), $"menuOpen={game.MenuOpen}, items={game.Human.car.mount.InstanceCount}");
                 }
                 else if (step == 6)
                 {
@@ -150,7 +173,7 @@ namespace CarWreck.Derby.EditorTools
                 else if (step == 7)
                 {
                     step = 8;
-                    Check("quitting to the menu returns to Home", Vis("Play") && Vis("Garage") && !Vis("Start"));
+                    Check("quitting to the menu returns to Home with the showcase spin and the orbit layer back", Vis("Play") && Vis("Garage") && !Vis("Start") && game.chaseCamera.menuAutoSpin && Vis("OrbitPad"));
                 }
                 else if (step == 8) Finish(null);
             }
