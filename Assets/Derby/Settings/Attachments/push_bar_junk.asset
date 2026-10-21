@@ -15,6 +15,7 @@ MonoBehaviour:
   id: push_bar_junk
   displayName: Junk Push Bar
   slot: 0
+  description: A welded pipe frame across the nose. Cheap, and it says you came to ram.
   rarity: 0
   capacityCost: 2
   prefab: {fileID: 4326732666602243049, guid: 366b3c544856f0b4abeece5f7b71407c, type: 3}

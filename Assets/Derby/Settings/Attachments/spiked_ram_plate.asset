@@ -15,6 +15,7 @@ MonoBehaviour:
   id: spiked_ram_plate
   displayName: Spiked Ram Plate
   slot: 0
+  description: A heavy plate with home-made spikes. Costs half your capacity; the meanest look in the yard.
   rarity: 0
   capacityCost: 4
   prefab: {fileID: 6278535370295637387, guid: 5a4c22394355e51429b8ca31986e77b0, type: 3}

@@ -51,6 +51,7 @@ namespace CarWreck.Derby.EditorTools
                 Basic(fit, cat);
                 Budget(fit, cat);
                 Persistence(cat, fit);
+                Presets();
                 CatalogAudit(junk, prefab);
                 PlaceholderAssets();
             }
@@ -148,6 +149,24 @@ namespace CarWreck.Derby.EditorTools
             Check("delete removes the save", LoadoutStore.Load("TestCar", out _) == LoadoutStore.ParseResult.Missing);
         }
 
+        static void Presets()
+        {
+            const string key = "TestCar";
+            for (int i = 0; i < LoadoutPresets.Count; i++) LoadoutPresets.Delete(key, i);
+            Check("saved builds: three slots per vehicle, all empty at first", LoadoutPresets.Count == 3 && !LoadoutPresets.Exists(key, 0) && LoadoutPresets.Load(key, 1, out var none) == LoadoutStore.ParseResult.Missing && none.IsEmpty);
+            var l = L((AttachmentSlot.Front, "front_a"), (AttachmentSlot.Left, "retired_item"));
+            LoadoutPresets.Save(key, 1, l);
+            Check("a saved build round-trips with every slot (an unknown id is kept, not dropped)", LoadoutPresets.Exists(key, 1) && LoadoutPresets.Load(key, 1, out var back) == LoadoutStore.ParseResult.Ok && Loadout.SameItems(l, back) && back.vehicleKey == key);
+            Check("other slots and other vehicles are untouched", !LoadoutPresets.Exists(key, 0) && !LoadoutPresets.Exists("TestCar_Other", 1));
+            l.Set(AttachmentSlot.Front, "front_b");
+            LoadoutPresets.Load(key, 1, out var again);
+            Check("a saved build is a copy: editing the current loadout later does not change it", again.Get(AttachmentSlot.Front) == "front_a");
+            LoadoutPresets.Save(key, 7, l); LoadoutPresets.Save(key, -1, l);
+            Check("out-of-range slots are ignored safely", !LoadoutPresets.Exists(key, 7) && LoadoutPresets.Load(key, 7, out _) == LoadoutStore.ParseResult.Missing);
+            LoadoutPresets.Delete(key, 1);
+            Check("delete empties the slot", !LoadoutPresets.Exists(key, 1));
+        }
+
         static void CatalogAudit(System.Collections.Generic.List<Object> junk, GameObject prefab)
         {
             var cat = ScriptableObject.CreateInstance<AttachmentCatalog>(); junk.Add(cat);
@@ -177,6 +196,8 @@ namespace CarWreck.Derby.EditorTools
             bool colliderFree = true;
             foreach (var it in cat.items) if (it != null && it.prefab != null && it.prefab.GetComponentInChildren<Collider>(true) != null) colliderFree = false;
             Check("placeholder prefabs carry no colliders (Stage 1 is visual only)", colliderFree);
+            bool described = true; foreach (var it in cat.items) if (it == null || string.IsNullOrWhiteSpace(it.description)) described = false;
+            Check("every placeholder item has a Garage description", described);
             var hatch = cat.FitFor("CompactHatchback"); var muscle = cat.FitFor("MuscleCar"); var pick = cat.FitFor("CompactPickup");
             Check("placeholder capacities are 8 / 10 / 12 (hatchback / muscle / pickup)", hatch != null && muscle != null && pick != null && hatch.capacity == 8 && muscle.capacity == 10 && pick.capacity == 12);
             bool anyFits = false;

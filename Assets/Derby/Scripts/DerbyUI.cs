@@ -42,9 +42,9 @@ namespace CarWreck.Derby
         readonly List<Plate> plates = new List<Plate>();
 
         // menu: Home (Play / Garage), Play (match setup) and Garage (Vehicle and Loadout tabs)
-        enum MenuPage { Home, Play, Vehicle, Loadout }
+        enum MenuPage { Home, Play, Vehicle, Loadout, Builds }
         MenuPage currentPage = MenuPage.Home;
-        GameObject pageHome, pagePlay, pageGarage, pageVehicle, pageLoadout, orbitPad;
+        GameObject pageHome, pagePlay, pageGarage, pageVehicle, pageLoadout, pageBuilds, orbitPad, cardRoot;
         /// <summary>Camera views for the loadout rows: (degrees round from behind the car, height in degrees, zoom). 0 = behind, 180 = front, 90 = left, 270 = right.</summary>
         static readonly (float angle, float pitch, float zoom)[] SlotViews =
         {
@@ -57,7 +57,12 @@ namespace CarWreck.Derby
         Button[] carButtons, modeButtons, swatchButtons, difficultyButtons;
         Image[] swatchRing;
         Text carDescription, modeDescription, difficultyDescription, homeSummary, playSummary;
-        Button startButton, clearProblemsButton, tabVehicle, tabLoadout, garageBack;
+        Button startButton, clearProblemsButton, tabVehicle, tabLoadout, tabBuilds, garageBack;
+        Image capacityBarBack, capacityBarFill;
+        Text cardTitle, cardMeta, cardBody;
+        int focusedSlot;
+        readonly Button[] itemButtons = new Button[VehicleAttachmentFit.SlotCount], presetLoad = new Button[LoadoutPresets.Count], presetSave = new Button[LoadoutPresets.Count];
+        readonly Text[] presetTitle = new Text[LoadoutPresets.Count], presetSummary = new Text[LoadoutPresets.Count], presetSaveLabel = new Text[LoadoutPresets.Count];
         Text startLabel, capacityLabel, tabLoadoutLabel;
         readonly Button[] slotPrev = new Button[VehicleAttachmentFit.SlotCount], slotNext = new Button[VehicleAttachmentFit.SlotCount];
         readonly Text[] slotName = new Text[VehicleAttachmentFit.SlotCount];
@@ -621,8 +626,14 @@ namespace CarWreck.Derby
             pageGarage = p.gameObject;
             var title = PlaceLabel("Title", p, "GARAGE", 50, TextAnchor.UpperLeft, FontStyle.Bold, 36, -8, 400, 56); title.color = Chosen;
             capacityLabel = PlaceLabel("Capacity", p, "", 20, TextAnchor.UpperRight, FontStyle.Bold, 334, -24, 280, 30);
-            tabVehicle = MenuButton("TabVehicle", p, "VEHICLE", 24, TextAnchor.MiddleCenter, new Vector2(36, -66), new Vector2(284, 70), () => ShowPage(MenuPage.Vehicle));
-            tabLoadout = MenuButton("TabLoadout", p, "LOADOUT", 24, TextAnchor.MiddleCenter, new Vector2(330, -66), new Vector2(284, 70), () => ShowPage(MenuPage.Loadout));
+            capacityBarBack = Img("CapacityBack", p, new Color(1f, 1f, 1f, 0.18f));
+            Anchor(capacityBarBack.rectTransform, TopLeft, TopLeft, TopLeft, new Vector2(334, -58), new Vector2(280, 8));
+            capacityBarFill = Img("CapacityFill", p, Chosen);
+            Anchor(capacityBarFill.rectTransform, TopLeft, TopLeft, TopLeft, new Vector2(334, -58), new Vector2(0, 8));
+            float tw = (578f - 2f * 8f) / 3f;
+            tabVehicle = MenuButton("TabVehicle", p, "VEHICLE", 22, TextAnchor.MiddleCenter, new Vector2(36, -66), new Vector2(tw, 70), () => ShowPage(MenuPage.Vehicle));
+            tabLoadout = MenuButton("TabLoadout", p, "LOADOUT", 22, TextAnchor.MiddleCenter, new Vector2(36 + tw + 8f, -66), new Vector2(tw, 70), () => ShowPage(MenuPage.Loadout));
+            tabBuilds = MenuButton("TabBuilds", p, "BUILDS", 22, TextAnchor.MiddleCenter, new Vector2(36 + 2f * (tw + 8f), -66), new Vector2(tw, 70), () => ShowPage(MenuPage.Builds));
             tabLoadoutLabel = tabLoadout.GetComponentInChildren<Text>();
 
             // vehicle tab
@@ -671,10 +682,39 @@ namespace CarWreck.Derby
                 slotPrev[i] = MenuButton("Prev" + i, l, "<", 32, TextAnchor.MiddleCenter, new Vector2(144, y), new Vector2(72, 70), () => CycleSlot(s, -1));
                 var nameBg = MenuButton("Item" + i, l, "", 21, TextAnchor.MiddleLeft, new Vector2(222, y), new Vector2(314, 70), () => CycleSlot(s, +1));
                 slotName[i] = nameBg.GetComponentInChildren<Text>();
+                itemButtons[i] = nameBg;
                 slotNext[i] = MenuButton("Next" + i, l, ">", 32, TextAnchor.MiddleCenter, new Vector2(542, y), new Vector2(72, 70), () => CycleSlot(s, +1));
             }
 
-            // bottom row, shared by both tabs
+            // builds tab: three saved loadouts per vehicle
+            var bp = NewPage("TabContentBuilds", p); pageBuilds = bp.gameObject;
+            for (int i = 0; i < LoadoutPresets.Count; i++)
+            {
+                int idx = i;
+                float y = -150f - i * 86f;
+                presetTitle[i] = PlaceLabel("PresetTitle" + i, bp, $"BUILD {i + 1}", 20, TextAnchor.UpperLeft, FontStyle.Bold, 38, y + 2f, 320, 26);
+                presetSummary[i] = PlaceLabel("PresetSummary" + i, bp, "", 16, TextAnchor.UpperLeft, FontStyle.Normal, 38, y - 28f, 320, 44);
+                presetLoad[i] = MenuButton("PresetLoad" + i, bp, "LOAD", 22, TextAnchor.MiddleCenter, new Vector2(366, y), new Vector2(118, 70), () => { game.LoadHumanPreset(idx); RefreshMenu(); });
+                presetSave[i] = MenuButton("PresetSave" + i, bp, "SAVE", 20, TextAnchor.MiddleCenter, new Vector2(490, y), new Vector2(124, 70), () => { game.SaveHumanPreset(idx); RefreshMenu(); });
+                presetSaveLabel[i] = presetSave[i].GetComponentInChildren<Text>();
+            }
+            PlaceLabel("PresetHint", bp, "SAVE keeps the current loadout in that slot. LOAD replaces your loadout with it.", 16, TextAnchor.UpperLeft, FontStyle.Normal, 38, -414, 580, 44).color = new Color(1f, 1f, 1f, 0.6f);
+
+            // item card, on the right of the screen over the preview (child of the orbit layer, so it hides with the menu and never blocks a drag)
+            cardRoot = new GameObject("ItemCard", typeof(RectTransform), typeof(Image));
+            var cr = (RectTransform)cardRoot.transform;
+            cr.SetParent(orbitPad.transform, false);
+            Anchor(cr, new Vector2(1, 1), new Vector2(1, 1), new Vector2(1, 1), new Vector2(-24, -72), new Vector2(340, 190));
+            var cardImg = cardRoot.GetComponent<Image>(); cardImg.color = Panel; cardImg.raycastTarget = false;
+            cardTitle = Label("CardTitle", cr, "", 26, TextAnchor.UpperLeft, FontStyle.Bold);
+            Anchor(cardTitle.rectTransform, TopLeft, TopLeft, TopLeft, new Vector2(16, -10), new Vector2(308, 34));
+            cardMeta = Label("CardMeta", cr, "", 17, TextAnchor.UpperLeft, FontStyle.Bold);
+            Anchor(cardMeta.rectTransform, TopLeft, TopLeft, TopLeft, new Vector2(16, -46), new Vector2(308, 24));
+            cardBody = Label("CardBody", cr, "", 18, TextAnchor.UpperLeft, FontStyle.Normal);
+            Anchor(cardBody.rectTransform, TopLeft, TopLeft, TopLeft, new Vector2(16, -76), new Vector2(308, 104));
+            cardRoot.SetActive(false);
+
+            // bottom row, shared by all tabs
             garageBack = MenuButton("GarageBack", p, "BACK", 32, TextAnchor.MiddleCenter, new Vector2(36, -548), new Vector2(578, 76), () => ShowPage(MenuPage.Home));
             clearProblemsButton = MenuButton("ClearProblems", p, "CLEAR PROBLEMS", 17, TextAnchor.MiddleCenter, new Vector2(424, -548), new Vector2(190, 76), () => { game.ClearInvalidHumanLoadoutSlots(); RefreshMenu(); });
         }
@@ -691,15 +731,17 @@ namespace CarWreck.Derby
             if (cam != null)
             {
                 cam.menuAutoSpin = page == MenuPage.Home || page == MenuPage.Play;      // the Garage holds the view still so the car can be inspected
-                if (page == MenuPage.Vehicle && previous != MenuPage.Vehicle) cam.FocusMenuView(ChaseCamera.DefaultMenuRelativeAngle, ChaseCamera.DefaultMenuPitch, 1f);
-                if (page == MenuPage.Loadout && previous != MenuPage.Loadout) FocusSlotView(0);
+                if ((page == MenuPage.Vehicle || page == MenuPage.Builds) && previous != MenuPage.Vehicle && previous != MenuPage.Builds) cam.FocusMenuView(ChaseCamera.DefaultMenuRelativeAngle, ChaseCamera.DefaultMenuPitch, 1f);
+                if (page == MenuPage.Loadout && previous != MenuPage.Loadout) { focusedSlot = 0; FocusSlotView(0); }
             }
-            bool garage = page == MenuPage.Vehicle || page == MenuPage.Loadout;
+            bool garage = page == MenuPage.Vehicle || page == MenuPage.Loadout || page == MenuPage.Builds;
             pageHome.SetActive(page == MenuPage.Home);
             pagePlay.SetActive(page == MenuPage.Play);
             pageGarage.SetActive(garage);
             pageVehicle.SetActive(page == MenuPage.Vehicle);
             pageLoadout.SetActive(page == MenuPage.Loadout);
+            pageBuilds.SetActive(page == MenuPage.Builds);
+            cardRoot.SetActive(page == MenuPage.Loadout);
             FitMenu();
             RefreshMenu();
         }
@@ -743,9 +785,14 @@ namespace CarWreck.Derby
             tabLoadout.gameObject.SetActive(available);
             tabLoadout.targetGraphic.color = onLoadout ? Chosen : Dark;
             tabLoadoutLabel.text = result == null || result.IsValid ? "LOADOUT" : "LOADOUT  <color=#FF6152>!</color>";
+            tabBuilds.gameObject.SetActive(available);
+            tabBuilds.targetGraphic.color = currentPage == MenuPage.Builds ? Chosen : Dark;
             capacityLabel.gameObject.SetActive(onLoadout && available);
+            capacityBarBack.gameObject.SetActive(onLoadout && available);
+            capacityBarFill.gameObject.SetActive(onLoadout && available);
             if (onLoadout && available) RefreshLoadoutRows(result);
             else clearProblemsButton.gameObject.SetActive(false);
+            if (currentPage == MenuPage.Builds && available) RefreshBuilds();
             garageBack.GetComponent<RectTransform>().sizeDelta = new Vector2(clearProblemsButton.gameObject.activeSelf ? 380f : 578f, 76f);
         }
 
@@ -771,6 +818,7 @@ namespace CarWreck.Derby
             int count = optionScratch.Count + 1;                      // none + items
             int pos = (index + 1 + dir + count) % count;              // 0 = none
             game.SetHumanLoadoutItem((AttachmentSlot)slot, pos == 0 ? "" : optionScratch[pos - 1].id);
+            focusedSlot = slot;
             FocusSlotView(slot);
             RefreshMenu();
         }
@@ -804,11 +852,74 @@ namespace CarWreck.Derby
                 else if (def == null) text = "<color=#9AA0A6>NONE</color>";
                 else text = $"{def.displayName}   <color=#FFB35C>{def.capacityCost}</color>";
                 slotName[s].text = text;
+                itemButtons[s].targetGraphic.color = problem != null ? new Color(0.45f, 0.14f, 0.12f, 0.95f) : def != null ? new Color(0.62f, 0.34f, 0.08f, 0.95f) : Dark;   // equipped = warm tint, problem = red
                 bool usable = optionScratch.Count > 0;
                 slotPrev[s].interactable = slotNext[s].interactable = usable;
                 slotName[s].GetComponentInParent<Button>().interactable = usable;
             }
             clearProblemsButton.gameObject.SetActive(anySlotProblem);
+
+            // capacity bar
+            float frac = r.capacity > 0 ? Mathf.Clamp01((float)r.totalCost / r.capacity) : 0f;
+            capacityBarFill.rectTransform.sizeDelta = new Vector2(280f * frac, 8f);
+            capacityBarFill.color = over ? Bad : Chosen;
+            RefreshItemCard(l, r);
+        }
+
+        static readonly string[] SlotNames = { "FRONT", "REAR", "LEFT SIDE", "RIGHT SIDE", "ROOF" };
+
+        /// <summary>The card on the right: what is in the slot being edited (or that it is empty), its cost and a short description.</summary>
+        void RefreshItemCard(Loadout l, LoadoutResult r)
+        {
+            int s = Mathf.Clamp(focusedSlot, 0, VehicleAttachmentFit.SlotCount - 1);
+            string id = l.slotItemIds[s];
+            var def = string.IsNullOrEmpty(id) ? null : game.attachmentCatalog.Find(id);
+            bool problem = false;
+            foreach (var issue in r.issues) if (issue.slot == s) problem = true;
+            SlotOptions(game.attachmentCatalog, s, optionScratch);
+            if (problem)
+            {
+                cardTitle.text = SlotNames[s];
+                cardMeta.text = "<color=#FF6152>PROBLEM</color>";
+                cardBody.text = "This slot holds something that cannot be used. Pick another item, or CLEAR PROBLEMS.";
+            }
+            else if (def != null)
+            {
+                cardTitle.text = def.displayName.ToUpperInvariant();
+                cardMeta.text = $"{SlotNames[s]}   -   COST {def.capacityCost}   -   {def.rarity.ToString().ToUpperInvariant()}";
+                cardBody.text = (string.IsNullOrEmpty(def.description) ? "" : def.description + "\n") + "<color=#9AA0A6>Looks only for now: no change to handling or damage.</color>";
+            }
+            else
+            {
+                cardTitle.text = SlotNames[s];
+                cardMeta.text = "EMPTY";
+                cardBody.text = optionScratch.Count == 0 ? "No items for this slot yet." : "Use the arrows to choose an item for this slot.";
+            }
+        }
+
+        // ---- builds (saved loadouts)
+
+        void RefreshBuilds()
+        {
+            for (int i = 0; i < LoadoutPresets.Count; i++)
+            {
+                var p = game.HumanPreset(i);
+                bool exists = p != null;
+                presetLoad[i].interactable = exists;
+                presetSaveLabel[i].text = exists ? "REPLACE" : "SAVE";
+                if (!exists) { presetSummary[i].text = "<color=#9AA0A6>empty</color>"; continue; }
+                var r = LoadoutValidator.Validate(p, game.HumanFit, game.attachmentCatalog);
+                var names = new List<string>();
+                for (int s = 0; s < VehicleAttachmentFit.SlotCount; s++)
+                {
+                    string id = p.slotItemIds[s];
+                    if (string.IsNullOrEmpty(id)) continue;
+                    var def = game.attachmentCatalog.Find(id);
+                    names.Add(def != null ? def.displayName : "?");
+                }
+                string items = names.Count == 0 ? "no attachments" : string.Join(", ", names);
+                presetSummary[i].text = r.IsValid ? $"{items}  -  {r.totalCost}/{r.capacity}" : $"<color=#FF6152>{items}  -  has problems</color>";
+            }
         }
 
         // ------------------------------------------------------------------ pause and results

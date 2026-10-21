@@ -15,6 +15,7 @@ MonoBehaviour:
   id: tow_hitch_bumper
   displayName: Tow Hitch Bumper
   slot: 1
+  description: A chunky rear bumper with a tow hitch. Rear-end swagger.
   rarity: 0
   capacityCost: 2
   prefab: {fileID: 7256303055270292859, guid: 40b479e0a4973e74f9707bc51d965aeb, type: 3}
