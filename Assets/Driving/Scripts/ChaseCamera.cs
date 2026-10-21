@@ -71,24 +71,67 @@ namespace CarWreck.Driving
         public float menuDistance = 8.5f;
         public float menuShift = 2.6f;
 
+        // Orbit controls for the menu / Garage view: the angle, height and distance the player chose are kept apart from the slow auto-spin, so a drag, a wheel or a pinch
+        // takes over and the spin can be switched off (Garage) or resume after a pause (Home). Defaults reproduce the original fixed menu view.
+        public const float DefaultMenuPitch = 16f;      // degrees above the car (the original view sat 2.4 m up at 8.5 m: asin(2.4 / 8.5))
+        public const float DefaultMenuRelativeAngle = 150f;   // degrees round from behind the car: front three-quarter
+        [Tooltip("Auto-spin of the menu view. Off while the player inspects the car in the Garage.")] public bool menuAutoSpin = true;
+        [Tooltip("The spin resumes this long after the player's last orbit, wheel or pinch.")] public float menuSpinResumeDelay = 2.5f;
+        public float menuMinPitch = 6f, menuMaxPitch = 65f, menuMinZoom = 0.6f, menuMaxZoom = 1.5f;
+        float menuPitch = DefaultMenuPitch, menuZoom = 1f, menuAngleShown, menuPitchShown = DefaultMenuPitch, menuZoomShown = 1f, menuAngleVel, menuPitchVel, menuZoomVel, menuLastInput = -99f;
+
+        public float MenuAngle => menuAngle;
+        public float MenuPitch => menuPitch;
+        public float MenuZoom => menuZoom;
+        public bool HasMenuFocus => menuFocus != null;
+
         public void SetMenuFocus(Transform focus)
         {
-            if (focus != null && menuFocus != focus) menuAngle = focus.eulerAngles.y + 150f;
+            if (focus != null && menuFocus != focus) { menuAngle = menuAngleShown = focus.eulerAngles.y + DefaultMenuRelativeAngle; menuAngleVel = 0f; }
             menuFocus = focus;
         }
 
-        public void ClearMenu() { menuFocus = null; Snap(); }
+        public void ClearMenu() { menuFocus = null; menuAutoSpin = true; Snap(); }
+
+        /// <summary>Player orbit input in the menu view, "grab and turn" style: <paramref name="turnDegrees"/> is the horizontal drag (the side of the car facing the camera follows the finger,
+        /// so the camera swings the other way) and <paramref name="raiseDegrees"/> the vertical one (a drag down looks from higher up).</summary>
+        public void OrbitMenu(float turnDegrees, float raiseDegrees)
+        {
+            menuAngle += turnDegrees;
+            menuPitch = Mathf.Clamp(menuPitch + raiseDegrees, menuMinPitch, menuMaxPitch);
+            menuLastInput = Time.unscaledTime;
+        }
+
+        /// <summary>Multiplies the viewing distance (below 1 moves closer).</summary>
+        public void ZoomMenu(float factor)
+        {
+            menuZoom = Mathf.Clamp(menuZoom * factor, menuMinZoom, menuMaxZoom);
+            menuLastInput = Time.unscaledTime;
+        }
+
+        /// <summary>Swings the menu view to look at the car from <paramref name="relativeAngle"/> degrees round from behind it (0 = behind, 180 = front, 90 = left side, 270 = right side),
+        /// taking the short way round.</summary>
+        public void FocusMenuView(float relativeAngle, float pitch, float zoom)
+        {
+            if (menuFocus != null) menuAngle += Mathf.DeltaAngle(menuAngle, menuFocus.eulerAngles.y + relativeAngle);
+            menuPitch = Mathf.Clamp(pitch, menuMinPitch, menuMaxPitch);
+            menuZoom = Mathf.Clamp(zoom, menuMinZoom, menuMaxZoom);
+            menuLastInput = Time.unscaledTime;
+        }
 
         void MenuOrbit()
         {
             if (cam == null) cam = GetComponent<Camera>();
             float dt = Mathf.Min(Time.unscaledDeltaTime, 0.05f);
-            menuAngle += menuSpin * dt;
+            if (menuAutoSpin && Time.unscaledTime - menuLastInput > menuSpinResumeDelay) menuAngle += menuSpin * dt;
+            menuAngleShown = Mathf.SmoothDampAngle(menuAngleShown, menuAngle, ref menuAngleVel, 0.06f, Mathf.Infinity, dt);
+            menuPitchShown = Mathf.SmoothDamp(menuPitchShown, menuPitch, ref menuPitchVel, 0.08f, Mathf.Infinity, dt);
+            menuZoomShown = Mathf.SmoothDamp(menuZoomShown, menuZoom, ref menuZoomVel, 0.08f, Mathf.Infinity, dt);
             Vector3 p = menuFocus.position;
-            Vector3 pos = p + Quaternion.Euler(0f, menuAngle, 0f) * new Vector3(0f, 2.4f, -menuDistance);
+            Vector3 pos = p + Quaternion.Euler(0f, menuAngleShown, 0f) * (Quaternion.Euler(menuPitchShown, 0f, 0f) * new Vector3(0f, 0f, -menuDistance * menuZoomShown));
             Vector3 look = p + Vector3.up * 0.7f;
             Quaternion wanted = Quaternion.LookRotation(look - pos, Vector3.up);
-            look -= wanted * Vector3.right * menuShift;          // look left of the car: the car sits right of centre
+            look -= wanted * Vector3.right * (menuShift * menuZoomShown);          // look left of the car: the car sits right of centre
             wanted = Quaternion.LookRotation(look - pos, Vector3.up);
             float k = 1f - Mathf.Exp(-7f * dt);
             transform.position = Vector3.Lerp(transform.position, pos, k);
