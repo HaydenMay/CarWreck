@@ -99,11 +99,11 @@ namespace DamageLab.CollisionTest
             public string carCollider;        // which car collider was struck (e.g. "FrontLeftBox")
             public string impactorColliders;  // the other body's box colliders that touched in this event ("FrontLeftBox + FrontCentreBox")
             public int impactorBoxes;         // how many of them shaped the footprint (1 = the first box only)
-            // Attachment proxies (AttachmentProxy). Default (false / 0 / null) when no proxy was involved, so reports are unchanged for every vehicle without attachments.
+            // Attachment proxies (AttachmentProxy). false / -1 / null when no proxy was involved; the other fields of the report are unchanged for every vehicle without attachments.
             public bool ownProxy;             // the deepest contact was on one of THIS car's attachment proxies (carCollider then names the nearest shell region, never the proxy)
-            public int ownSlot;               // that proxy's slot (valid when ownProxy)
+            public int ownSlot;               // that proxy's slot (-1 when not ownProxy)
             public bool otherProxy;           // the other body touched with one of ITS attachment proxies in this event
-            public int otherSlot;             // that proxy's slot (valid when otherProxy)
+            public int otherSlot;             // that proxy's slot (-1 when not otherProxy)
             public string otherItem;          // that proxy's item id (valid when otherProxy)
         }
 
@@ -130,8 +130,8 @@ namespace DamageLab.CollisionTest
             public readonly List<BoxCollider> boxes = new List<BoxCollider>(4);
             public string impactors;
             public string carCollider; // the car SHELL collider of the deepest contact (the nearest shell region when that contact was on an attachment proxy)
-            public bool ownProxy; public int ownSlot;                     // the deepest contact was on this car's attachment proxy
-            public bool otherProxy; public int otherSlot; public string otherItem;   // the other body touched with an attachment proxy
+            public bool ownProxy; public int ownSlot = -1;                // the deepest contact was on this car's attachment proxy
+            public bool otherProxy; public int otherSlot = -1; public string otherItem;   // the other body touched with an attachment proxy
             public bool proxyLed;     // the footprint is the other body's proxy box alone (no shell boxes are merged or filled in)
         }
 
@@ -208,13 +208,13 @@ namespace DamageLab.CollisionTest
                 {
                     if (AttachmentProxy.TryGet(cp.thisCollider, out var ownProxy))
                     {
-                        p.carCollider = NearestShellName(cp.point);      // a proxy is not shell: name the shell region next to it, so existing consumers of carCollider are unchanged
+                        p.carCollider = NearestShellName(pt);            // a proxy is not shell: name the shell region next to it, so existing consumers of carCollider are unchanged
                         p.ownProxy = true; p.ownSlot = ownProxy.slot;
                     }
                     else
                     {
                         p.carCollider = cp.thisCollider != null ? cp.thisCollider.name : null;
-                        p.ownProxy = false; p.ownSlot = 0;
+                        p.ownProxy = false; p.ownSlot = -1;
                     }
                 }
                 p.minSeparation = Mathf.Min(p.minSeparation, cp.separation);
@@ -235,14 +235,19 @@ namespace DamageLab.CollisionTest
                 // An attachment proxy is an impactor shape of its own: it leads the footprint (replacing a shell box that was reported first in the same event) and nothing is merged into it.
                 if (!p.box.valid || (proxyBox && !p.proxyLed))
                 {
+                    // The pose is the first box contact's, also when a proxy that only touched in a later gathered step takes over:
+                    // the proxy's center is in the other body's frame, so the event keeps one consistent placement.
+                    if (!p.box.valid)
+                    {
+                        var root = model.transform;
+                        p.otherPosition = root.InverseTransformPoint(ot.position);
+                        p.otherRotation = Quaternion.Inverse(root.rotation) * ot.rotation;
+                    }
                     p.box = new BoxImpactor { valid = true, center = center, rotation = rotation, halfExtents = half };
                     p.boxMin = -half; p.boxMax = half;
                     p.boxes.Clear();
                     p.proxyLed = proxyBox;
                     p.boxes.Add(bc); p.impactors = bc.name;
-                    var root = model.transform;
-                    p.otherPosition = root.InverseTransformPoint(ot.position);
-                    p.otherRotation = Quaternion.Inverse(root.rotation) * ot.rotation;
                 }
                 else if (combineImpactorBoxes && !p.proxyLed && !proxyBox && Quaternion.Angle(rotation, p.box.rotation) < 0.5f)
                 {
