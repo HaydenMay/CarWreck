@@ -510,6 +510,17 @@ Unanswered:
 | 6 | Crush gap behind rigid items (found in M2) | Firm hits leave 98-145 mm (within the accepted 160 mm); a maximum synthetic crush leaves 338-361 mm. **Fix deferred by the owner**; candidates when revisited: a visible strut or bracket behind the item, or items that follow the panel (`panel_follow`) |
 | 7 | Release gate | **WebGL/mobile verification is required before M2 is approved for release**; nothing is published meanwhile |
 
+### Future: destructible attachments (owner direction, not V1)
+
+Long term the owner wants attachments to be destructible too, following the same patterns as the cars. V1 was built so this stays open; what it would take, in the order it should be tried:
+1. **Contact first.** Opus's proxy interface (§7.3) gives each item a real contact shape on the car's body and slot-tagged reports. Destruction needs this: you cannot damage what cannot be hit.
+2. **Item damage state.** A per-item durability that fills from hits reported on that item's proxy (energy and slot already in the report), separate from the car's durability so scoring and the match rules stay as they are. Persistent configuration (the loadout) and runtime condition (damage) stay in different places, as they do today; a reset or respawn restores the item, exactly as `ResetCar` restores the car.
+3. **Visible damage.** The same deformation engine the cars use: an item mesh becomes a `DeformablePart`, which needs readable meshes, enough vertices to bend, a part rule per item and an opt-in discovery marker (today items are deliberately hidden from discovery by mounting after `Initialize`; destructible items would invert that on purpose). Cost is deformable vertices per item on mobile WebGL, so it needs a vertex budget per item and a measured cost before more than a few are allowed.
+4. **Detach.** A broken item can come off (hide, or spawn as a short-lived prop). A detached prop must not become a separate Rigidbody that hits cars, or attribution breaks (§7.2); it should be visual and brief. Whether a lost item stays lost for the rest of the match or comes back at respawn is a rule decision for the owner.
+5. **Follow the panel.** Removes the crush gap behind rigid items (the deferred `panel_follow` mount): the item rides the deforming panel it is bolted to. Needs an Opus API for reading displaced vertices.
+
+Open design questions for the owner when this starts: does a destroyed item change handling or protection (it would, if items ever protect), do AI cars lose items too, and is item damage shown in the HUD. None of this should be built before the first real item effect exists and its scoring path is audited.
+
 ### Future: Home screen with Play and Garage (owner direction, not V1)
 
 Long term, a production build should open on a home screen where the player chooses between **Play** (match setup: mode, opponents, START) and **Garage** (vehicle, paint, loadout), the way Rocket League and similar games separate them. How this relates to what exists:
