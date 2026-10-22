@@ -21,7 +21,8 @@ namespace CarWreck.Derby.EditorTools
     /// Roster: the human seat is driven by an EnemyDriver (as DerbyValidation.Balance does) and the player's vehicle rotates through the three bodies, so every match
     /// contains all three chassis (5 cars: 2+2+1) and each chassis meets every AI personality over the rotations.
     /// Environment: BASELINE_MODE = points | last (default points), BASELINE_MATCHES (default 30, rounded up to a multiple of 3), BASELINE_DIFFICULTY = casual | standard | competitive
-    /// (default standard), BASELINE_OUT (default Docs/Attachments/baseline).
+    /// (default standard), BASELINE_OUT (default Docs/Attachments/baseline), BASELINE_LOADOUT = none | full (default none; full = ram plate, tow hitch and roof rack on
+    /// all five cars, 7 capacity points, which fits every chassis: the M4 with/without comparison).
     /// Run: Unity -batchmode -nographics -projectPath . -executeMethod CarWreck.Derby.EditorTools.BaselineTelemetry.Run -quit -logFile baseline.log
     /// </summary>
     public static class BaselineTelemetry
@@ -51,6 +52,8 @@ namespace CarWreck.Derby.EditorTools
         }
 
         static DerbyGame game;
+        static bool fullLoadout;
+        static readonly string[] FullKit = { "spiked_ram_plate", "tow_hitch_bumper", "roof_cage_rack" };
         static readonly CultureInfo Ci = CultureInfo.InvariantCulture;
 
         [MenuItem("CarWreck/Attachments/Baseline Telemetry (M0)", priority = 47)]
@@ -75,6 +78,7 @@ namespace CarWreck.Derby.EditorTools
             int matches = int.TryParse(Environment.GetEnvironmentVariable("BASELINE_MATCHES"), out int n) ? Mathf.Max(3, n) : 30;
             matches = (matches + 2) / 3 * 3;
             string outDir = Environment.GetEnvironmentVariable("BASELINE_OUT") ?? "Docs/Attachments/baseline";
+            fullLoadout = (Environment.GetEnvironmentVariable("BASELINE_LOADOUT") ?? "none").ToLowerInvariant().StartsWith("full");
             Directory.CreateDirectory(outDir);
 
             Physics.simulationMode = SimulationMode.Script;
@@ -114,6 +118,13 @@ namespace CarWreck.Derby.EditorTools
             var parts = game.Participants.ToList();
             var human = game.Human;
             var hc = human.car;
+            if (fullLoadout)
+                foreach (var p in parts)
+                {
+                    var l = new Loadout(p.car.mount.VehicleKey);
+                    foreach (var id in FullKit) l.Set(game.attachmentCatalog.items.First(d => d.id == id).slot, id);
+                    p.loadout = l; p.car.mount.Apply(l);
+                }
             var bot = hc.rig.root.AddComponent<EnemyDriver>();
             bot.receiver = hc.Receiver; bot.arenaHalf = game.arenaHalf;
             game.WireDriver(bot);
@@ -235,6 +246,7 @@ namespace CarWreck.Derby.EditorTools
             var sb = new StringBuilder();
             sb.AppendLine($"# Baseline telemetry: {(points ? "Points Derby" : "Last Car Standing")}, {difficulty} AI (milestone M0, generated)");
             sb.AppendLine();
+            if (fullLoadout) { sb.AppendLine($"**Loadout: FULL on all five cars ({string.Join(", ", FullKit)}).** Compare against the stock-car run of the same protocol."); sb.AppendLine(); }
             sb.AppendLine($"{records.Count} AI-only matches ({records.Count(m => m.finished)} finished), 5 cars each, real DerbyArena rules and physics, stepped at 50 Hz in the editor ({wallSeconds:0} s wall time). " +
                 "Seat 0 (the player's seat) is driven by a bot; the player's vehicle rotates through the three bodies, so every match has all three chassis. Cells are mean ± standard error over car-matches. " +
                 "Nothing in the game was changed to produce this. Raw rows: the matching `matches-*.csv`.");
@@ -305,7 +317,8 @@ namespace CarWreck.Derby.EditorTools
             sb.AppendLine();
             sb.AppendLine("## How to read this, and its limits");
             sb.AppendLine();
-            sb.AppendLine("- These are the current game's numbers for the stock cars with no attachments. A later attachment build must be compared against the same protocol (same mode, difficulty, match count and roster rotation), never against a human or a different setup.");
+            sb.AppendLine(fullLoadout ? "- These are the current game's numbers with the full kit above on every car. Compare them only against a stock run of the same protocol (same mode, difficulty, match count and roster rotation)."
+                : "- These are the current game's numbers for the stock cars with no attachments. A later attachment build must be compared against the same protocol (same mode, difficulty, match count and roster rotation), never against a human or a different setup.");
             sb.AppendLine("- Standard errors assume car-matches are independent; cars in one match are not (they hit each other), so treat the intervals as optimistic and compare chassis only when differences are several standard errors.");
             sb.AppendLine("- The seat-0 bot is built like `DerbyValidation.Balance` and does not get the game's hulk-avoidance hook, so it is a slightly different driver from the AI cars. The per-personality table shows how much that matters.");
             sb.AppendLine("- Editor physics at a fixed 50 Hz step is not the WebGL build on a phone; this is a baseline of rules and balance, not of performance.");

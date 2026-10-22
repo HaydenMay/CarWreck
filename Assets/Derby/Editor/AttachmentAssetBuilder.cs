@@ -6,7 +6,7 @@ namespace CarWreck.Derby.EditorTools
 {
     /// <summary>
     /// Creates (or refreshes) the PLACEHOLDER attachment data: a catalog, three per-vehicle fits and four grey-box items. Capacities are placeholders until playtests;
-    /// sockets are left unplaced for milestone M2; the prefabs are plain grey cubes with no colliders. Safe to re-run: existing assets are updated in place.
+    /// sockets are left unplaced for milestone M2; the prefabs are plain grey boxes with no colliders (collision boxes live on the definitions as proxies). Safe to re-run: existing assets are updated in place.
     /// Run: Unity -batchmode -nographics -projectPath . -executeMethod CarWreck.Derby.EditorTools.AttachmentAssetBuilder.Build -quit
     /// </summary>
     public static class AttachmentAssetBuilder
@@ -18,15 +18,35 @@ namespace CarWreck.Derby.EditorTools
         struct ItemSpec
         {
             public string id, name; public AttachmentSlot slot; public int cost; public float mass; public Vector3 size;
-            public ItemSpec(string id, string name, AttachmentSlot slot, int cost, float mass, Vector3 size) { this.id = id; this.name = name; this.slot = slot; this.cost = cost; this.mass = mass; this.size = size; }
+            /// <summary>Grey-box pieces (prefab frame). Null = one box of <see cref="size"/> standing on the mount plane.</summary>
+            public ProxySpec[] parts;
+            /// <summary>Collision boxes (prefab frame). Empty = visual only.</summary>
+            public ProxySpec[] proxies;
+            public ItemSpec(string id, string name, AttachmentSlot slot, int cost, float mass, Vector3 size, ProxySpec[] proxies = null, ProxySpec[] parts = null)
+            {
+                this.id = id; this.name = name; this.slot = slot; this.cost = cost; this.mass = mass; this.size = size;
+                this.proxies = proxies ?? new ProxySpec[0]; this.parts = parts;
+            }
         }
 
+        /// <summary>A box of <paramref name="size"/> standing on the mount plane at <paramref name="z0"/> (prefab frame, +Z outward).</summary>
+        static ProxySpec OnPlane(Vector3 size, float z0 = 0f) => new ProxySpec(new Vector3(0f, 0f, z0 + size.z * 0.5f), size);
+
+        // M4 proxies (sonnet-implementation-plan-v1.md): push bar = front, wide and low (matches its visual); ram plate = front and NARROW: only the central ram
+        // block collides, so it leads a smaller, deeper footprint than the push bar (the thin plate wings are visual and 0.1 m deep); tow hitch = rear, matches its
+        // visual; roof rack = none (roof contacts stay on the cabin box). The ram block is 0.4 m wide, narrower than every chassis' rear centre shell box (0.62-0.68 m): a block
+        // that crosses that box's seam into the neighbouring box gets that sliver resolved sideways by PhysX and the averaged contact normal tilts, which lowers the hit
+        // energy (M4 finding; a centred hit is unaffected, a hit 0.3 m off centre can lose about half on the hatchback, see the M4 status in the plan doc).
         static readonly ItemSpec[] Items =
         {
-            new ItemSpec("push_bar_junk", "Junk Push Bar", AttachmentSlot.Front, 2, 40f, new Vector3(1.6f, 0.35f, 0.25f)),
-            new ItemSpec("spiked_ram_plate", "Spiked Ram Plate", AttachmentSlot.Front, 4, 70f, new Vector3(1.2f, 0.6f, 0.4f)),
+            new ItemSpec("push_bar_junk", "Junk Push Bar", AttachmentSlot.Front, 2, 40f, new Vector3(1.6f, 0.35f, 0.25f),
+                new[] { OnPlane(new Vector3(1.6f, 0.35f, 0.25f)) }),
+            new ItemSpec("spiked_ram_plate", "Spiked Ram Plate", AttachmentSlot.Front, 4, 70f, new Vector3(1.2f, 0.6f, 0.4f),
+                new[] { OnPlane(new Vector3(0.4f, 0.35f, 0.4f)) },
+                new[] { OnPlane(new Vector3(1.2f, 0.6f, 0.1f)), OnPlane(new Vector3(0.4f, 0.35f, 0.3f), 0.1f) }),
             new ItemSpec("roof_cage_rack", "Roof Cage Rack", AttachmentSlot.Roof, 1, 25f, new Vector3(1.2f, 1.4f, 0.25f)),
-            new ItemSpec("tow_hitch_bumper", "Tow Hitch Bumper", AttachmentSlot.Rear, 2, 35f, new Vector3(1.5f, 0.3f, 0.3f)),
+            new ItemSpec("tow_hitch_bumper", "Tow Hitch Bumper", AttachmentSlot.Rear, 2, 35f, new Vector3(1.5f, 0.3f, 0.3f),
+                new[] { OnPlane(new Vector3(1.5f, 0.3f, 0.3f)) }),
         };
 
         // Placeholder capacities (owner-approved as placeholders; retune after playtests).
@@ -51,6 +71,7 @@ namespace CarWreck.Derby.EditorTools
                 var def = LoadOrCreate<AttachmentDefinition>($"{DataFolder}/{spec.id}.asset", () => ScriptableObject.CreateInstance<AttachmentDefinition>());
                 def.id = spec.id; def.displayName = spec.name; def.slot = spec.slot; def.rarity = AttachmentRarity.Common;
                 def.capacityCost = spec.cost; def.designMassKg = spec.mass; def.prefab = prefab; def.description = Describe(spec.id);
+                def.proxies = (ProxySpec[])spec.proxies.Clone();
                 if (def.incompatibleWith == null) def.incompatibleWith = new string[0];
                 EditorUtility.SetDirty(def);
                 defs[i] = def;
@@ -99,13 +120,18 @@ namespace CarWreck.Derby.EditorTools
         static GameObject BuildPrefab(ItemSpec spec, Material mat)
         {
             var root = new GameObject("Attach_" + spec.id);
-            var cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            cube.name = "Attach_" + spec.id + "_Body";
-            Object.DestroyImmediate(cube.GetComponent<Collider>());   // visual only: Stage 1 items never carry colliders
-            cube.transform.SetParent(root.transform, false);
-            cube.transform.localScale = spec.size;
-            cube.transform.localPosition = new Vector3(0f, 0f, spec.size.z * 0.5f);   // mount plane at the pivot, item extends along +Z (outward); size = (width, height, depth outward)
-            cube.GetComponent<MeshRenderer>().sharedMaterial = mat;
+            // Mount plane at the pivot, item extends along +Z (outward); size = (width, height, depth outward).
+            var parts = spec.parts ?? new[] { OnPlane(spec.size) };
+            for (int i = 0; i < parts.Length; i++)
+            {
+                var cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                cube.name = "Attach_" + spec.id + (i == 0 ? "_Body" : "_Part" + i);
+                Object.DestroyImmediate(cube.GetComponent<Collider>());   // prefabs never carry colliders: collision comes from the definition's proxies
+                cube.transform.SetParent(root.transform, false);
+                cube.transform.localScale = parts[i].size;
+                cube.transform.localPosition = parts[i].center;
+                cube.GetComponent<MeshRenderer>().sharedMaterial = mat;
+            }
             string path = $"{ArtFolder}/Attach_{spec.id}.prefab";
             var saved = PrefabUtility.SaveAsPrefabAsset(root, path);
             Object.DestroyImmediate(root);

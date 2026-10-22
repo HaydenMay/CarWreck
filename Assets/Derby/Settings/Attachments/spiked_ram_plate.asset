@@ -21,3 +21,6 @@ MonoBehaviour:
   prefab: {fileID: 6278535370295637387, guid: 5a4c22394355e51429b8ca31986e77b0, type: 3}
   designMassKg: 70
   incompatibleWith: []
+  proxies:
+  - center: {x: 0, y: 0, z: 0.2}
+    size: {x: 0.4, y: 0.35, z: 0.4}

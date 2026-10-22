@@ -65,7 +65,7 @@ namespace CarWreck.Derby.EditorTools
         static List<BoxCollider> ShellBoxes(VehicleRig.Rig rig)
         {
             var boxes = new List<BoxCollider>();
-            foreach (var bc in rig.root.GetComponentsInChildren<BoxCollider>()) if (bc.attachedRigidbody == rig.body) boxes.Add(bc);
+            foreach (var bc in rig.root.GetComponentsInChildren<BoxCollider>()) if (bc.attachedRigidbody == rig.body && !DamageLab.CollisionTest.AttachmentProxy.IsProxy(bc)) boxes.Add(bc);   // an item's own proxies are not shell
             return boxes;
         }
 

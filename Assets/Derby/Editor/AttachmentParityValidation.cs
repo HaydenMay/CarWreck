@@ -43,6 +43,7 @@ namespace CarWreck.Derby.EditorTools
             sb = new StringBuilder("[Attachments] M2 parity and lifecycle validation (DerbyArena, real PhysX at 50 Hz; editor timings)\n");
             fails = passes = 0;
             var prevMode = Physics.simulationMode;
+            var savedProxies = new Dictionary<AttachmentDefinition, ProxySpec[]>();
             try
             {
                 Physics.simulationMode = SimulationMode.Script;
@@ -53,6 +54,11 @@ namespace CarWreck.Derby.EditorTools
                 if (game.attachmentCatalog == null) { Check("the DerbyArena scene has the attachment catalog wired (run CarWreck > Attachments > Wire Catalog Into DerbyArena)", false); }
                 else
                 {
+                    // This gate is the Stage 1 (visual-only) contract. Since M4 the shipped items carry proxy colliders, which change crashes by design (covered by
+                    // AttachmentM4Validation and the M4 telemetry), so the proxies are emptied in memory for this run and restored afterwards (never saved).
+                    foreach (var def in game.attachmentCatalog.items)
+                        if (def != null && def.proxies != null && def.proxies.Length > 0) { savedProxies[def] = def.proxies; def.proxies = new ProxySpec[0]; }
+                    sb.AppendLine($" -- Stage 1 path: proxies stripped in memory from {savedProxies.Count} item(s) for this run");
                     StaticParity();
                     LifecycleChecks();
                     PhysicsParity();
@@ -60,7 +66,7 @@ namespace CarWreck.Derby.EditorTools
                 }
             }
             catch (Exception e) { sb.AppendLine("EXCEPTION: " + e); fails++; }
-            finally { Physics.simulationMode = prevMode; Time.timeScale = 1f; VehiclePainter.ClearCache(); }
+            finally { foreach (var kv in savedProxies) kv.Key.proxies = kv.Value; Physics.simulationMode = prevMode; Time.timeScale = 1f; VehiclePainter.ClearCache(); }
             sb.AppendLine($"[Attachments] {passes} PASS, {fails} FAIL");
             return sb.ToString();
         }

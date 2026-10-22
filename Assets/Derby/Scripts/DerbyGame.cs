@@ -274,7 +274,7 @@ namespace CarWreck.Derby
             rig.hitbox.Setup();
             var car = new DerbyCar { participant = p, rig = rig, def = def };
             // Attachments are mounted AFTER Initialize on purpose: Initialize returns early once done and the derby never calls Rebuild, so the damage model never
-            // discovers an attachment mesh as a deformable part. Moving this above Initialize would change deformation. (Visual only: no colliders, no mass.)
+            // discovers an attachment mesh as a deformable part. Moving this above Initialize would change deformation. (Items add proxy colliders on this Rigidbody but no mass and no inertia change.)
             car.mount = rig.root.AddComponent<AttachmentMount>();
             car.mount.Configure(attachmentCatalog, def.name);
             if (attachmentCatalog != null && p.loadout != null) car.mount.Apply(p.loadout);

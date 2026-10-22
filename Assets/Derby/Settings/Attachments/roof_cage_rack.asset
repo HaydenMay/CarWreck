@@ -21,3 +21,4 @@ MonoBehaviour:
   prefab: {fileID: 665505640889373354, guid: 29de00f3eba888749b1952e32e3b8a48, type: 3}
   designMassKg: 25
   incompatibleWith: []
+  proxies: []
